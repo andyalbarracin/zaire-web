@@ -1,0 +1,165 @@
+// File: page.tsx
+// Path: zaire-web/app/casos/page.tsx
+// Last modified: 2026-04-27
+// Description: Página de casos de uso y escenarios de implementación por industria.
+
+'use client';
+
+import { useState } from 'react';
+import Nav from '@/components/nav';
+import Footer from '@/components/footer';
+import Stripe from '@/components/stripe';
+import ContactModal from '@/components/contact-modal';
+import Reveal from '@/components/reveal';
+
+const casos = [
+  {
+    sector: 'VENTAS B2B',
+    title: 'Pipeline Inteligente',
+    challenge: 'Un equipo de ventas B2B gestionando leads en hojas de cálculo. Seguimientos manuales, propuestas genéricas y sin visibilidad del estado real del pipeline.',
+    solution: 'Pipeline automatizado con lead scoring por agente IA, secuencias de seguimiento según comportamiento y propuestas generadas con contexto real del cliente.',
+    results: ['80% reducción en tiempo de calificación', 'Seguimiento 100% automatizado hasta la reunión', 'Propuestas personalizadas en minutos'],
+    chips: ['n8n', 'Claude', 'HubSpot', 'Email'],
+    hl: false,
+  },
+  {
+    sector: 'MARKETING',
+    title: 'Contenido Operativo',
+    challenge: 'Una empresa de servicios publicando contenido de forma irregular, con 3 personas dedicadas parcialmente y sin consistencia de brand voice.',
+    solution: 'Sistema de generación de contenido a escala con knowledge base de marca propia. Los agentes crean, el equipo revisa y aprueba. Publicación automatizada multi-plataforma.',
+    results: ['3× más contenido con el mismo equipo', 'Brand voice consistente en todos los canales', 'Ciclo editorial de días → horas'],
+    chips: ['OpenAI', 'Supabase', 'RAG', 'n8n'],
+    hl: true,
+  },
+  {
+    sector: 'OPERACIONES INTERNAS',
+    title: 'Onboarding Automatizado',
+    challenge: 'Una empresa de tecnología con onboarding de clientes que tomaba 2 semanas y requería coordinación manual entre 5 equipos.',
+    solution: 'Sistema de onboarding orquestado: contratos digitales, acceso a plataformas, comunicaciones secuenciales y tareas de equipo — todo disparado por un solo trigger.',
+    results: ['Onboarding de 2 semanas → 48 horas', 'Cero coordinación manual entre equipos', 'NPS de onboarding +40 puntos'],
+    chips: ['Webhooks', 'n8n', 'Notion', 'Email', 'Slack'],
+    hl: false,
+  },
+  {
+    sector: 'SOPORTE AL CLIENTE',
+    title: 'Agente 24/7',
+    challenge: 'Un SaaS B2B con soporte limitado a horario de oficina y tiempo promedio de respuesta de 4 horas para consultas frecuentes.',
+    solution: 'Agente IA entrenado con knowledge base propia que resuelve el 70% de los tickets automáticamente, escala casos complejos y aprende de cada interacción.',
+    results: ['70% de tickets resueltos sin humano', 'Tiempo de respuesta: 4h → 2 minutos', 'Equipo de soporte enfocado en casos reales'],
+    chips: ['Claude', 'RAG', 'Supabase', 'Intercom'],
+    hl: false,
+  },
+  {
+    sector: 'INMOBILIARIA',
+    title: 'Leads en WhatsApp',
+    challenge: 'Una inmobiliaria perdiendo leads por respuesta lenta en WhatsApp y sin seguimiento estructurado de los prospectos.',
+    solution: 'Agente en WhatsApp que responde al instante, califica el lead, agenda visitas y registra todo en el CRM. El broker humano solo entra cuando el lead está listo.',
+    results: ['Respuesta instantánea 24/7 en WhatsApp', '3× más visitas agendadas', 'Pipeline siempre actualizado sin carga manual'],
+    chips: ['WhatsApp API', 'n8n', 'Claude', 'CRM'],
+    hl: false,
+  },
+  {
+    sector: 'ACADEMIA / EDTECH',
+    title: 'Nurturing y Onboarding',
+    challenge: 'Una academia online con alta tasa de abandono en los primeros 30 días y equipo pedagógico saturado con consultas repetitivas.',
+    solution: 'Sistema de nurturing automático con secuencias según progreso del alumno, agente de soporte pedagógico para consultas frecuentes y alertas de abandono temprano.',
+    results: ['Tasa de finalización +35%', 'Consultas repetitivas resueltas por agente', 'Equipo pedagógico enfocado en casos complejos'],
+    chips: ['n8n', 'Claude', 'Email', 'Supabase', 'RAG'],
+    hl: false,
+  },
+];
+
+export default function CasosPage() {
+  const [showContact, setShowContact] = useState(false);
+
+  return (
+    <>
+      <Nav onContact={() => setShowContact(true)} dark activePage="/casos" />
+
+      <section className="pg-hero">
+        <div className="pg-hero-inner">
+          <div>
+            <div className="pg-hero-label">// CASOS DE USO · ESCENARIOS REALES</div>
+            <h1 className="pg-hero-h1">SISTEMAS EN<br /><em>OPERACIÓN</em></h1>
+            <p className="pg-hero-sub">
+              Escenarios concretos de implementación. Sin nombres de clientes, con arquitectura real y resultados medibles.
+            </p>
+          </div>
+          <div className="pg-hero-visual">
+            <svg viewBox="0 0 320 220" fill="none" width="100%" height="220">
+              {[['B2B', 40, 20], ['MKTG', 180, 20], ['OPS', 40, 110], ['SOPORTE', 180, 110]].map(([label, x, y]) => (
+                <g key={label}>
+                  <rect x={Number(x)} y={Number(y)} width="120" height="72" rx="2" stroke="#333" strokeWidth="1.5" />
+                  <text x={Number(x) + 60} y={Number(y) + 40} fontFamily="monospace" fontSize="9" fill="#555" textAnchor="middle">{label}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <Stripe />
+
+      {/* Grid de casos */}
+      <Reveal>
+        <section className="section">
+          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+            {casos.map(c => (
+              <div key={c.title} className={`case-card${c.hl ? ' hl' : ''}`} style={{ minHeight: 'auto', gap: 16 }}>
+                <div className="case-sector">{c.sector}</div>
+                <div className="case-title" style={{ fontSize: 26 }}>{c.title}</div>
+
+                <div>
+                  <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: c.hl ? 'rgba(0,0,0,.4)' : '#555', marginBottom: 8 }}>
+                    El problema
+                  </div>
+                  <div className="case-body" style={{ fontSize: 14 }}>{c.challenge}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: c.hl ? 'rgba(0,0,0,.4)' : '#FF6A00', marginBottom: 8 }}>
+                    La solución
+                  </div>
+                  <div className="case-body" style={{ fontSize: 14 }}>{c.solution}</div>
+                </div>
+
+                <div>
+                  {c.results.map(r => (
+                    <div key={r} style={{ display: 'flex', gap: 10, fontSize: 13, color: c.hl ? 'rgba(0,0,0,.6)' : '#aaa', marginBottom: 8, lineHeight: 1.5 }}>
+                      <span style={{ color: c.hl ? '#111' : '#FF6A00', flexShrink: 0 }}>✓</span>{r}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="case-chips">
+                  {c.chips.map(ch => (
+                    <span key={ch} className="case-chip">{ch}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      {/* CTA */}
+      <Reveal>
+        <section className="cta-sec">
+          <div>
+            <div className="s-lbl">// TU CASO</div>
+            <div className="cta-h">¿EN QUÉ<br />INDUSTRIA<br /><em>ESTÁS?</em></div>
+          </div>
+          <div className="cta-right">
+            <p>Contanos tu operación. En 30 minutos identificamos si tiene sentido y cómo sería el sistema para tu caso específico.</p>
+            <div className="cta-btns">
+              <button className="btn btn-primary" onClick={() => setShowContact(true)}>Hablar con ZAIRE →</button>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Footer />
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+    </>
+  );
+}

@@ -1,0 +1,47 @@
+# ── Dependencias ─────────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ────────────────────────────────────────────
+.next/
+out/
+dist/
+
+# ── Variables de entorno (NUNCA commitear) ───────────────────
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ── Documentación interna (no pública) ───────────────────────
+.docs/
+
+# ── Claude / IA tooling ──────────────────────────────────────
+.claude/
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS / editor ──────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Testing / coverage ───────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Miscelánea ───────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+.vercel
