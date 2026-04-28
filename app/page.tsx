@@ -157,6 +157,7 @@ export default function Home() {
           <div>
             <div className="hero-label">// ZAIRE · INTELLIGENT OPERATIONS STUDIO</div>
             <h1 className="hero-h1">
+              SISTEMAS<br />
               INTELI-<br /><em>GENTES</em>
             </h1>
             <p className="hero-sub">
