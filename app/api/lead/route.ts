@@ -55,11 +55,11 @@ function confirmationEmail(name: string) {
           </div>
         </div>
         <div style="padding:20px 40px;background:#111;display:flex;justify-content:space-between">
-          <span style="font-family:monospace;font-size:9px;color:#444;letter-spacing:.08em;text-transform:uppercase">
+          <span style="font-family:monospace;font-size:9px;color:#aaa;letter-spacing:.08em;text-transform:uppercase">
             © ZAIRE 2026
           </span>
           <a href="mailto:hola@zaire.studio"
-             style="font-family:monospace;font-size:9px;color:#444;letter-spacing:.08em">
+             style="font-family:monospace;font-size:9px;color:#aaa;letter-spacing:.08em">
             hola@zaire.studio
           </a>
         </div>
