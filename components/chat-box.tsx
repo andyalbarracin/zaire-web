@@ -8,18 +8,17 @@ import { useState, useRef, useEffect } from 'react';
 
 type Role = 'bot' | 'user';
 
-interface Message {
-  role: Role;
-  text: string;
-}
+interface Message { role: Role; text: string; }
 
 interface LeadForm {
   name: string;
+  company: string;
   email: string;
   whatsapp: string;
+  ai_knowledge: string;
 }
 
-const WELCOME = '¿Qué parte de tu operación querés optimizar?';
+/* ── Botones de cada paso ─────────────────────────── */
 
 const TOPIC_BTNS = [
   'Automatización de procesos',
@@ -30,112 +29,121 @@ const TOPIC_BTNS = [
   'Otros...',
 ];
 
-const QUALIFY_LABEL = '¿Cuántas personas hay en tu equipo?';
-const QUALIFY_BTNS = ['Solo / 1–2 personas', '3–10 personas', '10–50 personas', '50+ personas'];
+const SECTOR_LABEL  = '¿En qué tipo de negocio estás?';
+const SECTOR_BTNS   = [
+  'Indumentaria / Moda',
+  'Servicios profesionales',
+  'Minorista / Retail',
+  'Cuidado personal / Salud',
+  'Gastronomía / Alimentos',
+  'Tecnología',
+  'Educación',
+  'Otro rubro...',
+];
+
+const TEAM_LABEL  = '¿Cuántas personas hay en tu equipo?';
+const TEAM_BTNS   = [
+  'Solo / 1–2 personas',
+  '3–10 personas',
+  '10–50 personas',
+  '50+ personas',
+];
+
+const AI_OPTIONS = [
+  'Sí, ya uso herramientas',
+  'Algo escuché, no mucho',
+  'Es nuevo para mí',
+];
 
 export default function ChatBox() {
-  const [msgs, setMsgs] = useState<Message[]>([{ role: 'bot', text: WELCOME }]);
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
-  const [exchangeCount, setExchangeCount] = useState(0);
-  const [showLead, setShowLead] = useState(false);
-  const [lead, setLead] = useState<LeadForm>({ name: '', email: '', whatsapp: '' });
+  const [msgs, setMsgs]               = useState<Message[]>([{ role: 'bot', text: '¿Qué parte de tu operación querés optimizar?' }]);
+  const [input, setInput]             = useState('');
+  const [typing, setTyping]           = useState(false);
+  const [exchangeCount, setCount]     = useState(0);
+  const [showLead, setShowLead]       = useState(false);
+  const [lead, setLead]               = useState<LeadForm>({ name: '', company: '', email: '', whatsapp: '', ai_knowledge: '' });
   const [leadSending, setLeadSending] = useState(false);
-  const [leadDone, setLeadDone] = useState(false);
-  const [hasGroq, setHasGroq] = useState(true);
-  const msgsRef = useRef<HTMLDivElement>(null);
+  const [leadDone, setLeadDone]       = useState(false);
+  const [hasGroq, setHasGroq]         = useState(true);
+  const msgsRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /* Derivado — sin estado extra, sin timers que se pisen */
-  const showTopicBtns = exchangeCount === 0 && !typing;
-  const showQualify   = exchangeCount === 2 && !typing && !showLead && !leadDone;
+  /* ── Lógica de fases — 100% derivada, sin timers de estado ── */
+  // Los qualify buttons aparecen DESPUÉS de la respuesta de IA del exchange anterior,
+  // nunca después del exchange donde el usuario YA respondió esa pregunta.
+  const showTopicBtns  = exchangeCount === 0 && !typing;
+  const showSectorBtns = exchangeCount === 1 && !typing && !showLead && !leadDone;
+  const showTeamBtns   = exchangeCount === 2 && !typing && !showLead && !leadDone;
+  // Input libre: visible a partir del exchange 1, excepto cuando está el form o typing
+  const showInput      = exchangeCount > 0 && !showLead && !leadDone && !typing;
 
   useEffect(() => {
-    if (msgsRef.current) {
-      msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-    }
-  }, [msgs, typing, showLead, showQualify]);
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [msgs, typing, showLead, showSectorBtns, showTeamBtns]);
 
-  const toApiMessages = (history: Message[]) =>
-    history.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }));
+  const toApi = (h: Message[]) =>
+    h.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }));
 
-  const sendMessage = async (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim() || typing) return;
-
     const userMsg: Message = { role: 'user', text: text.trim() };
     const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput('');
     setTyping(true);
-
     const newCount = exchangeCount + 1;
-    setExchangeCount(newCount);
+    setCount(newCount);
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: toApiMessages(newMsgs) }),
+        body: JSON.stringify({ messages: toApi(newMsgs) }),
       });
-
-      if (!res.ok) throw new Error('API error');
+      if (!res.ok) throw new Error('api');
       const { text: botText } = await res.json();
-
       setMsgs(p => [...p, { role: 'bot', text: botText }]);
 
-      /* exchange 3+: mostrar formulario */
-      if (newCount >= 3 && !showLead) {
-        setTimeout(() => setShowLead(true), 400);
-      }
+      /* Después del exchange 3: mostrar form */
+      if (newCount >= 3) setTimeout(() => setShowLead(true), 300);
+
     } catch {
       setHasGroq(false);
-      setMsgs(p => [...p, {
-        role: 'bot',
-        text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy con un diagnóstico personalizado.',
-      }]);
+      setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
       setShowLead(true);
     } finally {
       setTyping(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
   };
 
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
-  };
-
-  const submitLead = async (e: React.FormEvent<HTMLFormElement>) => {
+  const submitLead = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!lead.email) return;
     setLeadSending(true);
-
     try {
       await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: lead.name || null,
-          email: lead.email,
-          whatsapp: lead.whatsapp || null,
+          name:         lead.name     || null,
+          company:      lead.company  || null,
+          email:        lead.email,
+          whatsapp:     lead.whatsapp || null,
+          ai_knowledge: lead.ai_knowledge || null,
           conversation: msgs.map(m => `${m.role === 'bot' ? 'ZAIRE' : 'Visitante'}: ${m.text}`).join('\n'),
-          source: 'chat_hero',
+          source:       'chat_hero',
         }),
       });
       setLeadDone(true);
-      setMsgs(p => [...p, {
-        role: 'bot',
-        text: `Perfecto${lead.name ? `, ${lead.name.split(' ')[0]}` : ''}! Te contactamos hoy. Mientras tanto podés explorar nuestros planes.`,
-      }]);
+      setMsgs(p => [...p, { role: 'bot', text: `Perfecto${lead.name ? `, ${lead.name.split(' ')[0]}` : ''}! Te contactamos hoy. Mientras tanto podés explorar nuestros planes.` }]);
       setShowLead(false);
     } catch {
       setLeadSending(false);
     }
   };
 
-  const showInput = !showTopicBtns && !showQualify && !showLead && !leadDone;
+  const setF = (k: keyof LeadForm, v: string) => setLead(p => ({ ...p, [k]: v }));
 
   return (
     <div className="ai-box">
@@ -152,7 +160,7 @@ export default function ChatBox() {
       </div>
 
       {/* Mensajes */}
-      <div className="ai-msgs" ref={msgsRef} aria-live="polite" aria-label="Conversación">
+      <div className="ai-msgs" ref={msgsRef} aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={`ai-msg ${m.role}`}>
             <div className="ai-bubble" style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
@@ -160,91 +168,90 @@ export default function ChatBox() {
         ))}
         {typing && (
           <div className="ai-msg bot">
-            <div className="ai-typing" aria-label="Escribiendo">
-              <span /><span /><span />
-            </div>
+            <div className="ai-typing"><span /><span /><span /></div>
           </div>
         )}
       </div>
 
-      {/* Botones de tema — solo al inicio */}
+      {/* Exchange 0: tema (exclusivo, sin input) */}
       {showTopicBtns && (
         <div className="ai-quick">
-          {TOPIC_BTNS.map(btn => (
-            <button key={btn} className="ai-qbtn" onClick={() => sendMessage(btn)}>{btn}</button>
-          ))}
+          {TOPIC_BTNS.map(b => <button key={b} className="ai-qbtn" onClick={() => send(b)}>{b}</button>)}
         </div>
       )}
 
-      {/* Botones de calificación — tamaño de equipo, exchange 2 */}
-      {showQualify && (
+      {/* Exchange 1: sector + input libre */}
+      {showSectorBtns && (
         <div className="ai-quick">
           <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6, width: '100%' }}>
-            {QUALIFY_LABEL}
+            {SECTOR_LABEL}
           </div>
-          {QUALIFY_BTNS.map(btn => (
-            <button key={btn} className="ai-qbtn" onClick={() => sendMessage(btn)}>{btn}</button>
-          ))}
+          {SECTOR_BTNS.map(b => <button key={b} className="ai-qbtn" onClick={() => send(b)}>{b}</button>)}
         </div>
       )}
 
-      {/* Formulario de captura de lead */}
+      {/* Exchange 2: equipo + input libre */}
+      {showTeamBtns && (
+        <div className="ai-quick">
+          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6, width: '100%' }}>
+            {TEAM_LABEL}
+          </div>
+          {TEAM_BTNS.map(b => <button key={b} className="ai-qbtn" onClick={() => send(b)}>{b}</button>)}
+        </div>
+      )}
+
+      {/* Formulario de lead */}
       {showLead && !leadDone && (
         <form className="ai-lead" onSubmit={submitLead}>
-          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6 }}>
+          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 8 }}>
             → Dejá tus datos y te contactamos hoy
           </div>
-          <input
-            className="ai-linput"
-            placeholder="Tu nombre (opcional)"
-            value={lead.name}
-            onChange={e => setLead(p => ({ ...p, name: e.target.value }))}
-            aria-label="Nombre"
-          />
-          <input
-            className="ai-linput"
-            type="email"
-            required
-            placeholder="tu@empresa.com *"
-            value={lead.email}
-            onChange={e => setLead(p => ({ ...p, email: e.target.value }))}
-            aria-label="Email"
-          />
-          <input
-            className="ai-linput"
-            type="tel"
-            placeholder="¿Tenés WhatsApp? Ingresalo sin el 0 y sin el 15"
-            value={lead.whatsapp}
-            onChange={e => setLead(p => ({ ...p, whatsapp: e.target.value }))}
-            aria-label="WhatsApp"
-          />
+          <input className="ai-linput" placeholder="Tu nombre (opcional)"
+            value={lead.name} onChange={e => setF('name', e.target.value)} />
+          <input className="ai-linput" placeholder="Empresa o nombre del negocio (opcional)"
+            value={lead.company} onChange={e => setF('company', e.target.value)} />
+          <input className="ai-linput" type="email" required placeholder="tu@empresa.com *"
+            value={lead.email} onChange={e => setF('email', e.target.value)} />
+          <input className="ai-linput" type="tel" placeholder="¿Tenés WhatsApp? Ingresalo sin el 0 y sin el 15"
+            value={lead.whatsapp} onChange={e => setF('whatsapp', e.target.value)} />
+
+          {/* IA knowledge — pill select */}
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6 }}>
+              ¿Conocés herramientas de IA o automatización?
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {AI_OPTIONS.map(opt => (
+                <button key={opt} type="button" onClick={() => setF('ai_knowledge', opt)}
+                  style={{
+                    fontFamily: 'var(--fm)', fontSize: 8, letterSpacing: '.06em', textTransform: 'uppercase',
+                    padding: '5px 10px', borderRadius: 2, cursor: 'pointer', border: '1px solid',
+                    borderColor: lead.ai_knowledge === opt ? '#FF6A00' : '#333',
+                    background: lead.ai_knowledge === opt ? '#FF6A00' : 'transparent',
+                    color: lead.ai_knowledge === opt ? '#111' : '#666',
+                    transition: 'all .15s',
+                  }}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button className="ai-lsubmit" type="submit" disabled={leadSending}>
             {leadSending ? 'ENVIANDO...' : 'HABLAR CON ZAIRE →'}
           </button>
         </form>
       )}
 
-      {/* Input de texto libre */}
+      {/* Input de texto libre — exchange 1+ junto con los qualify buttons */}
       {showInput && (
         <div className="ai-input-row">
-          <input
-            ref={inputRef}
-            className="ai-input"
-            placeholder="Escribí tu consulta..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            disabled={typing}
-            aria-label="Mensaje"
-          />
-          <button
-            className="ai-send"
-            onClick={() => sendMessage(input)}
-            disabled={typing || !input.trim()}
-            aria-label="Enviar"
-          >
-            →
-          </button>
+          <input ref={inputRef} className="ai-input"
+            placeholder={showSectorBtns ? 'O escribí tu rubro...' : showTeamBtns ? 'O escribí el tamaño...' : 'Escribí tu consulta...'}
+            value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
+            disabled={typing} />
+          <button className="ai-send" onClick={() => send(input)} disabled={typing || !input.trim()}>→</button>
         </div>
       )}
     </div>

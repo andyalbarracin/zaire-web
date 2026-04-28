@@ -73,6 +73,7 @@ function internalNotification(d: {
   name?: string; email: string; whatsapp?: string;
   company?: string; employees?: string; challenge?: string;
   message?: string; need?: string; source?: string; conversation?: string;
+  ai_knowledge?: string;
 }) {
   const field = (label: string, val?: string) => val ? `
     <tr>
@@ -113,6 +114,7 @@ function internalNotification(d: {
             ${field('Equipo', d.employees)}
             ${field('Desafío', d.challenge)}
             ${field('Necesidad', d.need)}
+            ${field('Conoce IA', d.ai_knowledge)}
             ${field('Fuente', d.source)}
           </table>
           ${d.message ? `<div style="margin-top:16px;padding:12px 16px;background:#1a1a1a;border-left:2px solid #FF6A00;border-radius:2px"><div style="font-family:monospace;font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Mensaje</div><p style="font-size:13px;color:#ccc;line-height:1.65;margin:0">${d.message}</p></div>` : ''}
@@ -136,7 +138,7 @@ function internalNotification(d: {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, whatsapp, company, employees, challenge, message, conversation, need, source } = body;
+    const { name, email, whatsapp, company, employees, challenge, message, conversation, need, source, ai_knowledge } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email requerido' }, { status: 400 });
@@ -155,6 +157,7 @@ export async function POST(req: NextRequest) {
       conversation: conversation || null,
       need:         need || null,
       source:       source || 'web',
+      ai_knowledge: ai_knowledge || null,
     });
 
     if (dbError) {
@@ -180,7 +183,7 @@ export async function POST(req: NextRequest) {
         from:    `ZAIRE Leads <noreply@${fromDomain}>`,
         to:      process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com',
         subject: `🔔 Nuevo lead — ${name || email}`,
-        html:    internalNotification({ name, email, whatsapp, company, employees, challenge, message, need, source, conversation }).html,
+        html:    internalNotification({ name, email, whatsapp, company, employees, challenge, message, need, source, conversation, ai_knowledge }).html,
       });
     }
 
