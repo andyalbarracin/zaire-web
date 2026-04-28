@@ -67,8 +67,8 @@ export default function ChatBox() {
       if (!res.ok) throw new Error('api');
       const { text: botText } = await res.json();
       setMsgs(p => [...p, { role: 'bot', text: botText }]);
-      /* Después del 3er intercambio la IA ya hizo su recomendación → form */
-      if (newCount >= 3) setTimeout(() => setShowLead(true), 400);
+      /* Después del 5to intercambio la IA ya tuvo suficiente conversación → form */
+      if (newCount >= 5) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
       setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
