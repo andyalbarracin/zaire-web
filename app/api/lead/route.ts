@@ -69,20 +69,65 @@ function confirmationEmail(name: string) {
 }
 
 /* ── Template notificación interna ── */
-function internalNotification(data: Record<string, string>) {
+function internalNotification(d: {
+  name?: string; email: string; whatsapp?: string;
+  company?: string; employees?: string; challenge?: string;
+  message?: string; need?: string; source?: string; conversation?: string;
+}) {
+  const field = (label: string, val?: string) => val ? `
+    <tr>
+      <td style="font-family:monospace;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px 6px 0;white-space:nowrap;vertical-align:top">${label}</td>
+      <td style="font-size:13px;color:#fff;padding:6px 0;line-height:1.5">${val}</td>
+    </tr>` : '';
+
+  const conversationHtml = d.conversation
+    ? d.conversation.split('\n').map(line => {
+        const isBot = line.startsWith('ZAIRE:');
+        const text = line.replace(/^(ZAIRE|Visitante): /, '');
+        return `<div style="margin-bottom:8px;padding:8px 12px;background:${isBot ? '#1a1a1a' : '#222'};border-left:2px solid ${isBot ? '#FF6A00' : '#444'};border-radius:2px">
+          <span style="font-family:monospace;font-size:9px;color:${isBot ? '#FF6A00' : '#666'};text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">${isBot ? 'ZAIRE' : 'VISITANTE'}</span>
+          <span style="font-size:13px;color:#ccc;line-height:1.5">${text}</span>
+        </div>`;
+      }).join('')
+    : '<p style="color:#555;font-size:12px">Sin conversación registrada.</p>';
+
   return {
-    subject: `🔔 Nuevo lead — ${data.name || 'Sin nombre'} (${data.source || 'web'})`,
+    subject: `🔔 Nuevo lead — ${d.name || d.email} (${d.source || 'web'})`,
     html: `
-      <div style="font-family:monospace;max-width:560px;margin:0 auto;padding:32px;background:#111;color:#aaa">
-        <h2 style="color:#FF6A00;font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:24px">
-          Nuevo lead recibido
-        </h2>
-        ${Object.entries(data).map(([k, v]) => v ? `
-          <div style="margin-bottom:12px">
-            <span style="color:#555;font-size:10px;text-transform:uppercase;letter-spacing:.08em">${k}:</span>
-            <br/><span style="color:#fff;font-size:13px">${v}</span>
-          </div>
-        ` : '').join('')}
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0d0d0d;padding:0">
+
+        <!-- Header -->
+        <div style="background:#111;padding:24px 32px;border-bottom:1px solid #1e1e1e">
+          <span style="font-family:monospace;font-size:16px;font-weight:700;color:#fff;letter-spacing:.15em">ZAIRE</span>
+          <span style="font-family:monospace;font-size:9px;color:#FF6A00;letter-spacing:.1em;text-transform:uppercase;margin-left:16px">NUEVO LEAD</span>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div style="padding:24px 32px;background:#111">
+          <div style="font-family:monospace;font-size:9px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">// CONTACTO</div>
+          <table cellpadding="0" cellspacing="0" style="width:100%">
+            ${field('Nombre', d.name)}
+            ${field('Email', `<a href="mailto:${d.email}" style="color:#FF6A00">${d.email}</a>`)}
+            ${field('WhatsApp', d.whatsapp ? `<a href="https://wa.me/${d.whatsapp.replace(/\D/g,'')}" style="color:#FF6A00">${d.whatsapp}</a>` : undefined)}
+            ${field('Empresa', d.company)}
+            ${field('Equipo', d.employees)}
+            ${field('Desafío', d.challenge)}
+            ${field('Necesidad', d.need)}
+            ${field('Fuente', d.source)}
+          </table>
+          ${d.message ? `<div style="margin-top:16px;padding:12px 16px;background:#1a1a1a;border-left:2px solid #FF6A00;border-radius:2px"><div style="font-family:monospace;font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Mensaje</div><p style="font-size:13px;color:#ccc;line-height:1.65;margin:0">${d.message}</p></div>` : ''}
+        </div>
+
+        <!-- Conversación -->
+        <div style="padding:24px 32px;background:#0d0d0d">
+          <div style="font-family:monospace;font-size:9px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">// CONVERSACIÓN DEL CHAT</div>
+          ${conversationHtml}
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 32px;background:#111;border-top:1px solid #1e1e1e">
+          <span style="font-family:monospace;font-size:9px;color:#333;letter-spacing:.06em">ZAIRE · Notificación automática · ${new Date().toLocaleString('es-AR')}</span>
+        </div>
       </div>
     `,
   };
@@ -91,7 +136,7 @@ function internalNotification(data: Record<string, string>) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, company, employees, challenge, message, conversation, need, source } = body;
+    const { name, email, whatsapp, company, employees, challenge, message, conversation, need, source } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email requerido' }, { status: 400 });
@@ -102,6 +147,7 @@ export async function POST(req: NextRequest) {
     const { error: dbError } = await supabase.from('leads').insert({
       name:         name || null,
       email,
+      whatsapp:     whatsapp || null,
       company:      company || null,
       employees:    employees || null,
       challenge:    challenge || null,
@@ -134,7 +180,7 @@ export async function POST(req: NextRequest) {
         from:    `ZAIRE Leads <noreply@${fromDomain}>`,
         to:      process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com',
         subject: `🔔 Nuevo lead — ${name || email}`,
-        html:    internalNotification({ name, email, company, employees, challenge, message, need, source }).html,
+        html:    internalNotification({ name, email, whatsapp, company, employees, challenge, message, need, source, conversation }).html,
       });
     }
 

@@ -1,10 +1,6 @@
 // File: chat-box.tsx
 // Path: zaire-web/components/chat-box.tsx
 // Last modified: 2026-04-27
-// Description: Chat de diagnóstico IA del hero.
-//              Usa Groq (Llama 3, gratuito) via /api/chat.
-//              Flujo: conversación libre → al 3er intercambio muestra captura de lead.
-//              Lead se envía al webhook configurado en NEXT_PUBLIC_LEAD_WEBHOOK_URL.
 
 'use client';
 
@@ -20,23 +16,27 @@ interface Message {
 interface LeadForm {
   name: string;
   email: string;
+  whatsapp: string;
 }
 
-/* Mensaje inicial de bienvenida */
 const WELCOME = '¿Qué parte de tu operación querés optimizar primero?';
 
+const QUALIFY_LABEL = '¿Cuántas personas hay en tu equipo?';
+const QUALIFY_BTNS = ['Solo / 1–2 personas', '3–10 personas', '10–50 personas', '50+ personas'];
+
+const TOPIC_BTNS = ['Automatización de procesos', 'Agentes IA', 'Revenue / Ventas', 'Knowledge Ops'];
+
 export default function ChatBox() {
-  const [msgs, setMsgs] = useState<Message[]>([
-    { role: 'bot', text: WELCOME },
-  ]);
+  const [msgs, setMsgs] = useState<Message[]>([{ role: 'bot', text: WELCOME }]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [exchangeCount, setExchangeCount] = useState(0);
+  const [showQualify, setShowQualify] = useState(false);
   const [showLead, setShowLead] = useState(false);
-  const [lead, setLead] = useState<LeadForm>({ name: '', email: '' });
+  const [lead, setLead] = useState<LeadForm>({ name: '', email: '', whatsapp: '' });
   const [leadSending, setLeadSending] = useState(false);
   const [leadDone, setLeadDone] = useState(false);
-  const [hasGroq, setHasGroq] = useState(true);   // asume que funciona hasta que falle
+  const [hasGroq, setHasGroq] = useState(true);
   const msgsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,9 +44,8 @@ export default function ChatBox() {
     if (msgsRef.current) {
       msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
     }
-  }, [msgs, typing, showLead]);
+  }, [msgs, typing, showLead, showQualify]);
 
-  /* Convierte el historial al formato que espera la API */
   const toApiMessages = (history: Message[]) =>
     history.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }));
 
@@ -57,6 +56,7 @@ export default function ChatBox() {
     const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput('');
+    setShowQualify(false);
     setTyping(true);
 
     const newCount = exchangeCount + 1;
@@ -74,16 +74,18 @@ export default function ChatBox() {
 
       setMsgs(p => [...p, { role: 'bot', text: botText }]);
 
-      /* Después del 3er intercambio, mostrar captura de lead */
-      if (newCount >= 3 && !showLead) {
-        setTimeout(() => setShowLead(true), 400);
+      if (newCount === 2) {
+        /* Después del 2do intercambio: botones de calificación de equipo */
+        setTimeout(() => setShowQualify(true), 500);
+      } else if (newCount >= 3 && !showLead) {
+        /* Después del 3er intercambio (que incluye la respuesta de calificación): form de lead */
+        setTimeout(() => setShowLead(true), 500);
       }
     } catch {
       setHasGroq(false);
-      /* Fallback si Groq no está configurado */
       setMsgs(p => [...p, {
         role: 'bot',
-        text: 'Para ayudarte mejor, déjame tus datos y te contactamos hoy con un diagnóstico personalizado.'
+        text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy con un diagnóstico personalizado.',
       }]);
       setShowLead(true);
     } finally {
@@ -99,7 +101,6 @@ export default function ChatBox() {
     }
   };
 
-  /* Envío del lead al webhook */
   const submitLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!lead.email) return;
@@ -110,26 +111,25 @@ export default function ChatBox() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...lead,
+          name: lead.name || null,
+          email: lead.email,
+          whatsapp: lead.whatsapp || null,
           conversation: msgs.map(m => `${m.role === 'bot' ? 'ZAIRE' : 'Visitante'}: ${m.text}`).join('\n'),
           source: 'chat_hero',
         }),
       });
       setLeadDone(true);
-      setMsgs(p => [...p, { role: 'bot', text: `¡Perfecto, ${lead.name.split(' ')[0]}! Te contactamos hoy. Mientras tanto podés explorar nuestros planes en detalle.` }]);
+      setMsgs(p => [...p, {
+        role: 'bot',
+        text: `Perfecto${lead.name ? `, ${lead.name.split(' ')[0]}` : ''}! Te contactamos hoy. Mientras tanto podés explorar nuestros planes.`,
+      }]);
       setShowLead(false);
     } catch {
       setLeadSending(false);
     }
   };
 
-  /* Botones rápidos de inicio */
-  const quickBtns = exchangeCount === 0 ? [
-    'Automatización de procesos',
-    'Agentes IA',
-    'Revenue / Ventas',
-    'Knowledge Ops',
-  ] : [];
+  const showTopicBtns = exchangeCount === 0 && !typing;
 
   return (
     <div className="ai-box">
@@ -161,13 +161,23 @@ export default function ChatBox() {
         )}
       </div>
 
-      {/* Botones rápidos de inicio */}
-      {quickBtns.length > 0 && !typing && (
+      {/* Botones de inicio — solo en exchange 0 */}
+      {showTopicBtns && (
         <div className="ai-quick">
-          {quickBtns.map(btn => (
-            <button key={btn} className="ai-qbtn" onClick={() => sendMessage(btn)}>
-              {btn}
-            </button>
+          {TOPIC_BTNS.map(btn => (
+            <button key={btn} className="ai-qbtn" onClick={() => sendMessage(btn)}>{btn}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Botones de calificación — tamaño del equipo */}
+      {showQualify && !typing && !showLead && !leadDone && (
+        <div className="ai-quick">
+          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6 }}>
+            {QUALIFY_LABEL}
+          </div>
+          {QUALIFY_BTNS.map(btn => (
+            <button key={btn} className="ai-qbtn" onClick={() => sendMessage(btn)}>{btn}</button>
           ))}
         </div>
       )}
@@ -175,12 +185,12 @@ export default function ChatBox() {
       {/* Formulario de captura de lead */}
       {showLead && !leadDone && (
         <form className="ai-lead" onSubmit={submitLead}>
-          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 4 }}>
+          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6 }}>
             → Dejá tus datos y te contactamos hoy
           </div>
           <input
             className="ai-linput"
-            placeholder="Tu nombre"
+            placeholder="Tu nombre (opcional)"
             value={lead.name}
             onChange={e => setLead(p => ({ ...p, name: e.target.value }))}
             aria-label="Nombre"
@@ -189,10 +199,18 @@ export default function ChatBox() {
             className="ai-linput"
             type="email"
             required
-            placeholder="tu@empresa.com"
+            placeholder="tu@empresa.com *"
             value={lead.email}
             onChange={e => setLead(p => ({ ...p, email: e.target.value }))}
             aria-label="Email"
+          />
+          <input
+            className="ai-linput"
+            type="tel"
+            placeholder="WhatsApp con código de país (opcional)"
+            value={lead.whatsapp}
+            onChange={e => setLead(p => ({ ...p, whatsapp: e.target.value }))}
+            aria-label="WhatsApp"
           />
           <button className="ai-lsubmit" type="submit" disabled={leadSending}>
             {leadSending ? 'ENVIANDO...' : 'HABLAR CON ZAIRE →'}
@@ -200,8 +218,8 @@ export default function ChatBox() {
         </form>
       )}
 
-      {/* Input de texto — oculto si estamos en captura de lead o conversación terminó */}
-      {!showLead && !leadDone && (
+      {/* Input de texto */}
+      {!showLead && !leadDone && !showQualify && (
         <div className="ai-input-row">
           <input
             ref={inputRef}
