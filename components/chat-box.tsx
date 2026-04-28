@@ -1,6 +1,6 @@
 // File: chat-box.tsx
 // Path: zaire-web/components/chat-box.tsx
-// Last modified: 2026-04-27
+// Last modified: 2026-04-28
 
 'use client';
 
@@ -19,19 +19,25 @@ interface LeadForm {
   whatsapp: string;
 }
 
-const WELCOME = '¿Qué parte de tu operación querés optimizar primero?';
+const WELCOME = '¿Qué parte de tu operación querés optimizar?';
+
+const TOPIC_BTNS = [
+  'Automatización de procesos',
+  'Agentes IA',
+  'Marketing / Ventas',
+  'Atención al Cliente',
+  'Knowledge Ops',
+  'Otros...',
+];
 
 const QUALIFY_LABEL = '¿Cuántas personas hay en tu equipo?';
 const QUALIFY_BTNS = ['Solo / 1–2 personas', '3–10 personas', '10–50 personas', '50+ personas'];
-
-const TOPIC_BTNS = ['Automatización de procesos', 'Agentes IA', 'Revenue / Ventas', 'Knowledge Ops'];
 
 export default function ChatBox() {
   const [msgs, setMsgs] = useState<Message[]>([{ role: 'bot', text: WELCOME }]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [exchangeCount, setExchangeCount] = useState(0);
-  const [showQualify, setShowQualify] = useState(false);
   const [showLead, setShowLead] = useState(false);
   const [lead, setLead] = useState<LeadForm>({ name: '', email: '', whatsapp: '' });
   const [leadSending, setLeadSending] = useState(false);
@@ -39,6 +45,10 @@ export default function ChatBox() {
   const [hasGroq, setHasGroq] = useState(true);
   const msgsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  /* Derivado — sin estado extra, sin timers que se pisen */
+  const showTopicBtns = exchangeCount === 0 && !typing;
+  const showQualify   = exchangeCount === 2 && !typing && !showLead && !leadDone;
 
   useEffect(() => {
     if (msgsRef.current) {
@@ -56,7 +66,6 @@ export default function ChatBox() {
     const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput('');
-    setShowQualify(false);
     setTyping(true);
 
     const newCount = exchangeCount + 1;
@@ -74,12 +83,9 @@ export default function ChatBox() {
 
       setMsgs(p => [...p, { role: 'bot', text: botText }]);
 
-      if (newCount === 2) {
-        /* Después del 2do intercambio: botones de calificación de equipo */
-        setTimeout(() => setShowQualify(true), 500);
-      } else if (newCount >= 3 && !showLead) {
-        /* Después del 3er intercambio (que incluye la respuesta de calificación): form de lead */
-        setTimeout(() => setShowLead(true), 500);
+      /* exchange 3+: mostrar formulario */
+      if (newCount >= 3 && !showLead) {
+        setTimeout(() => setShowLead(true), 400);
       }
     } catch {
       setHasGroq(false);
@@ -101,7 +107,7 @@ export default function ChatBox() {
     }
   };
 
-  const submitLead = async (e: React.FormEvent) => {
+  const submitLead = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!lead.email) return;
     setLeadSending(true);
@@ -129,7 +135,7 @@ export default function ChatBox() {
     }
   };
 
-  const showTopicBtns = exchangeCount === 0 && !typing;
+  const showInput = !showTopicBtns && !showQualify && !showLead && !leadDone;
 
   return (
     <div className="ai-box">
@@ -161,7 +167,7 @@ export default function ChatBox() {
         )}
       </div>
 
-      {/* Botones de inicio — solo en exchange 0 */}
+      {/* Botones de tema — solo al inicio */}
       {showTopicBtns && (
         <div className="ai-quick">
           {TOPIC_BTNS.map(btn => (
@@ -170,10 +176,10 @@ export default function ChatBox() {
         </div>
       )}
 
-      {/* Botones de calificación — tamaño del equipo */}
-      {showQualify && !typing && !showLead && !leadDone && (
+      {/* Botones de calificación — tamaño de equipo, exchange 2 */}
+      {showQualify && (
         <div className="ai-quick">
-          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6 }}>
+          <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 6, width: '100%' }}>
             {QUALIFY_LABEL}
           </div>
           {QUALIFY_BTNS.map(btn => (
@@ -207,7 +213,7 @@ export default function ChatBox() {
           <input
             className="ai-linput"
             type="tel"
-            placeholder="WhatsApp con código de país (opcional)"
+            placeholder="¿Tenés WhatsApp? Ingresalo sin el 0 y sin el 15"
             value={lead.whatsapp}
             onChange={e => setLead(p => ({ ...p, whatsapp: e.target.value }))}
             aria-label="WhatsApp"
@@ -218,8 +224,8 @@ export default function ChatBox() {
         </form>
       )}
 
-      {/* Input de texto */}
-      {!showLead && !leadDone && !showQualify && (
+      {/* Input de texto libre */}
+      {showInput && (
         <div className="ai-input-row">
           <input
             ref={inputRef}

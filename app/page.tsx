@@ -173,8 +173,17 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Columna derecha: Chat IA */}
-          <ChatBox />
+          {/* Columna derecha: Chat IA + aviso de privacidad */}
+          <div>
+            <ChatBox />
+            <p style={{ fontSize: 10, color: '#555', marginTop: 10, textAlign: 'center', lineHeight: 1.6 }}>
+              Al enviar tus datos aceptás nuestra{' '}
+              <a href="/politica-de-privacidad" style={{ color: '#666', textDecoration: 'underline' }}>
+                política de privacidad
+              </a>
+              .
+            </p>
+          </div>
         </div>
 
         {/* Stats */}

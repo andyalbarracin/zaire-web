@@ -177,6 +177,13 @@ export default function ContactoPage() {
                   <button className="fsub" type="submit" disabled={status === 'sending'}>
                     {status === 'sending' ? 'ENVIANDO...' : 'SOLICITAR DIAGNÓSTICO →'}
                   </button>
+                  <p style={{ fontSize: 11, color: '#aaa', marginTop: 12, lineHeight: 1.6 }}>
+                    Al enviar aceptás nuestra{' '}
+                    <a href="/politica-de-privacidad" style={{ color: '#888', textDecoration: 'underline' }}>
+                      política de privacidad
+                    </a>
+                    . Tus datos no se comparten con terceros.
+                  </p>
                 </form>
               )}
             </div>
