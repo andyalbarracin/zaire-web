@@ -11,10 +11,13 @@ interface Message { role: Role; text: string; }
 interface LeadForm { name: string; company: string; email: string; whatsapp: string; }
 
 const STORAGE_KEY  = 'zaire_chat_v2';
+const RESET_KEY    = 'zaire_chat_resets';
 const EXPIRY_MS    = 12 * 60 * 60 * 1000; // 12 horas
+const RESET_LIMIT  = 3;
+const RESET_WINDOW = 60 * 60_000; // 1 hora
 const WELCOME_TEXT = '¿Qué parte de tu operación querés optimizar?';
 const WELCOME_MSG: Message = { role: 'bot', text: WELCOME_TEXT };
-const MAX_MSG_LEN  = 800; // máx caracteres por mensaje del usuario
+const MAX_MSG_LEN  = 800;
 
 const TOPIC_BTNS = [
   'Automatización de procesos',
@@ -25,7 +28,7 @@ const TOPIC_BTNS = [
   'Otros...',
 ];
 
-/* Lee localStorage de forma segura y devuelve el estado guardado o null */
+/* ── Helpers de localStorage ──────────────────────────────── */
 function loadSaved(): { msgs: Message[]; count: number; leadDone: boolean } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -40,6 +43,31 @@ function loadSaved(): { msgs: Message[]; count: number; leadDone: boolean } | nu
     localStorage.removeItem(STORAGE_KEY);
     return null;
   }
+}
+
+function checkResetAllowed(): { allowed: boolean; minutesLeft?: number } {
+  try {
+    const raw = localStorage.getItem(RESET_KEY);
+    if (!raw) return { allowed: true };
+    const { count, resetAt } = JSON.parse(raw);
+    if (Date.now() > resetAt) return { allowed: true };
+    if (count >= RESET_LIMIT) {
+      return { allowed: false, minutesLeft: Math.ceil((resetAt - Date.now()) / 60_000) };
+    }
+    return { allowed: true };
+  } catch { return { allowed: true }; }
+}
+
+function incrementResetCount(): void {
+  try {
+    const raw = localStorage.getItem(RESET_KEY);
+    let count = 1, resetAt = Date.now() + RESET_WINDOW;
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (Date.now() < p.resetAt) { count = (p.count || 0) + 1; resetAt = p.resetAt; }
+    }
+    localStorage.setItem(RESET_KEY, JSON.stringify({ count, resetAt }));
+  } catch { /* ignorar */ }
 }
 
 export default function ChatBox() {
@@ -63,8 +91,25 @@ export default function ChatBox() {
   const [lead, setLead]               = useState<LeadForm>({ name: '', company: '', email: '', whatsapp: '' });
   const [leadSending, setLeadSending] = useState(false);
   const [hasGroq, setHasGroq]         = useState(true);
+  const [resetError, setResetError]   = useState<string | null>(null);
   const msgsRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleReset = () => {
+    const { allowed, minutesLeft } = checkResetAllowed();
+    if (!allowed) {
+      setResetError(`Límite alcanzado. Podés reiniciar en ${minutesLeft} min.`);
+      return;
+    }
+    incrementResetCount();
+    localStorage.removeItem(STORAGE_KEY);
+    setMsgs([WELCOME_MSG]);
+    setCount(0);
+    setLeadDone(false);
+    setShowLead(false);
+    setInput('');
+    setResetError(null);
+  };
 
   /* Persistir conversación en localStorage con cada cambio */
   useEffect(() => {
@@ -170,8 +215,26 @@ export default function ChatBox() {
             <div className="ai-sub">{hasGroq ? 'IA activa' : 'Sistema activo'}</div>
           </div>
         </div>
-        <span className="ai-badge">IA</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <span className="ai-badge">IA</span>
+          {count > 0 && !leadDone && (
+            <button
+              onClick={handleReset}
+              style={{ fontFamily: 'var(--fm)', fontSize: 7, letterSpacing: '.08em', textTransform: 'uppercase', color: '#444', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+              title="Empezar una nueva conversación"
+            >
+              ↺ nueva conv.
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Error de límite de reinicio */}
+      {resetError && (
+        <div style={{ fontFamily: 'var(--fm)', fontSize: 9, color: '#666', padding: '6px 16px', borderBottom: '1px solid #1a1a1a', letterSpacing: '.04em' }}>
+          {resetError}
+        </div>
+      )}
 
       {/* Mensajes */}
       <div className="ai-msgs" ref={msgsRef} aria-live="polite">
