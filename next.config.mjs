@@ -5,10 +5,6 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Habilita instrumentation.ts para parchear localStorage roto en Node.js 22+
-  experimental: {
-    instrumentationHook: true,
-  },
   images: {
     remotePatterns: [],
   },

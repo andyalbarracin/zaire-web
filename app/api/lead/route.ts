@@ -10,14 +10,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-/* ── Clientes ── */
-const supabase = createClient(
+/* ── Clientes lazy — se instancian en runtime, no en build ── */
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,   // service_role bypasea RLS
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false, autoRefreshToken: false } }
 );
 
-// Resend se instancia solo cuando la key está disponible
 const getResend = () => process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 /* ── Template email de confirmación al visitante ── */
@@ -49,7 +48,7 @@ function confirmationEmail(name: string) {
             <p style="font-family:monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:8px">
               Mientras tanto, podés explorar
             </p>
-            <a href="https://zaire.studio/planes"
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.cloud'}/planes"
                style="font-family:monospace;font-size:11px;color:#FF6A00;letter-spacing:.06em;text-transform:uppercase">
               → Ver planes y servicios
             </a>
@@ -99,6 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     /* 1. Guardar en Supabase */
+    const supabase = getSupabase();
     const { error: dbError } = await supabase.from('leads').insert({
       name:         name || null,
       email,
