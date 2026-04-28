@@ -56,7 +56,7 @@ const layers = [
   {
     bg: '#111', numColor: '#FF6A00', titleColor: '#fff', bodyColor: '#888', chipBg: '#222', chipColor: '#aaa',
     num: 'Capa 2', title: 'Sistemas Híbridos con IA',
-    body: 'Workflows que incorporan inteligencia: clasifican, deciden y responden con contexto real.',
+    body: 'Automatizaciones con inteligencia que clasifican, toman decisiones y responden según el contexto real de cada caso.',
     chips: ['Claude', 'GPT-4o', 'RAG', 'Supabase'],
   },
   {
@@ -112,7 +112,7 @@ const plans = [
 
 const process = [
   { n: '01', title: 'Discovery', body: 'Mapeamos tu operación actual, identificamos fricciones y definimos el punto de mayor impacto.' },
-  { n: '02', title: 'Diseño', body: 'Arquitecturamos el sistema: flows, agentes, integraciones y knowledge base.' },
+  { n: '02', title: 'Diseño', body: 'Organizamos todo el sistema para que procesos, herramientas e información funcionen juntos.' },
   { n: '03', title: 'Implementación', body: 'Construimos y conectamos todo. Cada pieza documentada y lista para operar.' },
   { n: '04', title: 'Estabilización', body: 'Monitoreamos, ajustamos y entrenamos al equipo. El sistema entra en producción real.' },
 ];
@@ -142,7 +142,7 @@ const cases = [
   {
     sector: 'SOPORTE',
     title: 'Agente 24/7',
-    body: 'Agente IA entrenado con tu knowledge base que resuelve tickets, escala casos y aprende de cada interacción.',
+    body: 'Agente IA entrenado con la información de tu empresa, capaz de resolver consultas, derivar casos complejos y mejorar con cada interacción..',
     chips: ['Claude', 'RAG', 'Supabase'],
     hl: false,
   },
@@ -167,8 +167,7 @@ export default function Home() {
               INTELI-<br /><em>GENTES</em>
             </h1>
             <p className="hero-sub">
-              Diseñamos sistemas inteligentes — workflows, agentes IA y knowledge ops — para que tu empresa opere con estructura, velocidad y criterio.
-            </p>
+            Diseñamos sistemas inteligentes con automatizaciones de procesos, agentes con IA y organización de la información para que tu empresa trabaje con más orden, velocidad y criterio.            </p>
             <div className="hero-btns">
               <button className="btn btn-primary" onClick={() => setShowContact(true)}>
                 Solicitar diagnóstico →

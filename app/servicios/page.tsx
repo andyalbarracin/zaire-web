@@ -17,7 +17,7 @@ const servicesData = [
   {
     layer: '// AUTOMATIZACIÓN · CAPA 1',
     items: [
-      { icon: <IWorkflow s="#FF6A00" size={48} />, title: 'Automatización de Flujos', tag: 'n8n · Make · Zapier · Webhooks · APIs REST', body: 'Workflows determinísticos que conectan tus herramientas. Sin código manual, sin fricciones. Cada flujo documentado, auditado y fácil de mantener.' },
+      { icon: <IWorkflow s="#FF6A00" size={48} />, title: 'Automatización de Flujos', tag: 'n8n · Make · Zapier · Webhooks · APIs REST', body: 'Procesos automáticos bien definidos que conectan tus herramientas sin vueltas. Todo queda ordenado, documentado y fácil de mantener.' },
       { icon: <IAgent s="#FF6A00" size={48} />, title: 'Agentes IA', tag: 'Claude · GPT-4o · LangChain · MCP · Ollama', body: 'Agentes especializados que clasifican, deciden y ejecutan. Integrados a tu operación real, no como demos sino como infraestructura.' },
     ],
   },
@@ -25,7 +25,7 @@ const servicesData = [
     layer: '// KNOWLEDGE INFRASTRUCTURE · CAPA 2–3',
     items: [
       { icon: <IKnowledge s="#FF6A00" size={48} />, title: 'Knowledge Infrastructure', tag: 'Supabase · PostgreSQL · pgvector · RAG · MCP', body: 'Base de conocimiento propia sobre tus documentos, procesos y marca. Los agentes la consultan, los equipos la actualizan.' },
-      { icon: <IRevenue s="#FF6A00" size={48} />, title: 'Revenue Systems', tag: 'HubSpot · Pipedrive · n8n · WhatsApp API · Email', body: 'Pipelines de ventas que operan solos. Lead scoring, seguimiento automático, propuestas con contexto real.' },
+      { icon: <IRevenue s="#FF6A00" size={48} />, title: 'Revenue Systems', tag: 'HubSpot · Pipedrive · n8n · WhatsApp API · Email', body: 'Sistemas de ventas que trabajan de forma automática: priorizan oportunidades, hacen seguimiento y generan propuestas con mejor contexto.' },
     ],
   },
   {
