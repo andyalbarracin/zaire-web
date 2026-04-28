@@ -119,9 +119,11 @@ export async function POST(req: NextRequest) {
     /* 2. Email de confirmación al visitante */
     const resend = getResend();
     if (resend) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.cloud';
+      const fromDomain = siteUrl.replace('https://', '').replace('http://', '');
       const { subject, html } = confirmationEmail(name || '');
       await resend.emails.send({
-        from:    'ZAIRE <noreply@zaire.studio>',   // cambiar por tu dominio verificado en Resend
+        from:    `ZAIRE <noreply@${fromDomain}>`,
         to:      email,
         subject,
         html,
@@ -129,8 +131,8 @@ export async function POST(req: NextRequest) {
 
       /* 3. Notificación interna */
       await resend.emails.send({
-        from:    'ZAIRE Leads <noreply@zaire.studio>',
-        to:      'hola@zaire.studio',              // tu email de equipo
+        from:    `ZAIRE Leads <noreply@${fromDomain}>`,
+        to:      process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com',
         subject: `🔔 Nuevo lead — ${name || email}`,
         html:    internalNotification({ name, email, company, employees, challenge, message, need, source }).html,
       });
