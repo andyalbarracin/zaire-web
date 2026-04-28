@@ -67,8 +67,15 @@ export default function ChatBox() {
       if (!res.ok) throw new Error('api');
       const { text: botText } = await res.json();
       setMsgs(p => [...p, { role: 'bot', text: botText }]);
-      /* Después del 5to intercambio la IA ya tuvo suficiente conversación → form */
-      if (newCount >= 5) setTimeout(() => setShowLead(true), 400);
+
+      /* Mostrar form cuando:
+         - La IA usa frases de cierre (desde exchange 2 en adelante), O
+         - Se llegó al máximo de 5 exchanges */
+      const CLOSING = ['dejá tus datos', 'dejar tus datos', 'dejame tus datos',
+        'agendemos', 'coordinar un diagnóstico', 'un diagnóstico de 30',
+        'dejar tu contacto', 'contactanos', 'lo charlamos en persona'];
+      const aiClosing = newCount >= 2 && CLOSING.some(s => botText.toLowerCase().includes(s));
+      if (aiClosing || newCount >= 5) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
       setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
