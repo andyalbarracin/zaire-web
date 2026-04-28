@@ -15,7 +15,7 @@ const TOPIC_BTNS = [
   'Agentes IA',
   'Marketing / Ventas',
   'Atención al Cliente',
-  'Knowledge Ops',
+  'Operaciones internas',
   'Otros...',
 ];
 
@@ -65,17 +65,13 @@ export default function ChatBox() {
         body: JSON.stringify({ messages: toApi(newMsgs) }),
       });
       if (!res.ok) throw new Error('api');
-      const { text: botText } = await res.json();
-      setMsgs(p => [...p, { role: 'bot', text: botText }]);
-
-      /* Mostrar form cuando:
-         - La IA usa frases de cierre (desde exchange 2 en adelante), O
-         - Se llegó al máximo de 5 exchanges */
-      const CLOSING = ['dejá tus datos', 'dejar tus datos', 'dejame tus datos',
-        'agendemos', 'coordinar un diagnóstico', 'un diagnóstico de 30',
-        'dejar tu contacto', 'contactanos', 'lo charlamos en persona'];
-      const aiClosing = newCount >= 2 && CLOSING.some(s => botText.toLowerCase().includes(s));
-      if (aiClosing || newCount >= 5) setTimeout(() => setShowLead(true), 400);
+      const raw = await res.json();
+      const botText = raw.text ?? '';
+      /* La IA incluye [[LEAD]] al final cuando está lista para cerrar */
+      const aiReady = botText.includes('[[LEAD]]');
+      const cleanText = botText.replace('[[LEAD]]', '').trim();
+      setMsgs(p => [...p, { role: 'bot', text: cleanText }]);
+      if (aiReady || newCount >= 5) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
       setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
