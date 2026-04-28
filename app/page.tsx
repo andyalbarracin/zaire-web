@@ -8,11 +8,17 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Nav from '@/components/nav';
 import Footer from '@/components/footer';
 import Stripe from '@/components/stripe';
-import ChatBox from '@/components/chat-box';
 import ContactModal from '@/components/contact-modal';
+
+/* ssr: false evita hydration mismatch con localStorage */
+const ChatBox = dynamic(() => import('@/components/chat-box'), {
+  ssr: false,
+  loading: () => <div className="ai-box" style={{ minHeight: 420 }} />,
+});
 import Reveal from '@/components/reveal';
 import {
   IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IInfra,

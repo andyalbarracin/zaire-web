@@ -72,18 +72,10 @@ function incrementResetCount(): void {
 
 export default function ChatBox() {
   /* Inicialización lazy desde localStorage — sin flash de contenido */
-  const [msgs, setMsgs] = useState<Message[]>(() => {
-    if (typeof window === 'undefined') return [WELCOME_MSG];
-    return loadSaved()?.msgs ?? [WELCOME_MSG];
-  });
-  const [count, setCount] = useState<number>(() => {
-    if (typeof window === 'undefined') return 0;
-    return loadSaved()?.count ?? 0;
-  });
-  const [leadDone, setLeadDone] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return loadSaved()?.leadDone ?? false;
-  });
+  /* Siempre arranca con el estado inicial — localStorage se restaura en useEffect */
+  const [msgs, setMsgs]       = useState<Message[]>([WELCOME_MSG]);
+  const [count, setCount]     = useState(0);
+  const [leadDone, setLeadDone] = useState(false);
 
   const [input, setInput]             = useState('');
   const [typing, setTyping]           = useState(false);
@@ -110,6 +102,16 @@ export default function ChatBox() {
     setInput('');
     setResetError(null);
   };
+
+  /* Restaurar conversación guardada — solo corre en cliente, tras mount */
+  useEffect(() => {
+    const saved = loadSaved();
+    if (saved) {
+      setMsgs(saved.msgs);
+      setCount(saved.count);
+      setLeadDone(saved.leadDone);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Persistir conversación en localStorage con cada cambio */
   useEffect(() => {
