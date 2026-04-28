@@ -10,6 +10,12 @@ type Role = 'bot' | 'user';
 interface Message { role: Role; text: string; }
 interface LeadForm { name: string; company: string; email: string; whatsapp: string; }
 
+const STORAGE_KEY  = 'zaire_chat_v2';
+const EXPIRY_MS    = 12 * 60 * 60 * 1000; // 12 horas
+const WELCOME_TEXT = '¿Qué parte de tu operación querés optimizar?';
+const WELCOME_MSG: Message = { role: 'bot', text: WELCOME_TEXT };
+const MAX_MSG_LEN  = 800; // máx caracteres por mensaje del usuario
+
 const TOPIC_BTNS = [
   'Automatización de procesos',
   'Agentes IA',
@@ -19,25 +25,55 @@ const TOPIC_BTNS = [
   'Otros...',
 ];
 
+/* Lee localStorage de forma segura y devuelve el estado guardado o null */
+function loadSaved(): { msgs: Message[]; count: number; leadDone: boolean } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const { msgs, count, leadDone, ts } = JSON.parse(raw);
+    if (Date.now() - ts > EXPIRY_MS || !Array.isArray(msgs) || msgs.length <= 1) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return { msgs, count: count ?? 0, leadDone: leadDone ?? false };
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
 export default function ChatBox() {
-  const [msgs, setMsgs]               = useState<Message[]>([{ role: 'bot', text: '¿Qué parte de tu operación querés optimizar?' }]);
+  /* Inicialización lazy desde localStorage — sin flash de contenido */
+  const [msgs, setMsgs] = useState<Message[]>(() => {
+    if (typeof window === 'undefined') return [WELCOME_MSG];
+    return loadSaved()?.msgs ?? [WELCOME_MSG];
+  });
+  const [count, setCount] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    return loadSaved()?.count ?? 0;
+  });
+  const [leadDone, setLeadDone] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return loadSaved()?.leadDone ?? false;
+  });
+
   const [input, setInput]             = useState('');
   const [typing, setTyping]           = useState(false);
-  const [count, setCount]             = useState(0);
   const [showLead, setShowLead]       = useState(false);
   const [lead, setLead]               = useState<LeadForm>({ name: '', company: '', email: '', whatsapp: '' });
   const [leadSending, setLeadSending] = useState(false);
-  const [leadDone, setLeadDone]       = useState(false);
   const [hasGroq, setHasGroq]         = useState(true);
   const msgsRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /*
-   * Flujo limpio:
-   * 0 → topic buttons (sin input)
-   * 1-2 → conversación libre con la IA (input habilitado)
-   * 3+ → la IA hizo su recomendación → aparece el form de lead
-   */
+  /* Persistir conversación en localStorage con cada cambio */
+  useEffect(() => {
+    if (msgs.length <= 1 && count === 0) return; // no guardar estado inicial
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ msgs, count, leadDone, ts: Date.now() }));
+    } catch { /* quota exceeded — ignorar */ }
+  }, [msgs, count, leadDone]);
+
   const showTopicBtns = count === 0 && !typing;
   const showInput     = count > 0 && !showLead && !leadDone;
 
@@ -50,7 +86,11 @@ export default function ChatBox() {
 
   const send = async (text: string) => {
     if (!text.trim() || typing) return;
-    const userMsg: Message = { role: 'user', text: text.trim() };
+    /* Sanitización básica en cliente: recortar y limpiar HTML */
+    const safe = text.trim().slice(0, MAX_MSG_LEN).replace(/[<>]/g, '');
+    if (!safe) return;
+
+    const userMsg: Message = { role: 'user', text: safe };
     const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput('');
@@ -64,14 +104,19 @@ export default function ChatBox() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: toApi(newMsgs) }),
       });
+
+      if (res.status === 429) {
+        setMsgs(p => [...p, { role: 'bot', text: 'Demasiadas consultas en poco tiempo. Esperá un momento y volvé a intentarlo.' }]);
+        setTyping(false);
+        return;
+      }
       if (!res.ok) throw new Error('api');
+
       const raw = await res.json();
       const botText = raw.text ?? '';
-      /* La IA incluye [[LEAD]] al final cuando está lista para cerrar */
       const aiReady = botText.includes('[[LEAD]]');
       const cleanText = botText.replace('[[LEAD]]', '').trim();
       setMsgs(p => [...p, { role: 'bot', text: cleanText }]);
-      /* Mínimo 3 intercambios antes de mostrar el form, máximo 5 */
       if ((aiReady && newCount >= 3) || newCount >= 5) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
@@ -79,7 +124,7 @@ export default function ChatBox() {
       setShowLead(true);
     } finally {
       setTyping(false);
-      if (count < 2) setTimeout(() => inputRef.current?.focus(), 80);
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
   };
 
@@ -101,6 +146,7 @@ export default function ChatBox() {
         }),
       });
       setLeadDone(true);
+      localStorage.removeItem(STORAGE_KEY); // limpiar al convertir
       setMsgs(p => [...p, {
         role: 'bot',
         text: `Perfecto${lead.name ? `, ${lead.name.split(' ')[0]}` : ''}! Te contactamos hoy. Podés explorar nuestros planes mientras tanto.`,
@@ -134,14 +180,22 @@ export default function ChatBox() {
             <div className="ai-bubble" style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
           </div>
         ))}
+
+        {/* Indicador de escritura mejorado */}
         {typing && (
           <div className="ai-msg bot">
-            <div className="ai-typing"><span /><span /><span /></div>
+            <div className="ai-thinking">
+              <div className="ai-thinking-avatar">Z</div>
+              <div className="ai-thinking-body">
+                <span className="ai-thinking-name">ZAIRE · analizando</span>
+                <div className="ai-typing"><span /><span /><span /></div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Exchange 0: topic buttons — acceso rápido, sin input */}
+      {/* Topic buttons (exchange 0) */}
       {showTopicBtns && (
         <div className="ai-quick">
           {TOPIC_BTNS.map(b => (
@@ -150,35 +204,36 @@ export default function ChatBox() {
         </div>
       )}
 
-      {/* Form de lead — aparece tras el 3er intercambio */}
+      {/* Lead form */}
       {showLead && !leadDone && (
         <form className="ai-lead" onSubmit={submitLead}>
           <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#666', marginBottom: 8 }}>
             → Dejá tus datos y te contactamos hoy
           </div>
           <input className="ai-linput" placeholder="Tu nombre (opcional)"
-            value={lead.name} onChange={e => setF('name', e.target.value)} />
+            value={lead.name} onChange={e => setF('name', e.target.value)} maxLength={100} />
           <input className="ai-linput" placeholder="Empresa y rubro (ej: tienda de ropa, estudio contable...)"
-            value={lead.company} onChange={e => setF('company', e.target.value)} />
+            value={lead.company} onChange={e => setF('company', e.target.value)} maxLength={200} />
           <input className="ai-linput" type="email" required placeholder="tu@empresa.com *"
-            value={lead.email} onChange={e => setF('email', e.target.value)} />
+            value={lead.email} onChange={e => setF('email', e.target.value)} maxLength={200} />
           <input className="ai-linput" type="tel" placeholder="¿Tenés WhatsApp? Ingresalo sin el 0 y sin el 15"
-            value={lead.whatsapp} onChange={e => setF('whatsapp', e.target.value)} />
+            value={lead.whatsapp} onChange={e => setF('whatsapp', e.target.value)} maxLength={20} />
           <button className="ai-lsubmit" type="submit" disabled={leadSending}>
             {leadSending ? 'ENVIANDO...' : 'HABLAR CON ZAIRE →'}
           </button>
         </form>
       )}
 
-      {/* Input libre — exchanges 1 y 2 */}
+      {/* Input libre */}
       {showInput && (
         <div className="ai-input-row">
           <input ref={inputRef} className="ai-input"
             placeholder="Escribí tu respuesta..."
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value.slice(0, MAX_MSG_LEN))}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
             disabled={typing}
+            maxLength={MAX_MSG_LEN}
           />
           <button className="ai-send" onClick={() => send(input)} disabled={typing || !input.trim()}>→</button>
         </div>

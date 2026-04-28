@@ -10,6 +10,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
+/* ── Rate limiting ──────────────────────────────────────────── */
+const rl = new Map<string, { count: number; reset: number }>();
+function checkRate(ip: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const e = rl.get(ip);
+  if (!e || now > e.reset) { rl.set(ip, { count: 1, reset: now + windowMs }); return true; }
+  if (e.count >= limit) return false;
+  e.count++;
+  return true;
+}
+
+/* ── Sanitización de campos de texto ───────────────────────── */
+function clean(val: unknown, maxLen = 500): string | null {
+  if (typeof val !== 'string' || !val.trim()) return null;
+  return val.trim().slice(0, maxLen).replace(/[<>]/g, '');
+}
+
+function cleanEmail(val: unknown): string | null {
+  const s = clean(val, 200);
+  if (!s) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : null;
+}
+
 /* ── Clientes lazy — se instancian en runtime, no en build ── */
 const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,28 +159,40 @@ function internalNotification(d: {
 }
 
 export async function POST(req: NextRequest) {
+  /* Rate limit: máx 10 envíos por hora por IP */
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+          ?? req.headers.get('x-real-ip') ?? 'unknown';
+  if (!checkRate(ip, 10, 60 * 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
-    const { name, email, whatsapp, company, employees, challenge, message, conversation, need, source, ai_knowledge } = body;
 
+    /* Sanitizar y validar todos los campos */
+    const email = cleanEmail(body.email);
     if (!email) {
-      return NextResponse.json({ error: 'Email requerido' }, { status: 400 });
+      return NextResponse.json({ error: 'Email inválido o requerido' }, { status: 400 });
     }
+    const name         = clean(body.name,         100);
+    const whatsapp     = clean(body.whatsapp,      30);
+    const company      = clean(body.company,       200);
+    const employees    = clean(body.employees,     50);
+    const challenge    = clean(body.challenge,     100);
+    const need         = clean(body.need,          100);
+    const source       = clean(body.source,        50) ?? 'web';
+    const ai_knowledge = clean(body.ai_knowledge,  100);
+    const message      = clean(body.message,       2000);
+    /* La conversación puede ser larga pero la limitamos para evitar payloads gigantes */
+    const conversation = typeof body.conversation === 'string'
+      ? body.conversation.slice(0, 20_000)
+      : null;
 
     /* 1. Guardar en Supabase */
     const supabase = getSupabase();
     const { error: dbError } = await supabase.from('leads').insert({
-      name:         name || null,
-      email,
-      whatsapp:     whatsapp || null,
-      company:      company || null,
-      employees:    employees || null,
-      challenge:    challenge || null,
-      message:      message || null,
-      conversation: conversation || null,
-      need:         need || null,
-      source:       source || 'web',
-      ai_knowledge: ai_knowledge || null,
+      name, email, whatsapp, company, employees,
+      challenge, message, conversation, need, source, ai_knowledge,
     });
 
     if (dbError) {
@@ -183,7 +218,14 @@ export async function POST(req: NextRequest) {
         from:    `ZAIRE Leads <noreply@${fromDomain}>`,
         to:      process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com',
         subject: `🔔 Nuevo lead — ${name || email}`,
-        html:    internalNotification({ name, email, whatsapp, company, employees, challenge, message, need, source, conversation, ai_knowledge }).html,
+        html:    internalNotification({
+          name: name ?? undefined, email,
+          whatsapp: whatsapp ?? undefined, company: company ?? undefined,
+          employees: employees ?? undefined, challenge: challenge ?? undefined,
+          message: message ?? undefined, need: need ?? undefined,
+          source: source ?? undefined, conversation: conversation ?? undefined,
+          ai_knowledge: ai_knowledge ?? undefined,
+        }).html,
       });
     }
 
