@@ -33,6 +33,13 @@ export const metadata: Metadata = {
     'Diseñamos operaciones conectadas con workflows, IA y agentes. Sistemas inteligentes para ventas, operación y crecimiento.',
   keywords: ['automatización', 'agentes IA', 'n8n', 'Claude', 'workflows', 'operaciones', 'Argentina'],
   authors: [{ name: 'ZAIRE Studio' }],
+  icons: {
+    icon: [
+      { url: '/assets/favicon.ico' },
+      { url: '/assets/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/assets/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
   openGraph: {
     type: 'website',
     locale: 'es_AR',

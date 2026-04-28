@@ -127,7 +127,7 @@ export default function SistemasPage() {
         <section className="cta-sec">
           <div>
             <div className="s-lbl">// EXPLOREMOS JUNTOS</div>
-            <div className="cta-h">¿EN QUÉ<br /><em>CAPA</em><br />ESTÁS?</div>
+            <div className="cta-h" style={{ fontSize: 'clamp(28px, 4.5vw, 54px)', fontWeight: 700, lineHeight: 1.2 }}>¿EN QUÉ<br /><em>CAPA</em><br />ESTÁS?</div>
           </div>
           <div className="cta-right">
             <p>Identificamos en cuál de las tres capas tiene sentido empezar según tu operación actual y tus objetivos de escala.</p>

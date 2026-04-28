@@ -157,7 +157,7 @@ export default function Home() {
           <div>
             <div className="hero-label">// ZAIRE · INTELLIGENT OPERATIONS STUDIO</div>
             <h1 className="hero-h1">
-              DE TAREAS<br />SUELTAS A<br /><em>OPERACIONES</em><br />CONECTADAS
+              INTELI-<br /><em>GENTES</em>
             </h1>
             <p className="hero-sub">
               Diseñamos sistemas inteligentes — workflows, agentes IA y knowledge ops — para que tu empresa opere con estructura, velocidad y criterio.
