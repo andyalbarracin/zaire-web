@@ -71,7 +71,8 @@ export default function ChatBox() {
       const aiReady = botText.includes('[[LEAD]]');
       const cleanText = botText.replace('[[LEAD]]', '').trim();
       setMsgs(p => [...p, { role: 'bot', text: cleanText }]);
-      if (aiReady || newCount >= 5) setTimeout(() => setShowLead(true), 400);
+      /* Mínimo 3 intercambios antes de mostrar el form, máximo 5 */
+      if ((aiReady && newCount >= 3) || newCount >= 5) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
       setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
