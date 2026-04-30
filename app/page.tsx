@@ -80,12 +80,18 @@ const stack = [
   { icon: <ICRM s="#FF6A00" size={32} />, name: 'CRM' },
 ];
 
+// ── PRECIOS ─────────────────────────────────────────────────────────────────
+// Para cambiar precios, edita los campos `setup` y `maintenance` de cada plan.
+// setup: precio único de implementación (string, ej. '$300')
+// maintenance: cuota mensual (string, ej. '$150') — null para "A medida"
+// Estos valores deben mantenerse sincronizados con app/planes/page.tsx.
+// ────────────────────────────────────────────────────────────────────────────
 const plans = [
   {
     tier: 'Automatiza tu primer flujo',
     name: 'ZAIRE\nFLOW',
-    price: '$997',
-    period: '/mes',
+    setup: '$249',        // ← SETUP FLOW
+    maintenance: '$99',   // ← MANTENIMIENTO FLOW /mes
     feats: ['1 workflow principal automatizado', 'Integración CRM + Email', 'Dashboard básico de seguimiento', 'Documentación del sistema', 'Soporte mensual dedicado'],
     cta: 'EMPEZAR',
     feat: false,
@@ -93,8 +99,8 @@ const plans = [
   {
     tier: 'Opera sin fricción',
     name: 'ZAIRE\nPERFORMANCE',
-    price: '$2,497',
-    period: '/mes',
+    setup: '$399',        // ← SETUP PERFORMANCE
+    maintenance: '$250',  // ← MANTENIMIENTO PERFORMANCE /mes
     feats: ['Hasta 5 workflows conectados', 'Agente IA integrado a tu CRM', 'Knowledge base de marca propia', 'Reporting avanzado en tiempo real', 'Soporte semanal + optimización', 'Revisión mensual de arquitectura'],
     cta: 'EMPEZAR',
     feat: true,
@@ -102,8 +108,8 @@ const plans = [
   {
     tier: 'Arquitectura total',
     name: 'ZAIRE\nINTELLIGENCE',
-    price: 'A medida',
-    period: '',
+    setup: 'A medida',   // ← sin precio fijo
+    maintenance: null,
     feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
     cta: 'HABLAR',
     feat: false,
@@ -167,7 +173,7 @@ export default function Home() {
               INTELI-<br /><em>GENTES</em>
             </h1>
             <p className="hero-sub">
-            Diseñamos sistemas inteligentes con automatizaciones de procesos, agentes con IA y organización de la información para que tu empresa trabaje con más orden, velocidad y criterio.            </p>
+Diseñamos sistemas para ventas, operación y crecimiento con automatizaciones, agentes con IA e información conectada.            </p>
             <div className="hero-btns">
               <button className="btn btn-primary" onClick={() => setShowContact(true)}>
                 Solicitar diagnóstico →
@@ -336,10 +342,21 @@ export default function Home() {
               <div key={p.name} className={`plan-card${p.feat ? ' feat' : ''}`}>
                 <div className="plan-tier">{p.tier}</div>
                 <div className="plan-name" style={{ whiteSpace: 'pre-line' }}>{p.name}</div>
-                <div className="plan-price">
-                  {p.price}
-                  {p.period && <span>{p.period}</span>}
+                <div className="plan-price" style={{ color: p.feat ? '#fff' : '#111', fontSize: p.setup === 'A medida' ? 38 : undefined }}>
+                  {p.setup !== 'A medida' && (
+                    <span style={{ fontSize: 14, fontWeight: 400, color: p.feat ? '#999' : '#111' }}>setups desde</span>
+                  )}
+                  {p.setup}
+                  {p.setup !== 'A medida' && (
+                    <span style={{ fontSize: 16, fontWeight: 400, color: p.feat ? '#999' : '#111' }}>usd</span>
+                  )}
                 </div>
+                {p.maintenance && (
+                  <div style={{ fontSize: 13, fontWeight: 400, color: p.feat ? '#888' : '#111', marginTop: 6 }}>
+                    Mantenimiento desde {p.maintenance}
+                    <span style={{ fontSize: 13, fontWeight: 400, color: p.feat ? '#999' : '#111' }}> usd /mes</span>
+                  </div>
+                )}
                 <div className="plan-feats">
                   {p.feats.map(f => (
                     <div key={f} className="plan-feat">{f}</div>

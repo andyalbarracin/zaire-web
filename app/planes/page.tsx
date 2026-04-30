@@ -12,11 +12,19 @@ import Stripe from '@/components/stripe';
 import ContactModal from '@/components/contact-modal';
 import Reveal from '@/components/reveal';
 
+// ── PRECIOS ─────────────────────────────────────────────────────────────────
+// Para cambiar precios, edita los campos `setup` y `maintenance` de cada plan.
+// setup: precio único de implementación (string, ej. '$300')
+// maintenance: cuota mensual (string, ej. '$150') — null para "A medida"
+// Si querés centralizar precios en una sola fuente, extraé estos valores a un
+// objeto separado (ej. PRICES.flow.setup) y referencialo aquí y en page.tsx.
+// ────────────────────────────────────────────────────────────────────────────
 const plans = [
   {
     tier: 'Automatiza tu primer flujo',
     name: 'ZAIRE\nFLOW',
-    price: '$997', period: '/mes',
+    setup: '$249',        // ← SETUP FLOW
+    maintenance: '$99',  // ← MANTENIMIENTO FLOW /mes
     promise: 'Para equipos que quieren dejar de hacer tareas manuales repetitivas y empezar a operar con estructura.',
     who: 'Ideal para: negocios en crecimiento, equipos de 3–15 personas',
     feats: ['1 workflow principal automatizado', 'Integración CRM + Email', 'Dashboard básico de seguimiento', 'Documentación del sistema', 'Soporte mensual dedicado'],
@@ -25,7 +33,8 @@ const plans = [
   {
     tier: 'Opera sin fricción',
     name: 'ZAIRE\nPERFORMANCE',
-    price: '$2,497', period: '/mes',
+    setup: '$399',        // ← SETUP PERFORMANCE
+    maintenance: '$250',  // ← MANTENIMIENTO PERFORMANCE /mes
     promise: 'Para operaciones que necesitan inteligencia real integrada en su día a día, no solo automatizaciones básicas.',
     who: 'Ideal para: equipos de 10–50 personas, operaciones medianas',
     feats: ['Hasta 5 workflows conectados', 'Agente IA integrado a tu CRM', 'Knowledge base de marca propia', 'Reporting avanzado en tiempo real', 'Soporte semanal + optimización continua', 'Revisión mensual de arquitectura'],
@@ -34,7 +43,8 @@ const plans = [
   {
     tier: 'Arquitectura total',
     name: 'ZAIRE\nINTELLIGENCE',
-    price: 'A medida', period: '',
+    setup: 'A medida',   // ← sin precio fijo
+    maintenance: null,
     promise: 'Para empresas que quieren construir infraestructura operativa real con agentes autónomos, sistemas multi-capa y software operativo.',
     who: 'Ideal para: empresas +50 personas, escala avanzada',
     feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
@@ -77,9 +87,11 @@ export default function PlanesPage() {
               <text x="160" y="48" fontFamily="monospace" fontSize="8" fill="#FF6A00" textAnchor="middle">PERFORMANCE</text>
               <rect x="220" y="60" width="86" height="110" rx="2" stroke="#333" strokeWidth="1.5" />
               <text x="263" y="88" fontFamily="monospace" fontSize="8" fill="#555" textAnchor="middle">INTELLIGENCE</text>
-              <text x="57" y="138" fontFamily="monospace" fontSize="18" fill="#555" textAnchor="middle" fontWeight="bold">$997</text>
-              <text x="160" y="138" fontFamily="monospace" fontSize="18" fill="#FF6A00" textAnchor="middle" fontWeight="bold">$2.4k</text>
-              <text x="263" y="138" fontFamily="monospace" fontSize="14" fill="#555" textAnchor="middle" fontWeight="bold">Custom</text>
+              <text x="57" y="130" fontFamily="monospace" fontSize="10" fill="#555" textAnchor="middle" opacity="0.5">desde</text>
+              <text x="57" y="146" fontFamily="monospace" fontSize="18" fill="#555" textAnchor="middle" fontWeight="bold">$300</text>
+              <text x="160" y="130" fontFamily="monospace" fontSize="10" fill="#FF6A00" textAnchor="middle" opacity="0.7">desde</text>
+              <text x="160" y="146" fontFamily="monospace" fontSize="18" fill="#FF6A00" textAnchor="middle" fontWeight="bold">$500</text>
+              <text x="263" y="138" fontFamily="monospace" fontSize="14" fill="#555" textAnchor="middle" fontWeight="bold">A medida</text>
             </svg>
           </div>
         </div>
@@ -96,9 +108,21 @@ export default function PlanesPage() {
                 style={p.accent ? { background: 'var(--crm)', border: '2px solid #FF6A00' } : {}}>
                 <div className="plan-tier" style={p.accent ? { color: '#FF6A00' } : {}}>{p.tier}</div>
                 <div className="plan-name" style={{ whiteSpace: 'pre-line', color: p.dark ? '#fff' : '#111' }}>{p.name}</div>
-                <div className="plan-price" style={{ color: p.dark ? '#fff' : '#111', fontSize: p.price === 'A medida' ? 38 : undefined }}>
-                  {p.price}{p.period && <span>{p.period}</span>}
+                <div className="plan-price" style={{ color: p.dark ? '#fff' : '#111', fontSize: p.setup === 'A medida' ? 38 : undefined }}>
+                  {p.setup !== 'A medida' && (
+                    <span style={{ fontSize: 14, fontWeight: 400, color: p.dark ? '#999' : '#111' }}>setups desde</span>
+                  )}
+                  {p.setup}
+                  {p.setup !== 'A medida' && (
+                    <span style={{ fontSize: 16, fontWeight: 400, color: p.dark ? '#999' : '#111' }}>usd</span>
+                  )}
                 </div>
+                {p.maintenance && (
+                  <div style={{ fontSize: 13, fontWeight: 400, color: p.dark ? '#888' : '#111', marginTop: 6 }}>
+                    Mantenimiento desde {p.maintenance}
+                    <span style={{ fontSize: 13, fontWeight: 400, color: p.dark ? '#999' : '#111' }}> usd /mes</span>
+                  </div>
+                )}
                 <p style={{ fontSize: 14, fontWeight: 300, color: p.dark ? '#555' : '#888', lineHeight: 1.7, borderTop: `1px solid ${p.dark ? '#1d1d1d' : '#eee'}`, paddingTop: 16 }}>
                   {p.promise}
                 </p>
