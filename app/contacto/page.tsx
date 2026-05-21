@@ -104,8 +104,8 @@ export default function ContactoPage() {
                 <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 12 }}>
                   También podés escribirnos directo
                 </div>
-                <a href="mailto:hola@zaire.studio" style={{ fontFamily: 'var(--fd)', fontSize: 20, fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
-                  hola@zaire.studio
+                <a href="mailto:hola@zairetech.com" style={{ fontFamily: 'var(--fd)', fontSize: 20, fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
+                  hola@zairetech.com
                 </a>
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function ContactoPage() {
 
                   {status === 'error' && (
                     <p style={{ color: '#E71D0A', fontSize: 13, marginBottom: 12 }}>
-                      Error al enviar. Intentá nuevamente o escribinos a hola@zaire.studio
+                      Error al enviar. Intentá nuevamente o escribinos a hola@zairetech.com
                     </p>
                   )}
 

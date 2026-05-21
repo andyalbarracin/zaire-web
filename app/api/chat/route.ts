@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content
-              ?? 'Disculpá, hubo un error. Podés escribirnos a hola@zaire.studio';
+              ?? 'Disculpá, hubo un error. Podés escribirnos a hola@zairetech.com';
 
     return NextResponse.json({ text });
 

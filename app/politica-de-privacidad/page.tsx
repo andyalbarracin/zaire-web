@@ -63,7 +63,7 @@ export default function PoliticaPrivacidadPage() {
           <Section title="1. Responsable del tratamiento">
             <p>
               El responsable del tratamiento de los datos personales recolectados a través de este sitio web es <strong>ZAIRE</strong> (en adelante, "ZAIRE", "nosotros" o "el responsable"), con domicilio en la República Argentina y contacto en{' '}
-              <a href="mailto:hola@zaire.studio" style={{ color: '#FF6A00' }}>hola@zaire.studio</a>.
+              <a href="mailto:hola@zairetech.com" style={{ color: '#FF6A00' }}>hola@zairetech.com</a>.
             </p>
           </Section>
 
@@ -145,7 +145,7 @@ export default function PoliticaPrivacidadPage() {
             </ul>
             <p style={{ marginTop: 12 }}>
               Para ejercer estos derechos, podés contactarnos en{' '}
-              <a href="mailto:hola@zaire.studio" style={{ color: '#FF6A00' }}>hola@zaire.studio</a>{' '}
+              <a href="mailto:hola@zairetech.com" style={{ color: '#FF6A00' }}>hola@zairetech.com</a>{' '}
               indicando tu nombre, el derecho que deseás ejercer y adjuntando prueba de identidad. Responderemos dentro de los 5 días hábiles.
             </p>
           </Section>
@@ -172,7 +172,7 @@ export default function PoliticaPrivacidadPage() {
           <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid #e5e3dd' }}>
             <p style={{ fontSize: 14, color: '#aaa', lineHeight: 1.7 }}>
               ¿Tenés preguntas sobre el tratamiento de tus datos?{' '}
-              <a href="mailto:hola@zaire.studio" style={{ color: '#FF6A00' }}>Escribinos</a>.
+              <a href="mailto:hola@zairetech.com" style={{ color: '#FF6A00' }}>Escribinos</a>.
             </p>
           </div>
 

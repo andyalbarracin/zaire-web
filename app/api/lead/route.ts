@@ -71,7 +71,7 @@ function confirmationEmail(name: string) {
             <p style="font-family:monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:8px">
               Mientras tanto, podés explorar
             </p>
-            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.cloud'}/planes"
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com'}/planes"
                style="font-family:monospace;font-size:11px;color:#FF6A00;letter-spacing:.06em;text-transform:uppercase">
               → Ver planes y servicios
             </a>
@@ -81,9 +81,9 @@ function confirmationEmail(name: string) {
           <span style="font-family:monospace;font-size:9px;color:#aaa;letter-spacing:.08em;text-transform:uppercase">
             © ZAIRE 2026
           </span>
-          <a href="mailto:hola@zaire.studio"
+          <a href="mailto:hola@zairetech.com"
              style="font-family:monospace;font-size:9px;color:#aaa;letter-spacing:.08em">
-            hola@zaire.studio
+            hola@zairetech.com
           </a>
         </div>
       </div>
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
     /* 2. Email de confirmación al visitante */
     const resend = getResend();
     if (resend) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.cloud';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
       const fromDomain = siteUrl.replace('https://', '').replace('http://', '');
       const { subject, html } = confirmationEmail(name || '');
       await resend.emails.send({
@@ -213,10 +213,12 @@ export async function POST(req: NextRequest) {
         html,
       });
 
-      /* 3. Notificación interna */
+      /* 3. Notificación interna — soporta múltiples emails separados por coma */
+      const notifyEmails = (process.env.NOTIFY_EMAILS || process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com')
+        .split(',').map(e => e.trim()).filter(Boolean);
       await resend.emails.send({
         from:    `ZAIRE Leads <noreply@${fromDomain}>`,
-        to:      process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com',
+        to:      notifyEmails,
         subject: `🔔 Nuevo lead — ${name || email}`,
         html:    internalNotification({
           name: name ?? undefined, email,

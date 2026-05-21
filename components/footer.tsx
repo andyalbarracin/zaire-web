@@ -105,12 +105,12 @@ export default function Footer() {
           {/* Derecha */}
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
             <a
-              href="mailto:hola@zaire.studio"
+              href="mailto:hola@zairetech.com"
               style={{ fontFamily: 'var(--fm)', fontSize: 10, color: '#aaa', letterSpacing: '.06em', transition: 'color .15s' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#FF6A00')}
               onMouseLeave={e => (e.currentTarget.style.color = '#444')}
             >
-              hola@zaire.studio
+              hola@zairetech.com
             </a>
             <Link
               href="/politica-de-privacidad"

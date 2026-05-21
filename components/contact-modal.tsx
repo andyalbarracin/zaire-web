@@ -88,7 +88,7 @@ export default function ContactModal({ onClose }: ContactModalProps) {
 
             {status === 'error' && (
               <p style={{ color: '#E71D0A', fontSize: 13, marginBottom: 12 }}>
-                Hubo un error al enviar. Intenta nuevamente o escríbenos a hola@zaire.studio
+                Hubo un error al enviar. Intenta nuevamente o escríbenos a hola@zairetech.com
               </p>
             )}
 
