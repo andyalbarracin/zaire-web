@@ -122,6 +122,30 @@ export default function SistemasPage() {
         </Reveal>
       ))}
 
+      {/* ── SOFTWARE PROPIO · base operativa transversal (no es una Capa 4) ── */}
+      <Reveal>
+        <section className="section s-dk">
+          <div style={{ maxWidth: 900 }}>
+            <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.14em', textTransform: 'uppercase', color: '#FF6A00', marginBottom: 12 }}>
+              // SOFTWARE PROPIO
+            </div>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(28px,3.4vw,46px)', fontWeight: 800, textTransform: 'uppercase', color: '#fff', lineHeight: 0.95, marginBottom: 24, maxWidth: 760 }}>
+              Cuando el sistema necesita una base a medida
+            </h2>
+            <p style={{ fontSize: 16, fontWeight: 300, color: '#888', lineHeight: 1.75, maxWidth: 620, marginBottom: 28 }}>
+              Algunas operaciones no necesitan otra herramienta conectada: necesitan una plataforma propia. En esos casos diseñamos aplicaciones web, CRMs, dashboards y sistemas internos donde las automatizaciones, agentes y bases de conocimiento pueden operar sobre datos propios.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {['Apps', 'CRMs', 'Dashboards', 'Portales', 'APIs', 'Agentes'].map(t => (
+                <span key={t} style={{ fontFamily: 'var(--fm)', fontSize: 9, padding: '6px 12px', background: '#222', color: '#aaa', letterSpacing: '.06em', textTransform: 'uppercase', borderRadius: 2 }}>
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
       {/* CTA */}
       <Reveal>
         <section className="cta-sec">

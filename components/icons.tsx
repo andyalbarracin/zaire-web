@@ -60,6 +60,15 @@ export const IInfra = ({ s = '#FF6A00', size = 40 }: IconProps) => (
   </svg>
 );
 
+export const IApps = ({ s = '#FF6A00', size = 40 }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={s} strokeWidth="1.5" width={size} height={size}>
+    <rect x="3" y="4" width="18" height="16" rx="1.5" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <polyline points="10 12.5 8 14.5 10 16.5" />
+    <polyline points="14 12.5 16 14.5 14 16.5" />
+  </svg>
+);
+
 /* ── Stack icons ─────────────────────────────────────────── */
 export const IN8n = ({ s = '#FF6A00', size = 32 }: IconProps) => (
   <svg viewBox="0 0 32 32" fill="none" width={size} height={size}>

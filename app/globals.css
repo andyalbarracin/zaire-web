@@ -1652,3 +1652,140 @@ footer.zfooter {
   .hero-h1 { font-size: 60px; }
   .pg-hero-h1 { font-size: 36px; }
 }
+
+/* ── SOFTWARE OPERATIVO A MEDIDA (sección transversal en /servicios) ─────── */
+.soft-card {
+  background: #fff;
+  border: 1px solid #ebe9e2;
+  border-top: 2px solid var(--org);
+  border-radius: 2px;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.soft-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.soft-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.soft-lbl {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--org);
+  margin-bottom: 14px;
+}
+
+.soft-title {
+  font-family: var(--fd);
+  font-size: clamp(28px, 3.4vw, 44px);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.95;
+  color: #111;
+}
+
+.soft-subtitle {
+  font-family: var(--fd);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #999;
+  margin-top: 10px;
+}
+
+.soft-desc {
+  font-size: 14px;
+  font-weight: 300;
+  color: #777;
+  line-height: 1.75;
+  max-width: 760px;
+  text-wrap: pretty;
+}
+
+.soft-tech {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.soft-systems-lbl {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+.soft-subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.soft-sub-card {
+  background: var(--crm);            /* cream — gris muy claro */
+  border: 1px solid #ebe9e2;
+  border-left: 2px solid var(--org); /* acento naranja */
+  border-radius: 2px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.soft-sub-name {
+  font-family: var(--fd);
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #111;
+  line-height: 1;
+}
+
+.soft-sub-lbl {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--org);
+}
+
+.soft-sub-desc {
+  font-size: 13px;
+  font-weight: 300;
+  color: #777;
+  line-height: 1.65;
+}
+
+.soft-sub-keys {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .soft-card { padding: 32px; }
+  .soft-subgrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .soft-card { padding: 24px; }
+}

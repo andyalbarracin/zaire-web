@@ -47,7 +47,7 @@ const plans = [
     maintenance: null,
     promise: 'Para empresas que quieren construir infraestructura operativa real con agentes autónomos, sistemas multi-capa y software operativo.',
     who: 'Ideal para: empresas +50 personas, escala avanzada',
-    feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
+    feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Software operativo a medida: CRMs, dashboards, portales y sistemas verticales', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
     dark: false, accent: true,
   },
 ];
@@ -133,6 +133,11 @@ export default function PlanesPage() {
                 <div className="plan-feats">
                   {p.feats.map(f => <div key={f} className="plan-feat" style={p.dark ? { color: '#aaa' } : {}}>{f}</div>)}
                 </div>
+                {p.accent && (
+                  <p style={{ fontSize: 11, color: '#999', lineHeight: 1.55 }}>
+                    Los proyectos de software a medida se cotizan según alcance, módulos, integraciones y soporte requerido.
+                  </p>
+                )}
                 <button
                   className={`btn ${p.dark ? 'btn-primary' : 'btn-dark'}`}
                   style={{ justifyContent: 'center', width: '100%' }}

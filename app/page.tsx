@@ -21,7 +21,7 @@ const ChatBox = dynamic(() => import('@/components/chat-box'), {
 });
 import Reveal from '@/components/reveal';
 import {
-  IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IInfra,
+  IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IApps,
   IN8n, IClaude, IOpenAI, ISupabase, IMCP, IPostgres, IRAG, IOllama, IAPI, ICRM,
 } from '@/components/icons';
 import Link from 'next/link';
@@ -43,7 +43,7 @@ const services = [
   { icon: <IKnowledge s="#111" size={40} />, title: 'Knowledge Ops', tag: 'Supabase · pgvector · RAG · embeddings · MCP', org: true },
   { icon: <IRevenue s="#fff" size={40} />, title: 'Funnels y Revenue Systems', tag: 'HubSpot · Pipedrive · n8n · WhatsApp API', org: false },
   { icon: <IGrowth s="#fff" size={40} />, title: 'Growth y Performance', tag: 'Analytics · A/B · automatización de contenido', org: false },
-  { icon: <IInfra s="#fff" size={40} />, title: 'Infraestructura Híbrida', tag: 'Supabase · Postgres · APIs · webhooks · auth', org: false },
+  { icon: <IApps s="#fff" size={40} />, title: 'Software Operativo a Medida', tag: 'Next.js · Supabase · PostgreSQL · APIs · Auth', org: false },
 ];
 
 const layers = [

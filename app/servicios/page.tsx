@@ -11,6 +11,7 @@ import Footer from '@/components/footer';
 import Stripe from '@/components/stripe';
 import ContactModal from '@/components/contact-modal';
 import Reveal from '@/components/reveal';
+import SoftwareCard from '@/components/software-card';
 import { IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IInfra } from '@/components/icons';
 
 const servicesData = [
@@ -92,6 +93,13 @@ export default function ServiciosPage() {
         </Reveal>
       ))}
 
+      {/* ── SOFTWARE OPERATIVO A MEDIDA · línea transversal (no es una Capa) ── */}
+      <Reveal>
+        <section className="section">
+          <SoftwareCard />
+        </section>
+      </Reveal>
+
       {/* CTA */}
       <Reveal>
         <section className="cta-sec">
@@ -101,6 +109,7 @@ export default function ServiciosPage() {
           </div>
           <div className="cta-right">
             <p>Identificamos en 30 minutos qué servicio tiene mayor impacto en tu operación actual.</p>
+            <p style={{ fontSize: 14, color: '#aaa' }}>Automatizaciones, agentes y aplicaciones a medida para operar mejor.</p>
             <div className="cta-btns">
               <button className="btn btn-primary" onClick={() => setShowContact(true)}>Solicitar diagnóstico →</button>
             </div>

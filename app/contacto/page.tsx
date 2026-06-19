@@ -22,7 +22,7 @@ interface FormState {
 }
 
 const employees = ['1–5', '6–20', '21–50', '50+'];
-const challenges = ['Automatización de procesos', 'Agentes IA y chatbots', 'Revenue y ventas', 'Knowledge management', 'Otro'];
+const challenges = ['Automatización de procesos', 'Agentes IA y chatbots', 'App / sistema a medida', 'Revenue y ventas', 'Knowledge management', 'Otro'];
 
 export default function ContactoPage() {
   const [form, setForm] = useState<FormState>({ name: '', email: '', company: '', employees: '', challenge: '', message: '' });
