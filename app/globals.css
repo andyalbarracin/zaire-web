@@ -1659,16 +1659,21 @@ footer.zfooter {
   border: 1px solid #ebe9e2;
   border-top: 2px solid var(--org);
   border-radius: 2px;
-  padding: 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: 44px 48px;
 }
 
-.soft-head {
+/* Layout interno: texto a la izquierda, sistemas apilados a la derecha */
+.soft-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 44px;
+  align-items: start;
+}
+
+.soft-main {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .soft-icon {
@@ -1677,32 +1682,13 @@ footer.zfooter {
   flex-shrink: 0;
 }
 
-.soft-lbl {
-  font-family: var(--fm);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--org);
-  margin-bottom: 14px;
-}
-
 .soft-title {
   font-family: var(--fd);
-  font-size: clamp(28px, 3.4vw, 44px);
+  font-size: clamp(26px, 2.8vw, 40px);
   font-weight: 800;
   text-transform: uppercase;
   line-height: 0.95;
   color: #111;
-}
-
-.soft-subtitle {
-  font-family: var(--fd);
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #999;
-  margin-top: 10px;
 }
 
 .soft-desc {
@@ -1710,7 +1696,6 @@ footer.zfooter {
   font-weight: 300;
   color: #777;
   line-height: 1.75;
-  max-width: 760px;
   text-wrap: pretty;
 }
 
@@ -1720,6 +1705,13 @@ footer.zfooter {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #aaa;
+  margin-top: 2px;
+}
+
+.soft-systems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .soft-systems-lbl {
@@ -1728,12 +1720,11 @@ footer.zfooter {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #aaa;
-  margin-top: 4px;
 }
 
 .soft-subgrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -1742,15 +1733,15 @@ footer.zfooter {
   border: 1px solid #ebe9e2;
   border-left: 2px solid var(--org); /* acento naranja */
   border-radius: 2px;
-  padding: 28px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .soft-sub-name {
   font-family: var(--fd);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   text-transform: uppercase;
   color: #111;
@@ -1769,7 +1760,7 @@ footer.zfooter {
   font-size: 13px;
   font-weight: 300;
   color: #777;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .soft-sub-keys {
@@ -1778,12 +1769,12 @@ footer.zfooter {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #aaa;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 @media (max-width: 860px) {
   .soft-card { padding: 32px; }
-  .soft-subgrid { grid-template-columns: 1fr; }
+  .soft-grid { grid-template-columns: 1fr; gap: 32px; }
 }
 
 @media (max-width: 600px) {

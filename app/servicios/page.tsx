@@ -94,9 +94,13 @@ export default function ServiciosPage() {
       ))}
 
       {/* ── SOFTWARE OPERATIVO A MEDIDA · línea transversal (no es una Capa) ── */}
+      {/* Padding 0 + márgenes negativos: comprime el doble gap de sección (mismo fondo cream) */}
       <Reveal>
-        <section className="section">
-          <SoftwareCard />
+        <section className="section" style={{ paddingTop: 0, paddingBottom: 0, marginTop: -32, marginBottom: -32 }}>
+          <div className="s-lbl">// SOFTWARE OPERATIVO · SISTEMAS A MEDIDA</div>
+          <div style={{ marginTop: 32 }}>
+            <SoftwareCard />
+          </div>
         </section>
       </Reveal>
 
