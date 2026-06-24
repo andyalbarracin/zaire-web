@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { createTimeEntry, deleteTimeEntry } from '@/lib/zaire-ops/queries';
-import { s, sReq, n, b } from '@/lib/zaire-ops/form';
+import { s, sReq, b, hoursToMin } from '@/lib/zaire-ops/form';
 
 export async function createTimeEntryAction(fd: FormData) {
   await createTimeEntry({
     client_id: sReq(fd, 'client_id'),
-    minutes: n(fd, 'minutes'),
+    minutes: hoursToMin(fd, 'hours') ?? 0,
     work_type: sReq(fd, 'work_type') || 'desarrollo',
     description: s(fd, 'description'),
     entry_date: sReq(fd, 'entry_date') || new Date().toISOString().slice(0, 10),

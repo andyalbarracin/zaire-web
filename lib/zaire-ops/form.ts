@@ -26,3 +26,14 @@ export const b = (fd: FormData, k: string): boolean => {
   const v = fd.get(k);
   return v === 'on' || v === 'true' || v === '1';
 };
+
+// Lee un input en HORAS (decimal) y lo convierte a minutos para la DB.
+export const hoursToMin = (fd: FormData, k: string): number | null => {
+  const v = fd.get(k);
+  if (v === null || v === '') return null;
+  const h = Number(v);
+  return Number.isNaN(h) ? null : Math.round(h * 60);
+};
+
+// Para defaultValue de inputs en horas a partir de minutos guardados.
+export const minToHours = (min: number | null | undefined): string => min == null ? '' : String(min / 60);

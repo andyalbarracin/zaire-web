@@ -32,7 +32,7 @@ export default async function HorasPage() {
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="zo-field"><label className="zo-flabel">Minutos *</label><input className="zo-input" name="minutes" type="number" min="0" required placeholder="60" /></div>
+              <div className="zo-field"><label className="zo-flabel">Horas *</label><input className="zo-input" name="hours" type="number" min="0" step="0.25" required placeholder="1.5" /></div>
             </div>
             <div className="zo-grid2">
               <div className="zo-field"><label className="zo-flabel">Tipo</label>

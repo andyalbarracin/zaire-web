@@ -116,7 +116,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
         <div className="zo-card-title">// REGISTRAR HORAS · total {minutesToHours(totalMin)}</div>
         <form action={logTimeAction.bind(null, ticket.id, ticket.client_id, ticket.project_id)} className="zo-form" style={{ maxWidth: '100%' }}>
           <div className="zo-grid2">
-            <div className="zo-field"><label className="zo-flabel">Minutos *</label><input className="zo-input" name="minutes" type="number" min="0" required placeholder="45" /></div>
+            <div className="zo-field"><label className="zo-flabel">Horas *</label><input className="zo-input" name="hours" type="number" min="0" step="0.25" required placeholder="1.5" /></div>
             <div className="zo-field"><label className="zo-flabel">Tipo de trabajo</label>
               <select className="zo-select" name="work_type" defaultValue="soporte">{WORK_TYPES.map(w => <option key={w} value={w}>{humanLabel(w)}</option>)}</select>
             </div>

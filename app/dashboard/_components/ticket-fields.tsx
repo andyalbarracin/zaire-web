@@ -5,6 +5,7 @@ import {
   type ZoTicket, type ZoClient, type ZoProject,
 } from '@/lib/zaire-ops/types';
 import type { ZoProfile } from '@/lib/zaire-ops/profiles';
+import { minToHours } from '@/lib/zaire-ops/form';
 
 export default function TicketFields({
   ticket, clients, projects, members, defaultClientId, edit,
@@ -81,8 +82,8 @@ export default function TicketFields({
         <textarea className="zo-textarea" name="description" defaultValue={t?.description ?? ''} placeholder="Detalle del problema o pedido…" />
       </div>
       <div className="zo-grid2">
-        <div className="zo-field"><label className="zo-flabel">Minutos estimados</label><input className="zo-input" name="estimated_minutes" type="number" min="0" defaultValue={t?.estimated_minutes ?? ''} placeholder="—" /></div>
-        <div className="zo-field"><label className="zo-flabel">Minutos reales</label><input className="zo-input" name="actual_minutes" type="number" min="0" defaultValue={t?.actual_minutes ?? ''} placeholder="—" /></div>
+        <div className="zo-field"><label className="zo-flabel">Horas estimadas</label><input className="zo-input" name="estimated_hours" type="number" min="0" step="0.25" defaultValue={minToHours(t?.estimated_minutes)} placeholder="—" /></div>
+        <div className="zo-field"><label className="zo-flabel">Horas reales</label><input className="zo-input" name="actual_hours" type="number" min="0" step="0.25" defaultValue={minToHours(t?.actual_minutes)} placeholder="—" /></div>
       </div>
       <div className="zo-grid2">
         <label className="zo-checkbox"><input type="checkbox" name="included_in_support" defaultChecked={t?.included_in_support ?? true} /> Incluida en soporte mensual</label>

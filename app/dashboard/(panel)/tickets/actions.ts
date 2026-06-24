@@ -7,7 +7,7 @@ import {
   addComment, uploadTicketFile, addAttachment, deleteAttachment, profileName,
 } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
-import { s, sReq, nN, n, b } from '@/lib/zaire-ops/form';
+import { s, sReq, b, hoursToMin } from '@/lib/zaire-ops/form';
 import { STATUS_LABEL, type TicketPriority, type TicketStatus } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
@@ -22,8 +22,8 @@ function parse(fd: FormData) {
     source: sReq(fd, 'source') || 'manual',
     description: s(fd, 'description'),
     reported_by: s(fd, 'reported_by'),
-    estimated_minutes: nN(fd, 'estimated_minutes'),
-    actual_minutes: nN(fd, 'actual_minutes'),
+    estimated_minutes: hoursToMin(fd, 'estimated_hours'),
+    actual_minutes: hoursToMin(fd, 'actual_hours'),
     included_in_support: b(fd, 'included_in_support'),
     billable_extra: b(fd, 'billable_extra'),
     resolution: s(fd, 'resolution'),
@@ -89,7 +89,7 @@ export async function logTimeAction(ticketId: string, clientId: string, projectI
     ticket_id: ticketId,
     client_id: clientId,
     project_id: projectId,
-    minutes: n(fd, 'minutes'),
+    minutes: hoursToMin(fd, 'hours') ?? 0,
     work_type: sReq(fd, 'work_type') || 'soporte',
     description: s(fd, 'description'),
     billable: b(fd, 'billable'),
