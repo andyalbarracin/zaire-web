@@ -1,10 +1,10 @@
 // File: page.tsx — Detalle + edición de cliente
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getClient, listProjects, listTickets } from '@/lib/zaire-ops/queries';
+import { getClient, listProjects, listTickets, clientHoursThisMonth } from '@/lib/zaire-ops/queries';
 import ClientFields from '@/app/dashboard/_components/client-fields';
 import { updateClientAction } from '../actions';
-import { STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
+import { STATUS_LABEL, STATUS_COLOR, minutesToHours } from '@/lib/zaire-ops/types';
 import RowLink from '@/app/dashboard/_components/row-link';
 import { clientAccount, listInvoices, liveInvoiceStatus, money } from '@/lib/zaire-ops/billing';
 
@@ -15,9 +15,10 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [projects, tickets, account, invoices] = await Promise.all([
-    listProjects(id), listTickets({ clientId: id }), clientAccount(id), listInvoices(id),
+  const [projects, tickets, account, invoices, hours] = await Promise.all([
+    listProjects(id), listTickets({ clientId: id }), clientAccount(id), listInvoices(id), clientHoursThisMonth(id),
   ]);
+  const monthName = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
   return (
     <>
@@ -38,6 +39,21 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
         <div className="zo-kpi accent"><div className="zo-kpi-n">{tickets.length}</div><div className="zo-kpi-l">Incidencias</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{projects.length}</div><div className="zo-kpi-l">Proyectos</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{client.monthly_support_hours}h</div><div className="zo-kpi-l">Horas incluidas/mes</div></div>
+      </div>
+
+      <div className="zo-card">
+        <div className="zo-card-title">// HORAS DE SOPORTE · {monthName}</div>
+        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)', margin: 0 }}>
+          <div className="zo-kpi"><div className="zo-kpi-n">{minutesToHours(hours.includedMin)}</div><div className="zo-kpi-l">Incluidas</div></div>
+          <div className="zo-kpi"><div className="zo-kpi-n" style={{ color: hours.consumedMin > hours.includedMin ? '#FFC107' : '#fff' }}>{minutesToHours(hours.consumedMin)}</div><div className="zo-kpi-l">Consumidas</div></div>
+          <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: hours.extraMin > 0 ? '#E71D0A' : '#22c55e' }}>{minutesToHours(hours.extraMin)}</div><div className="zo-kpi-l">Extra facturable</div></div>
+        </div>
+        {hours.extraMin > 0 && (
+          <p style={{ marginTop: 14, fontSize: 13, color: '#aaa' }}>
+            Consumió {minutesToHours(hours.extraMin)} por encima del plan este mes.{' '}
+            <Link href={`/dashboard/facturas/nuevo?client=${client.id}`} style={{ color: '#FF6A00' }}>Generar invoice por horas extra →</Link>
+          </p>
+        )}
       </div>
 
       <div className="zo-card">

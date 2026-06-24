@@ -262,3 +262,12 @@ export async function getMonthlyReport(clientId: string, year: number, month: nu
     entries,
   };
 }
+
+// Horas del mes en curso vs incluidas en el plan → excedente facturable.
+export async function clientHoursThisMonth(clientId: string): Promise<{ consumedMin: number; includedMin: number; extraMin: number }> {
+  const { from, to } = monthRange();
+  const [client, entries] = await Promise.all([getClient(clientId), listTimeEntries({ clientId, from, to })]);
+  const consumedMin = entries.reduce((s, e) => s + (e.minutes ?? 0), 0);
+  const includedMin = (client?.monthly_support_hours ?? 0) * 60;
+  return { consumedMin, includedMin, extraMin: Math.max(0, consumedMin - includedMin) };
+}
