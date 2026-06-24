@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, money, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
-import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, markPaidAction } from '../actions';
+import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, markPaidAction, sendInvoiceAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FacturaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FacturaDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; err?: string }> }) {
   const { id } = await params;
+  const { sent, err } = await searchParams;
   const invoice = await getInvoice(id);
   if (!invoice) notFound();
 
@@ -31,10 +32,16 @@ export default async function FacturaDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {invoice.status !== 'anulada' && (
+            <form action={sendInvoiceAction.bind(null, invoice.id)}><button className="zo-btn zo-btn-sm" type="submit">Enviar al cliente</button></form>
+          )}
           <a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Imprimir / PDF</button></a>
           <Link href={`/dashboard/facturas?client=${invoice.client_id}`}><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
         </div>
       </div>
+
+      {sent && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Solicitud de pago enviada al cliente por email. ✓</div>}
+      {err && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(231,29,10,.1)', border: '1px solid #E71D0A', color: '#ff6b5b', fontSize: 13 }}>{err}</div>}
 
       <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
         <div className="zo-kpi"><div className="zo-kpi-n">{money(invoice.amount, invoice.currency)}</div><div className="zo-kpi-l">Monto</div></div>

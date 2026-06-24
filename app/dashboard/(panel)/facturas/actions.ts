@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createInvoice, updateInvoice, addPayment, uploadReceipt } from '@/lib/zaire-ops/billing';
+import { Resend } from 'resend';
+import { createInvoice, updateInvoice, addPayment, uploadReceipt, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
+import { getClient } from '@/lib/zaire-ops/queries';
 import { s, sReq, nN } from '@/lib/zaire-ops/form';
 
 function parseInvoice(fd: FormData) {
@@ -52,6 +54,26 @@ export async function markPaidAction(invoiceId: string, clientId: string, curren
     });
   }
   revalidatePath(`/dashboard/facturas/${invoiceId}`);
+}
+
+export async function sendInvoiceAction(invoiceId: string) {
+  const base = `/dashboard/facturas/${invoiceId}`;
+  const invoice = await getInvoice(invoiceId);
+  if (!invoice) redirect(base);
+  const client = await getClient(invoice.client_id);
+  if (!client?.email) redirect(`${base}?err=${encodeURIComponent('El cliente no tiene email cargado. Agregalo en su ficha.')}`);
+  if (!process.env.RESEND_API_KEY) redirect(`${base}?err=${encodeURIComponent('Resend no está configurado (RESEND_API_KEY).')}`);
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
+  const fromDomain = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const { subject, html } = buildInvoiceEmailHtml(invoice, client.name);
+  try {
+    await resend.emails.send({ from: `ZAIRE <noreply@${fromDomain}>`, to: client.email, subject, html });
+  } catch {
+    redirect(`${base}?err=${encodeURIComponent('No se pudo enviar el email. Revisá el dominio verificado en Resend.')}`);
+  }
+  redirect(`${base}?sent=1`);
 }
 
 export async function addPaymentAction(invoiceId: string, clientId: string, fd: FormData) {

@@ -47,11 +47,19 @@ export const INVOICE_STATUS_COLOR: Record<InvoiceStatus, string> = {
 };
 export const PAYMENT_METHODS = ['Transferencia', 'Efectivo', 'Mercado Pago', 'Cripto', 'Cheque', 'Otro'];
 
-// Estado "vivo" derivado de los pagos (pagada / parcial / pendiente / anulada).
+// Vencido = no anulado, con saldo, y due_date pasada.
+export function isOverdue(i: ZoInvoice): boolean {
+  if (i.status === 'anulada' || !i.due_date) return false;
+  if ((i.paid ?? 0) >= i.amount) return false;
+  return i.due_date < new Date().toISOString().slice(0, 10);
+}
+
+// Estado "vivo" derivado de los pagos + vencimiento (pagada / vencida / parcial / pendiente / anulada).
 export function liveInvoiceStatus(i: ZoInvoice): { label: string; color: string } {
   if (i.status === 'anulada') return { label: 'Anulada', color: '#6b7280' };
   const paid = i.paid ?? 0;
   if (i.amount > 0 && paid >= i.amount) return { label: 'Pagada', color: '#22c55e' };
+  if (isOverdue(i)) return { label: paid > 0 ? 'Vencida (parcial)' : 'Vencida', color: '#E71D0A' };
   if (paid > 0) return { label: 'Parcial', color: '#3b82f6' };
   return { label: 'Pendiente', color: '#FFC107' };
 }
@@ -142,4 +150,58 @@ export async function clientAccount(clientId: string): Promise<{ invoiced: numbe
   const invoiced = (invoices ?? []).filter(i => (i as { status: string }).status !== 'anulada').reduce((s, i) => s + Number((i as { amount: number }).amount ?? 0), 0);
   const paid = (payments ?? []).reduce((s, p) => s + Number((p as { amount: number }).amount ?? 0), 0);
   return { invoiced, paid, balance: invoiced - paid, currency: (client as { currency?: string })?.currency ?? 'USD' };
+}
+
+// Cuentas por cobrar globales: invoices con saldo (no anuladas), total y vencido.
+export async function receivables(): Promise<{ totalDue: number; overdueDue: number; currency: string; items: ZoInvoice[] }> {
+  const all = await listInvoices();
+  const today = new Date().toISOString().slice(0, 10);
+  const items = all.filter(i => i.status !== 'anulada' && (i.paid ?? 0) < i.amount);
+  let totalDue = 0, overdueDue = 0;
+  for (const i of items) {
+    const saldo = i.amount - (i.paid ?? 0);
+    totalDue += saldo;
+    if (i.due_date && i.due_date < today) overdueDue += saldo;
+  }
+  items.sort((a, b) => (a.due_date ?? '9999-99-99').localeCompare(b.due_date ?? '9999-99-99'));
+  return { totalDue, overdueDue, currency: items[0]?.currency ?? 'USD', items };
+}
+
+function esc(s = ''): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// HTML branded de la solicitud de pago para enviar al cliente (Resend).
+export function buildInvoiceEmailHtml(i: ZoInvoice, clientName: string): { subject: string; html: string } {
+  const saldo = i.amount - (i.paid ?? 0);
+  const subject = `Solicitud de pago ${i.number ?? ''} · ZAIRE`;
+  const row = (l: string, v: string, strong = false) => `
+    <tr>
+      <td style="padding:8px 0;font-size:13px;color:#888">${l}</td>
+      <td style="padding:8px 0;font-size:${strong ? '15px;font-weight:800' : '13px'};color:#111;text-align:right">${v}</td>
+    </tr>`;
+  const html = `
+  <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+    <div style="background:#111;padding:24px 36px">
+      <span style="font-family:monospace;font-size:16px;font-weight:700;color:#fff;letter-spacing:.15em">ZAIRE</span>
+      <span style="font-family:monospace;font-size:9px;color:#FF6A00;letter-spacing:.1em;text-transform:uppercase;margin-left:14px">SOLICITUD DE PAGO</span>
+    </div>
+    <div style="padding:36px;background:#F5F5F0">
+      <p style="font-family:monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;margin:0 0 6px">// ${esc(i.number ?? '')}</p>
+      <h1 style="font-family:sans-serif;font-size:22px;font-weight:800;color:#111;margin:0 0 4px">${esc(i.concept)}</h1>
+      <p style="font-size:14px;color:#555;margin:0 0 24px">Hola ${esc(clientName)}, te compartimos el detalle del pago.</p>
+      <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e3dd;border-radius:4px;padding:0 16px">
+        <tr><td colspan="2" style="height:8px"></td></tr>
+        ${row('Monto', money(i.amount, i.currency))}
+        ${i.paid ? row('Pagado', money(i.paid, i.currency)) : ''}
+        ${i.due_date ? row('Vencimiento', i.due_date) : ''}
+        ${row('A pagar', money(saldo, i.currency), true)}
+        <tr><td colspan="2" style="height:8px"></td></tr>
+      </table>
+      ${i.notes ? `<p style="font-size:13px;color:#555;margin:20px 0 0;white-space:pre-wrap">${esc(i.notes)}</p>` : ''}
+      <p style="font-size:11px;color:#999;font-style:italic;margin:24px 0 0;line-height:1.6">Este documento es una solicitud de pago y no constituye una factura fiscal/contable. La factura fiscal correspondiente se emite por separado.</p>
+    </div>
+    <div style="background:#111;padding:16px 36px"><span style="font-family:monospace;font-size:9px;color:#666;letter-spacing:.08em">ZAIRE · zairetech.com</span></div>
+  </div>`;
+  return { subject, html };
 }

@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { getDashboardStats } from '@/lib/zaire-ops/queries';
 import { minutesToHours, STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
 import RowLink from '@/app/dashboard/_components/row-link';
+import { receivables, money } from '@/lib/zaire-ops/billing';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InicioPage() {
-  const s = await getDashboardStats();
+  const [s, rec] = await Promise.all([getDashboardStats(), receivables()]);
   const today = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
@@ -29,6 +30,7 @@ export default async function InicioPage() {
         <div className="zo-kpi"><div className="zo-kpi-n">{minutesToHours(s.minutesThisMonth)}</div><div className="zo-kpi-l">Horas registradas (mes)</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{s.activeClients}</div><div className="zo-kpi-l">Clientes activos</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{s.activeProjects}</div><div className="zo-kpi-l">Proyectos activos</div></div>
+        <Link href="/dashboard/facturas?filter=porcobrar"><div className="zo-kpi" style={{ cursor: 'pointer' }}><div className="zo-kpi-n" style={{ color: rec.totalDue > 0 ? '#FFC107' : '#22c55e' }}>{money(rec.totalDue, rec.currency)}</div><div className="zo-kpi-l">Por cobrar{rec.overdueDue > 0 ? ` · ${money(rec.overdueDue, rec.currency)} vencido` : ''}</div></div></Link>
       </div>
 
       <div className="zo-card-title">// ÚLTIMAS INCIDENCIAS</div>
