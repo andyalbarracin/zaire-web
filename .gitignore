@@ -17,6 +17,9 @@ dist/
 # ── Documentación interna (no pública) ───────────────────────
 .docs/
 
+# ── Supabase (migraciones locales viven en .docs/migrations/) ─
+supabase/
+
 # ── Claude / IA tooling ──────────────────────────────────────
 .claude/
 

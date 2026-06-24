@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle, FileSignature,
+  LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle, FileSignature, Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +42,7 @@ export default function Sidebar({ role }: { role: 'owner' | 'admin' | 'member' }
 
         <div className="zo-nav-section">Comercial</div>
         <Item href="/dashboard/acuerdos" label="Acuerdos" Icon={FileSignature} />
+        <Item href="/dashboard/facturas" label="Facturas" Icon={Receipt} />
 
         <div className="zo-nav-section">Configuración</div>
         {(role === 'owner' || role === 'admin') && <Item href="/dashboard/equipo" label="Equipo" Icon={UserCog} />}

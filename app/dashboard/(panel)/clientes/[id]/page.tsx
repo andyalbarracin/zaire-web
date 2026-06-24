@@ -24,6 +24,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
           <div className="zo-sub">{client.plan ?? 'Sin plan'} · {client.monthly_support_hours}h/mes incluidas</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link href={`/dashboard/facturas?client=${client.id}`}><button className="zo-btn zo-btn-sm">Facturas</button></Link>
           <Link href={`/dashboard/reportes?client=${client.id}`}><button className="zo-btn zo-btn-sm">Reporte</button></Link>
           <Link href="/dashboard/clientes"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
         </div>
