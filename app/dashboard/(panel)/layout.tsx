@@ -3,6 +3,7 @@
 // Description: Shell autenticado de Zaire Ops (sidebar + topbar con perfil).
 
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import Sidebar from '../_components/sidebar';
@@ -14,9 +15,11 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   const profile = await getMyProfile();
   if (!profile) redirect('/dashboard/login');
 
+  const collapsed = (await cookies()).get('zo_sidebar')?.value === 'collapsed';
+
   return (
-    <div className="zo-shell">
-      <Sidebar role={profile.role} />
+    <div className={`zo-shell${collapsed ? ' zo-collapsed' : ''}`}>
+      <Sidebar role={profile.role} defaultCollapsed={collapsed} />
       <div className="zo-main">
         <header className="zo-topbar">
           <div className="zo-topbar-crumb">// ZAIRE OPS · PANEL</div>

@@ -45,6 +45,27 @@
 
 .zo-sidebar-foot { padding: 14px; border-top: 1px solid #1d1d1d; }
 
+/* ── Sidebar colapsable ───────────────────────────────────────────────────── */
+.zo-shell { transition: grid-template-columns .2s ease; }
+.zo-brand { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.zo-brand-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.zo-collapse-btn {
+  flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid #222; border-radius: 7px; background: #111; color: #888; cursor: pointer;
+  transition: color .12s, border-color .12s;
+}
+.zo-collapse-btn:hover { color: #fff; border-color: #333; }
+.zo-collapse-ico { width: 15px; height: 15px; transition: transform .2s ease; }
+
+.zo-shell.zo-collapsed { grid-template-columns: 64px 1fr; }
+.zo-collapsed .zo-brand { justify-content: center; padding: 18px 8px; }
+.zo-collapsed .zo-brand-txt { display: none; }
+.zo-collapsed .zo-collapse-ico { transform: rotate(180deg); }
+.zo-collapsed .zo-nav { padding: 14px 8px; }
+.zo-collapsed .zo-nav-txt { display: none; }
+.zo-collapsed .zo-nav-item { justify-content: center; padding: 9px; }
+.zo-collapsed .zo-nav-section { height: 1px; padding: 0; margin: 10px 8px; background: #1d1d1d; overflow: hidden; color: transparent; }
+
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 .zo-main { display: flex; flex-direction: column; min-width: 0; }
 .zo-topbar {
@@ -191,8 +212,9 @@
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
-  .zo-shell { grid-template-columns: 1fr; }
+  .zo-shell, .zo-shell.zo-collapsed { grid-template-columns: 1fr; }
   .zo-sidebar { position: static; height: auto; flex-direction: row; overflow-x: auto; align-items: center; }
+  .zo-collapse-btn { display: none; }
   .zo-brand { border-bottom: none; border-right: 1px solid #1d1d1d; padding: 14px 16px; }
   .zo-nav { flex-direction: row; padding: 8px; gap: 4px; }
   .zo-nav-section, .zo-sidebar-foot { display: none; }
