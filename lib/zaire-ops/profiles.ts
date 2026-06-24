@@ -38,6 +38,15 @@ export async function getMyProfile(): Promise<ZoProfile | null> {
   return { ...(data as ZoProfile), email: user.email };
 }
 
+// Perfil (con email desde auth) por id — para notificar al asignado.
+export async function getProfileById(id: string): Promise<ZoProfile | null> {
+  const admin = createSupabaseAdmin();
+  const { data } = await admin.from('zo_profiles').select('*').eq('id', id).single();
+  if (!data) return null;
+  const { data: u } = await admin.auth.admin.getUserById(id);
+  return { ...(data as ZoProfile), email: u?.user?.email };
+}
+
 // requireRole: usar en páginas server. Redirige si no tiene permiso.
 export async function requireRole(roles: Role[]): Promise<ZoProfile> {
   const profile = await getMyProfile();

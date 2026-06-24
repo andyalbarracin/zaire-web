@@ -6,12 +6,14 @@ import {
   createTicket, updateTicket, getTicket, getClient, createTimeEntry,
   addComment, uploadTicketFile, addAttachment, deleteAttachment, profileName,
 } from '@/lib/zaire-ops/queries';
-import { getMyProfile } from '@/lib/zaire-ops/profiles';
+import { getMyProfile, getProfileById } from '@/lib/zaire-ops/profiles';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { Resend } from 'resend';
 import { buildTicketEmailHtml } from '@/lib/zaire-ops/ticket-email';
+import { sendOpsEmail } from '@/lib/zaire-ops/mailer';
+import { buildAssignmentEmail, buildCommentEmail } from '@/lib/zaire-ops/team-email';
 import { s, sReq, b, hoursToMin, actionError, type FormState } from '@/lib/zaire-ops/form';
-import { STATUS_LABEL, type TicketPriority, type TicketStatus } from '@/lib/zaire-ops/types';
+import { STATUS_LABEL, type TicketPriority, type TicketStatus, type ZoTicket } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
   return {
@@ -33,15 +35,37 @@ function parse(fd: FormData) {
   };
 }
 
+// ── Notificaciones internas al equipo (no bloqueantes; no avisan al propio actor) ──
+async function sendAssignmentNotice(ticket: ZoTicket, assigneeId: string) {
+  const who = await getProfileById(assigneeId);
+  if (!who?.email) return;
+  const { subject, html } = buildAssignmentEmail(ticket, who.full_name ?? who.email);
+  await sendOpsEmail({ to: who.email, subject, html });
+}
+
+async function sendCommentNotice(ticket: ZoTicket, body: string, authorName: string) {
+  if (!ticket.assigned_to) return;
+  const who = await getProfileById(ticket.assigned_to);
+  if (!who?.email) return;
+  const { subject, html } = buildCommentEmail(ticket, body, authorName, who.full_name ?? who.email);
+  await sendOpsEmail({ to: who.email, subject, html });
+}
+
 export async function createTicketAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   const data = parse(fd);
   if (!data.title) return { error: 'El título de la incidencia es obligatorio.' };
   if (!data.client_id) return { error: 'Elegí un cliente.' };
-  let id: string;
-  try { id = (await createTicket(data)).id; }
+  let t: ZoTicket;
+  try { t = await createTicket(data); }
   catch (e) { return actionError(e); }
-  redirect(`/dashboard/tickets/${id}`);
+
+  const me = await getMyProfile();
+  if (data.assigned_to && data.assigned_to !== me?.id) {
+    const full = await getTicket(t.id);
+    if (full) await sendAssignmentNotice(full, data.assigned_to);
+  }
+  redirect(`/dashboard/tickets/${t.id}`);
 }
 
 export async function updateTicketAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
@@ -53,7 +77,7 @@ export async function updateTicketAction(id: string, _prev: FormState, fd: FormD
     const prev = await getTicket(id);
     await updateTicket(id, patch);
 
-    // Log de actividad: cambios de estado y asignación quedan en el timeline.
+    // Log de actividad + notificación al nuevo asignado.
     const me = await getMyProfile();
     if (prev) {
       if (prev.status !== patch.status) {
@@ -68,6 +92,9 @@ export async function updateTicketAction(id: string, _prev: FormState, fd: FormD
           ticket_id: id, author_id: me?.id ?? null, is_system: true,
           body: patch.assigned_to ? `asignó la incidencia a ${who}` : 'quitó la asignación',
         });
+        if (patch.assigned_to && patch.assigned_to !== me?.id) {
+          await sendAssignmentNotice({ ...prev, ...patch } as ZoTicket, patch.assigned_to);
+        }
       }
     }
   } catch (e) { return actionError(e); }
@@ -80,6 +107,10 @@ export async function addCommentAction(ticketId: string, fd: FormData) {
   const body = String(fd.get('body') || '').trim();
   if (body) {
     await addComment({ ticket_id: ticketId, author_id: me?.id ?? null, body, is_internal: b(fd, 'is_internal') });
+    const ticket = await getTicket(ticketId);
+    if (ticket?.assigned_to && ticket.assigned_to !== me?.id) {
+      await sendCommentNotice(ticket, body, me?.full_name ?? me?.email ?? 'Un miembro del equipo');
+    }
   }
   revalidatePath(`/dashboard/tickets/${ticketId}`);
 }
