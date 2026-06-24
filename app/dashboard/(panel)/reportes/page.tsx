@@ -53,7 +53,7 @@ export default async function ReportesPage({
           <div className="zo-lbl">// REPORTE · {report.client.name.toUpperCase()}</div>
           <h2 className="zo-h1" style={{ fontSize: 22, marginTop: 6 }}>{MONTHS[month - 1]} {year}</h2>
 
-          <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginTop: 20 }}>
+          <div className="zo-kpis c4" style={{ marginTop: 20 }}>
             <div className="zo-kpi"><div className="zo-kpi-n">{report.received}</div><div className="zo-kpi-l">Recibidas</div></div>
             <div className="zo-kpi"><div className="zo-kpi-n">{report.resolved}</div><div className="zo-kpi-l">Resueltas</div></div>
             <div className="zo-kpi"><div className="zo-kpi-n">{report.inProgress}</div><div className="zo-kpi-l">En progreso</div></div>

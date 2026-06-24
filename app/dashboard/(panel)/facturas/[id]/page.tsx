@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, money, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, markPaidAction, sendInvoiceAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
       {sent && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Solicitud de pago enviada al cliente por email. ✓</div>}
       {err && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(231,29,10,.1)', border: '1px solid #E71D0A', color: '#ff6b5b', fontSize: 13 }}>{err}</div>}
 
-      <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+      <div className="zo-kpis c3">
         <div className="zo-kpi"><div className="zo-kpi-n">{money(invoice.amount, invoice.currency)}</div><div className="zo-kpi-l">Monto</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{money(paid, invoice.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
         <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
@@ -92,7 +93,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
             <InvoiceFields invoice={invoice} clients={clients} />
             <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
           </form>
-          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Anular invoice</button></form>
+          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><ConfirmButton message="¿Anular este invoice? Ya no se podrá cobrar.">Anular invoice</ConfirmButton></form>
         </div>
       )}
     </>

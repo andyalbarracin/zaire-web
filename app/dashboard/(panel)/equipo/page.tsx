@@ -1,6 +1,7 @@
 // File: page.tsx — Equipo (gestión de usuarios y roles)
 import { requireRole, listProfiles, ROLE_LABEL, ROLES } from '@/lib/zaire-ops/profiles';
 import Avatar from '@/app/dashboard/_components/avatar';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import { createUserAction, setRoleAction, deleteUserAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,7 @@ export default async function EquipoPage({ searchParams }: { searchParams: Promi
                 </form>
               </td>
               <td>{me.role === 'owner' && u.id !== me.id && (
-                <form action={deleteUserAction.bind(null, u.id)}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Borrar</button></form>
+                <form action={deleteUserAction.bind(null, u.id)}><ConfirmButton message="¿Borrar este usuario? Perderá el acceso al panel.">Borrar</ConfirmButton></form>
               )}</td>
             </tr>
           ))}</tbody>

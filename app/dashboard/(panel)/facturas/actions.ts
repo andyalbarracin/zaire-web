@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
 import { createInvoice, updateInvoice, addPayment, uploadReceipt, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
+import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, nN } from '@/lib/zaire-ops/form';
 
 function parseInvoice(fd: FormData) {
@@ -19,6 +20,7 @@ function parseInvoice(fd: FormData) {
 }
 
 export async function createInvoiceAction(fd: FormData) {
+  await requireUser();
   const base = parseInvoice(fd);
   const cuotas = Math.max(1, Math.min(36, Number(fd.get('installments')) || 1));
 
@@ -36,17 +38,20 @@ export async function createInvoiceAction(fd: FormData) {
 }
 
 export async function updateInvoiceAction(id: string, fd: FormData) {
+  await requireUser();
   await updateInvoice(id, parseInvoice(fd));
   redirect(`/dashboard/facturas/${id}`);
 }
 
 export async function anularInvoiceAction(id: string) {
+  await requireUser();
   await updateInvoice(id, { status: 'anulada' });
   redirect(`/dashboard/facturas/${id}`);
 }
 
 // Marca el invoice como pagado registrando el saldo restante como un pago.
 export async function markPaidAction(invoiceId: string, clientId: string, currency: string, saldo: number) {
+  await requireUser();
   if (saldo > 0) {
     await addPayment({
       invoice_id: invoiceId, client_id: clientId, amount: saldo, currency,
@@ -57,6 +62,7 @@ export async function markPaidAction(invoiceId: string, clientId: string, curren
 }
 
 export async function sendInvoiceAction(invoiceId: string) {
+  await requireUser();
   const base = `/dashboard/facturas/${invoiceId}`;
   const invoice = await getInvoice(invoiceId);
   if (!invoice) redirect(base);
@@ -77,6 +83,7 @@ export async function sendInvoiceAction(invoiceId: string) {
 }
 
 export async function addPaymentAction(invoiceId: string, clientId: string, fd: FormData) {
+  await requireUser();
   const file = fd.get('receipt') as File | null;
   let receipt_url: string | null = null;
   if (file && typeof file === 'object' && file.size > 0) receipt_url = await uploadReceipt(invoiceId, file);

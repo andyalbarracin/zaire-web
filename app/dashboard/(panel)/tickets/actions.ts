@@ -7,6 +7,7 @@ import {
   addComment, uploadTicketFile, addAttachment, deleteAttachment, profileName,
 } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
+import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, b, hoursToMin } from '@/lib/zaire-ops/form';
 import { STATUS_LABEL, type TicketPriority, type TicketStatus } from '@/lib/zaire-ops/types';
 
@@ -31,11 +32,13 @@ function parse(fd: FormData) {
 }
 
 export async function createTicketAction(fd: FormData) {
+  await requireUser();
   const t = await createTicket(parse(fd));
   redirect(`/dashboard/tickets/${t.id}`);
 }
 
 export async function updateTicketAction(id: string, fd: FormData) {
+  await requireUser();
   const prev = await getTicket(id);
   const patch = parse(fd);
   await updateTicket(id, patch);
@@ -61,6 +64,7 @@ export async function updateTicketAction(id: string, fd: FormData) {
 }
 
 export async function addCommentAction(ticketId: string, fd: FormData) {
+  await requireUser();
   const me = await getMyProfile();
   const body = String(fd.get('body') || '').trim();
   if (body) {
@@ -70,6 +74,7 @@ export async function addCommentAction(ticketId: string, fd: FormData) {
 }
 
 export async function uploadAttachmentAction(ticketId: string, fd: FormData) {
+  await requireUser();
   const file = fd.get('file') as File | null;
   if (file && typeof file === 'object' && file.size > 0) {
     const res = await uploadTicketFile(ticketId, file);
@@ -79,12 +84,14 @@ export async function uploadAttachmentAction(ticketId: string, fd: FormData) {
 }
 
 export async function deleteAttachmentAction(ticketId: string, id: string) {
+  await requireUser();
   await deleteAttachment(id);
   revalidatePath(`/dashboard/tickets/${ticketId}`);
 }
 
 // Registrar horas directamente desde una incidencia.
 export async function logTimeAction(ticketId: string, clientId: string, projectId: string | null, fd: FormData) {
+  await requireUser();
   await createTimeEntry({
     ticket_id: ticketId,
     client_id: clientId,

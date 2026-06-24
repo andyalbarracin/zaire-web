@@ -2,6 +2,7 @@
 import { listClients, listTimeEntries } from '@/lib/zaire-ops/queries';
 import { WORK_TYPES, humanLabel, minutesToHours } from '@/lib/zaire-ops/types';
 import { createTimeEntryAction, deleteTimeEntryAction } from './actions';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,7 @@ export default async function HorasPage() {
                 <td>{humanLabel(e.work_type)}</td>
                 <td>{e.description ?? '—'}</td>
                 <td className="zo-mono">{minutesToHours(e.minutes)}</td>
-                <td><form action={deleteTimeEntryAction.bind(null, e.id)}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Borrar</button></form></td>
+                <td><form action={deleteTimeEntryAction.bind(null, e.id)}><ConfirmButton message="¿Borrar este registro de horas?">Borrar</ConfirmButton></form></td>
               </tr>
             ))}</tbody>
           </table></div>

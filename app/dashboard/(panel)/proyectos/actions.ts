@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createProject, updateProject } from '@/lib/zaire-ops/queries';
+import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq } from '@/lib/zaire-ops/form';
 import type { ProjectStatus } from '@/lib/zaire-ops/types';
 
@@ -22,11 +23,13 @@ function parse(fd: FormData) {
 }
 
 export async function createProjectAction(fd: FormData) {
+  await requireUser();
   const p = await createProject(parse(fd));
   redirect(`/dashboard/proyectos/${p.id}`);
 }
 
 export async function updateProjectAction(id: string, fd: FormData) {
+  await requireUser();
   await updateProject(id, parse(fd));
   redirect(`/dashboard/proyectos/${id}`);
 }

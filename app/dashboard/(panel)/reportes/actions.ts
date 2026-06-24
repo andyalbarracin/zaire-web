@@ -4,8 +4,10 @@ import { redirect } from 'next/navigation';
 import { Resend } from 'resend';
 import { getMonthlyReport } from '@/lib/zaire-ops/queries';
 import { buildReportEmailHtml } from '@/lib/zaire-ops/report-email';
+import { requireUser } from '@/lib/zaire-ops/auth';
 
 export async function sendReportAction(fd: FormData) {
+  await requireUser();
   const clientId = String(fd.get('client') || '');
   const year = Number(fd.get('year'));
   const month = Number(fd.get('month'));

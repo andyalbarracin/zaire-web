@@ -37,7 +37,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       </div>
 
       {account && (
-        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+        <div className="zo-kpis c3">
           <div className="zo-kpi"><div className="zo-kpi-n">{money(account.invoiced, account.currency)}</div><div className="zo-kpi-l">Facturado</div></div>
           <div className="zo-kpi"><div className="zo-kpi-n">{money(account.paid, account.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
           <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: account.balance > 0 ? '#FFC107' : '#22c55e' }}>{money(account.balance, account.currency)}</div><div className="zo-kpi-l">Saldo / deuda</div></div>
@@ -45,7 +45,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       )}
 
       {rec && (
-        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(2,1fr)' }}>
+        <div className="zo-kpis c2">
           <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: rec.totalDue > 0 ? '#FFC107' : '#22c55e' }}>{money(rec.totalDue, rec.currency)}</div><div className="zo-kpi-l">Por cobrar (total)</div></div>
           <div className="zo-kpi"><div className="zo-kpi-n" style={{ color: rec.overdueDue > 0 ? '#E71D0A' : '#fff' }}>{money(rec.overdueDue, rec.currency)}</div><div className="zo-kpi-l">Vencido</div></div>
         </div>

@@ -5,6 +5,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient as dbCreateClient, updateClient } from '@/lib/zaire-ops/queries';
+import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, n, nN } from '@/lib/zaire-ops/form';
 import type { ClientStatus } from '@/lib/zaire-ops/types';
 
@@ -24,11 +25,13 @@ function parse(fd: FormData) {
 }
 
 export async function createClientAction(fd: FormData) {
+  await requireUser();
   const c = await dbCreateClient(parse(fd));
   redirect(`/dashboard/clientes/${c.id}`);
 }
 
 export async function updateClientAction(id: string, fd: FormData) {
+  await requireUser();
   await updateClient(id, parse(fd));
   redirect(`/dashboard/clientes/${id}`);
 }

@@ -7,6 +7,7 @@ import {
 import { listProfiles } from '@/lib/zaire-ops/profiles';
 import TicketFields from '@/app/dashboard/_components/ticket-fields';
 import Avatar from '@/app/dashboard/_components/avatar';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import {
   updateTicketAction, logTimeAction, addCommentAction, uploadAttachmentAction, deleteAttachmentAction,
 } from '../actions';
@@ -69,7 +70,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             {attachments.map(a => (
               <div key={a.id} className="zo-attach">
                 <a href={a.file_url} target="_blank" rel="noopener noreferrer">📎 {a.file_name ?? a.file_url}</a>
-                <form action={deleteAttachmentAction.bind(null, ticket.id, a.id)}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Borrar</button></form>
+                <form action={deleteAttachmentAction.bind(null, ticket.id, a.id)}><ConfirmButton message="¿Borrar este adjunto?">Borrar</ConfirmButton></form>
               </div>
             ))}
           </div>

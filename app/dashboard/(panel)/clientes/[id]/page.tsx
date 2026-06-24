@@ -35,7 +35,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+      <div className="zo-kpis c3">
         <div className="zo-kpi accent"><div className="zo-kpi-n">{tickets.length}</div><div className="zo-kpi-l">Incidencias</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{projects.length}</div><div className="zo-kpi-l">Proyectos</div></div>
         <div className="zo-kpi"><div className="zo-kpi-n">{client.monthly_support_hours}h</div><div className="zo-kpi-l">Horas incluidas/mes</div></div>
@@ -43,7 +43,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
 
       <div className="zo-card">
         <div className="zo-card-title">// HORAS DE SOPORTE · {monthName}</div>
-        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)', margin: 0 }}>
+        <div className="zo-kpis c3" style={{ margin: 0 }}>
           <div className="zo-kpi"><div className="zo-kpi-n">{minutesToHours(hours.includedMin)}</div><div className="zo-kpi-l">Incluidas</div></div>
           <div className="zo-kpi"><div className="zo-kpi-n" style={{ color: hours.consumedMin > hours.includedMin ? '#FFC107' : '#fff' }}>{minutesToHours(hours.consumedMin)}</div><div className="zo-kpi-l">Consumidas</div></div>
           <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: hours.extraMin > 0 ? '#E71D0A' : '#22c55e' }}>{minutesToHours(hours.extraMin)}</div><div className="zo-kpi-l">Extra facturable</div></div>
@@ -69,7 +69,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
           <div className="zo-card-title">// ESTADO DE CUENTA</div>
           <Link href={`/dashboard/facturas/nuevo?client=${client.id}`}><button className="zo-btn zo-btn-sm">+ Invoice</button></Link>
         </div>
-        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+        <div className="zo-kpis c3">
           <div className="zo-kpi"><div className="zo-kpi-n">{money(account.invoiced, account.currency)}</div><div className="zo-kpi-l">Facturado</div></div>
           <div className="zo-kpi"><div className="zo-kpi-n">{money(account.paid, account.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
           <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: account.balance > 0 ? '#FFC107' : '#22c55e' }}>{money(account.balance, account.currency)}</div><div className="zo-kpi-l">Saldo / deuda</div></div>

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createAgreement, updateAgreement, defaultTerms } from '@/lib/zaire-ops/agreements';
 import { getClient } from '@/lib/zaire-ops/queries';
+import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, nN } from '@/lib/zaire-ops/form';
 
 function parse(fd: FormData) {
@@ -20,6 +21,7 @@ function parse(fd: FormData) {
 }
 
 export async function createAgreementAction(fd: FormData) {
+  await requireUser();
   const data = parse(fd);
   if (!data.terms) {
     const client = await getClient(data.client_id);
@@ -33,11 +35,13 @@ export async function createAgreementAction(fd: FormData) {
 }
 
 export async function updateAgreementAction(id: string, fd: FormData) {
+  await requireUser();
   await updateAgreement(id, parse(fd));
   redirect(`/dashboard/acuerdos/${id}`);
 }
 
 export async function markSentAction(id: string) {
+  await requireUser();
   await updateAgreement(id, { status: 'enviado', sent_at: new Date().toISOString() });
   redirect(`/dashboard/acuerdos/${id}`);
 }
