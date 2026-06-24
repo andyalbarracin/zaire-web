@@ -37,3 +37,16 @@ export const hoursToMin = (fd: FormData, k: string): number | null => {
 
 // Para defaultValue de inputs en horas a partir de minutos guardados.
 export const minToHours = (min: number | null | undefined): string => min == null ? '' : String(min / 60);
+
+// ── Resultado de server actions (para useActionState) ───────────────────────
+export type FormState = { error?: string };
+
+// Convierte un error en un mensaje amable para mostrar en el formulario.
+export function actionError(e: unknown): FormState {
+  if (e instanceof Error) {
+    if (/duplicate key|unique/i.test(e.message)) return { error: 'Ya existe un registro con esos datos (valor duplicado).' };
+    if (/null value|not-null|violates/i.test(e.message)) return { error: 'Faltan campos obligatorios o hay datos inválidos.' };
+    return { error: e.message };
+  }
+  return { error: 'Ocurrió un error inesperado. Revisá los datos e intentá de nuevo.' };
+}

@@ -8,7 +8,7 @@ import {
 } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq, b, hoursToMin } from '@/lib/zaire-ops/form';
+import { s, sReq, b, hoursToMin, actionError, type FormState } from '@/lib/zaire-ops/form';
 import { STATUS_LABEL, type TicketPriority, type TicketStatus } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
@@ -31,35 +31,44 @@ function parse(fd: FormData) {
   };
 }
 
-export async function createTicketAction(fd: FormData) {
+export async function createTicketAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  const t = await createTicket(parse(fd));
-  redirect(`/dashboard/tickets/${t.id}`);
+  const data = parse(fd);
+  if (!data.title) return { error: 'El título de la incidencia es obligatorio.' };
+  if (!data.client_id) return { error: 'Elegí un cliente.' };
+  let id: string;
+  try { id = (await createTicket(data)).id; }
+  catch (e) { return actionError(e); }
+  redirect(`/dashboard/tickets/${id}`);
 }
 
-export async function updateTicketAction(id: string, fd: FormData) {
+export async function updateTicketAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  const prev = await getTicket(id);
   const patch = parse(fd);
-  await updateTicket(id, patch);
+  if (!patch.title) return { error: 'El título de la incidencia es obligatorio.' };
+  if (!patch.client_id) return { error: 'Elegí un cliente.' };
+  try {
+    const prev = await getTicket(id);
+    await updateTicket(id, patch);
 
-  // Log de actividad: cambios de estado y asignación quedan en el timeline.
-  const me = await getMyProfile();
-  if (prev) {
-    if (prev.status !== patch.status) {
-      await addComment({
-        ticket_id: id, author_id: me?.id ?? null, is_system: true,
-        body: `cambió el estado: ${STATUS_LABEL[prev.status]} → ${STATUS_LABEL[patch.status]}`,
-      });
+    // Log de actividad: cambios de estado y asignación quedan en el timeline.
+    const me = await getMyProfile();
+    if (prev) {
+      if (prev.status !== patch.status) {
+        await addComment({
+          ticket_id: id, author_id: me?.id ?? null, is_system: true,
+          body: `cambió el estado: ${STATUS_LABEL[prev.status]} → ${STATUS_LABEL[patch.status]}`,
+        });
+      }
+      if ((prev.assigned_to ?? null) !== (patch.assigned_to ?? null)) {
+        const who = await profileName(patch.assigned_to ?? null);
+        await addComment({
+          ticket_id: id, author_id: me?.id ?? null, is_system: true,
+          body: patch.assigned_to ? `asignó la incidencia a ${who}` : 'quitó la asignación',
+        });
+      }
     }
-    if ((prev.assigned_to ?? null) !== (patch.assigned_to ?? null)) {
-      const who = await profileName(patch.assigned_to ?? null);
-      await addComment({
-        ticket_id: id, author_id: me?.id ?? null, is_system: true,
-        body: patch.assigned_to ? `asignó la incidencia a ${who}` : 'quitó la asignación',
-      });
-    }
-  }
+  } catch (e) { return actionError(e); }
   redirect(`/dashboard/tickets/${id}`);
 }
 

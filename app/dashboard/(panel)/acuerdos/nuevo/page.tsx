@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { listClients } from '@/lib/zaire-ops/queries';
 import AgreementFields from '@/app/dashboard/_components/agreement-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import { createAgreementAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -17,13 +18,9 @@ export default async function NuevoAcuerdoPage() {
       {clients.length === 0 ? (
         <div className="zo-card"><div className="zo-empty">Creá un cliente primero. <Link href="/dashboard/clientes/nuevo" style={{ color: '#FF6A00' }}>Nuevo cliente →</Link></div></div>
       ) : (
-        <form action={createAgreementAction} className="zo-form">
+        <FormShell action={createAgreementAction} submitLabel="Crear acuerdo" cancelHref="/dashboard/acuerdos">
           <AgreementFields clients={clients} />
-          <div className="zo-form-actions">
-            <button type="submit" className="zo-btn zo-btn-primary">Crear acuerdo</button>
-            <Link href="/dashboard/acuerdos"><button type="button" className="zo-btn">Cancelar</button></Link>
-          </div>
-        </form>
+        </FormShell>
       )}
     </>
   );

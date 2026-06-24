@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { createAgreement, updateAgreement, defaultTerms } from '@/lib/zaire-ops/agreements';
 import { getClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq, nN } from '@/lib/zaire-ops/form';
+import { s, sReq, nN, actionError, type FormState } from '@/lib/zaire-ops/form';
 
 function parse(fd: FormData) {
   return {
@@ -20,23 +20,31 @@ function parse(fd: FormData) {
   };
 }
 
-export async function createAgreementAction(fd: FormData) {
+export async function createAgreementAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   const data = parse(fd);
-  if (!data.terms) {
-    const client = await getClient(data.client_id);
-    data.terms = defaultTerms({
-      projectName: data.project_name, plan: data.plan, setupFee: data.setup_fee,
-      monthlyFee: data.monthly_fee, currency: data.currency, clientName: client?.name,
-    });
-  }
-  const a = await createAgreement(data);
-  redirect(`/dashboard/acuerdos/${a.id}`);
+  if (!data.client_id) return { error: 'Elegí un cliente.' };
+  if (!data.project_name) return { error: 'El nombre del proyecto/acuerdo es obligatorio.' };
+  let id: string;
+  try {
+    if (!data.terms) {
+      const client = await getClient(data.client_id);
+      data.terms = defaultTerms({
+        projectName: data.project_name, plan: data.plan, setupFee: data.setup_fee,
+        monthlyFee: data.monthly_fee, currency: data.currency, clientName: client?.name,
+      });
+    }
+    id = (await createAgreement(data)).id;
+  } catch (e) { return actionError(e); }
+  redirect(`/dashboard/acuerdos/${id}`);
 }
 
-export async function updateAgreementAction(id: string, fd: FormData) {
+export async function updateAgreementAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  await updateAgreement(id, parse(fd));
+  const data = parse(fd);
+  if (!data.project_name) return { error: 'El nombre del proyecto/acuerdo es obligatorio.' };
+  try { await updateAgreement(id, data); }
+  catch (e) { return actionError(e); }
   redirect(`/dashboard/acuerdos/${id}`);
 }
 

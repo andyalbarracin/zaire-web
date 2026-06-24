@@ -6,7 +6,7 @@
 import { redirect } from 'next/navigation';
 import { createClient as dbCreateClient, updateClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq, n, nN } from '@/lib/zaire-ops/form';
+import { s, sReq, n, nN, actionError, type FormState } from '@/lib/zaire-ops/form';
 import type { ClientStatus } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
@@ -24,14 +24,21 @@ function parse(fd: FormData) {
   };
 }
 
-export async function createClientAction(fd: FormData) {
+export async function createClientAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  const c = await dbCreateClient(parse(fd));
-  redirect(`/dashboard/clientes/${c.id}`);
+  const data = parse(fd);
+  if (!data.name) return { error: 'El nombre del cliente es obligatorio.' };
+  let id: string;
+  try { id = (await dbCreateClient(data)).id; }
+  catch (e) { return actionError(e); }
+  redirect(`/dashboard/clientes/${id}`);
 }
 
-export async function updateClientAction(id: string, fd: FormData) {
+export async function updateClientAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  await updateClient(id, parse(fd));
+  const data = parse(fd);
+  if (!data.name) return { error: 'El nombre del cliente es obligatorio.' };
+  try { await updateClient(id, data); }
+  catch (e) { return actionError(e); }
   redirect(`/dashboard/clientes/${id}`);
 }

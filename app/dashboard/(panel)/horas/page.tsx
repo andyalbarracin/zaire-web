@@ -6,7 +6,8 @@ import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HorasPage() {
+export default async function HorasPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
+  const { err } = await searchParams;
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
@@ -19,6 +20,8 @@ export default async function HorasPage() {
       <div className="zo-pagehead">
         <div><div className="zo-lbl">// OPERACIÓN</div><h1 className="zo-h1">Horas</h1><div className="zo-sub">{monthName} · total {minutesToHours(total)}</div></div>
       </div>
+
+      {err && <div className="zo-form-error" style={{ marginBottom: 18 }}>⚠ {err}</div>}
 
       <div className="zo-card">
         <div className="zo-card-title">// REGISTRAR HORAS</div>

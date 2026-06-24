@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import { createInvoiceAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -18,13 +19,9 @@ export default async function NuevaFacturaPage({ searchParams }: { searchParams:
       {clients.length === 0 ? (
         <div className="zo-card"><div className="zo-empty">Creá un cliente primero. <Link href="/dashboard/clientes/nuevo" style={{ color: '#FF6A00' }}>Nuevo cliente →</Link></div></div>
       ) : (
-        <form action={createInvoiceAction} className="zo-form">
+        <FormShell action={createInvoiceAction} submitLabel="Crear invoice" cancelHref="/dashboard/facturas">
           <InvoiceFields clients={clients} defaultClientId={client} />
-          <div className="zo-form-actions">
-            <button type="submit" className="zo-btn zo-btn-primary">Crear invoice</button>
-            <Link href="/dashboard/facturas"><button type="button" className="zo-btn">Cancelar</button></Link>
-          </div>
-        </form>
+        </FormShell>
       )}
     </>
   );

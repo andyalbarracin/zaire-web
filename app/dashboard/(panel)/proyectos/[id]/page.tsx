@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject, listClients, listTickets } from '@/lib/zaire-ops/queries';
 import ProjectFields from '@/app/dashboard/_components/project-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import { updateProjectAction } from '../actions';
 import { STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
 
@@ -29,10 +30,9 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
 
       <div className="zo-card">
         <div className="zo-card-title">// EDITAR PROYECTO</div>
-        <form action={updateProjectAction.bind(null, project.id)} className="zo-form">
+        <FormShell action={updateProjectAction.bind(null, project.id)} submitLabel="Guardar cambios">
           <ProjectFields project={project} clients={clients} />
-          <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
-        </form>
+        </FormShell>
       </div>
 
       <div className="zo-section-gap">

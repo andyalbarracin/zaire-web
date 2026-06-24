@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, money, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, markPaidAction, sendInvoiceAction } from '../actions';
 
@@ -89,10 +90,9 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
       {invoice.status !== 'anulada' && (
         <div className="zo-card zo-section-gap">
           <div className="zo-card-title">// EDITAR INVOICE</div>
-          <form action={updateInvoiceAction.bind(null, invoice.id)} className="zo-form">
+          <FormShell action={updateInvoiceAction.bind(null, invoice.id)} submitLabel="Guardar cambios">
             <InvoiceFields invoice={invoice} clients={clients} />
-            <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
-          </form>
+          </FormShell>
           <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><ConfirmButton message="¿Anular este invoice? Ya no se podrá cobrar.">Anular invoice</ConfirmButton></form>
         </div>
       )}

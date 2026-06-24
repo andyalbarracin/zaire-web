@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { listClients, listProjects } from '@/lib/zaire-ops/queries';
 import { listProfiles } from '@/lib/zaire-ops/profiles';
 import TicketFields from '@/app/dashboard/_components/ticket-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import { createTicketAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -20,13 +21,9 @@ export default async function NuevoTicketPage({ searchParams }: { searchParams: 
       {clients.length === 0 ? (
         <div className="zo-card"><div className="zo-empty">Primero creá un cliente. <Link href="/dashboard/clientes/nuevo" style={{ color: '#FF6A00' }}>Nuevo cliente →</Link></div></div>
       ) : (
-        <form action={createTicketAction} className="zo-form">
+        <FormShell action={createTicketAction} submitLabel="Crear incidencia" cancelHref="/dashboard/tickets">
           <TicketFields clients={clients} projects={projects} members={members} defaultClientId={client} />
-          <div className="zo-form-actions">
-            <button type="submit" className="zo-btn zo-btn-primary">Crear incidencia</button>
-            <Link href="/dashboard/tickets"><button type="button" className="zo-btn">Cancelar</button></Link>
-          </div>
-        </form>
+        </FormShell>
       )}
     </>
   );

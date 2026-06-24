@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getClient, listProjects, listTickets, clientHoursThisMonth } from '@/lib/zaire-ops/queries';
 import ClientFields from '@/app/dashboard/_components/client-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import { updateClientAction } from '../actions';
 import { STATUS_LABEL, STATUS_COLOR, minutesToHours } from '@/lib/zaire-ops/types';
 import RowLink from '@/app/dashboard/_components/row-link';
@@ -58,10 +59,9 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
 
       <div className="zo-card">
         <div className="zo-card-title">// EDITAR CLIENTE</div>
-        <form action={updateClientAction.bind(null, client.id)} className="zo-form">
+        <FormShell action={updateClientAction.bind(null, client.id)} submitLabel="Guardar cambios">
           <ClientFields client={client} />
-          <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
-        </form>
+        </FormShell>
       </div>
 
       <div className="zo-section-gap">

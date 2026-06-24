@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createProject, updateProject } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq } from '@/lib/zaire-ops/form';
+import { s, sReq, actionError, type FormState } from '@/lib/zaire-ops/form';
 import type { ProjectStatus } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
@@ -22,14 +22,22 @@ function parse(fd: FormData) {
   };
 }
 
-export async function createProjectAction(fd: FormData) {
+export async function createProjectAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  const p = await createProject(parse(fd));
-  redirect(`/dashboard/proyectos/${p.id}`);
+  const data = parse(fd);
+  if (!data.client_id) return { error: 'Elegí un cliente.' };
+  if (!data.name) return { error: 'El nombre del proyecto es obligatorio.' };
+  let id: string;
+  try { id = (await createProject(data)).id; }
+  catch (e) { return actionError(e); }
+  redirect(`/dashboard/proyectos/${id}`);
 }
 
-export async function updateProjectAction(id: string, fd: FormData) {
+export async function updateProjectAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  await updateProject(id, parse(fd));
+  const data = parse(fd);
+  if (!data.name) return { error: 'El nombre del proyecto es obligatorio.' };
+  try { await updateProject(id, data); }
+  catch (e) { return actionError(e); }
   redirect(`/dashboard/proyectos/${id}`);
 }

@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { getAgreement, AGREEMENT_STATUS_LABEL, AGREEMENT_STATUS_COLOR } from '@/lib/zaire-ops/agreements';
 import { listClients } from '@/lib/zaire-ops/queries';
 import AgreementFields from '@/app/dashboard/_components/agreement-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import CopyLink from '@/app/dashboard/_components/copy-link';
 import { updateAgreementAction, markSentAction } from '../actions';
 
@@ -70,10 +71,9 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
       ) : (
         <div className="zo-card zo-section-gap">
           <div className="zo-card-title">// EDITAR ACUERDO</div>
-          <form action={updateAgreementAction.bind(null, a.id)} className="zo-form">
+          <FormShell action={updateAgreementAction.bind(null, a.id)} submitLabel="Guardar cambios">
             <AgreementFields agreement={a} clients={clients} />
-            <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
-          </form>
+          </FormShell>
         </div>
       )}
     </>

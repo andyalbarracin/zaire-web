@@ -6,6 +6,7 @@ import {
 } from '@/lib/zaire-ops/queries';
 import { listProfiles } from '@/lib/zaire-ops/profiles';
 import TicketFields from '@/app/dashboard/_components/ticket-fields';
+import FormShell from '@/app/dashboard/_components/form-shell';
 import Avatar from '@/app/dashboard/_components/avatar';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import {
@@ -52,10 +53,9 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
 
       <div className="zo-card">
         <div className="zo-card-title">// EDITAR INCIDENCIA</div>
-        <form action={updateTicketAction.bind(null, ticket.id)} className="zo-form">
+        <FormShell action={updateTicketAction.bind(null, ticket.id)} submitLabel="Guardar cambios">
           <TicketFields ticket={ticket} clients={clients} projects={projects} members={members} edit />
-          <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
-        </form>
+        </FormShell>
       </div>
 
       {/* Adjuntos */}

@@ -152,6 +152,7 @@
 
 /* ── Forms ────────────────────────────────────────────────────────────────── */
 .zo-form { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
+.zo-form-error { padding: 11px 14px; border-radius: 8px; background: rgba(231,29,10,.1); border: 1px solid #E71D0A; color: #ff6b5b; font-size: 13px; }
 .zo-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .zo-field { display: flex; flex-direction: column; gap: 7px; }
 .zo-flabel { font-family: var(--fm); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #888; }

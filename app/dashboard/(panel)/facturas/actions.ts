@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 import { createInvoice, updateInvoice, addPayment, uploadReceipt, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq, nN } from '@/lib/zaire-ops/form';
+import { s, sReq, nN, actionError, type FormState } from '@/lib/zaire-ops/form';
 
 function parseInvoice(fd: FormData) {
   return {
@@ -19,27 +19,43 @@ function parseInvoice(fd: FormData) {
   };
 }
 
-export async function createInvoiceAction(fd: FormData) {
-  await requireUser();
-  const base = parseInvoice(fd);
-  const cuotas = Math.max(1, Math.min(36, Number(fd.get('installments')) || 1));
-
-  if (cuotas === 1) {
-    const i = await createInvoice(base);
-    redirect(`/dashboard/facturas/${i.id}`);
-  }
-
-  // Plan de pagos: dividir el monto en N invoices (Cuota i/N).
-  const each = Math.round((base.amount / cuotas) * 100) / 100;
-  for (let n = 1; n <= cuotas; n++) {
-    await createInvoice({ ...base, amount: each, concept: `${base.concept} · Cuota ${n}/${cuotas}` });
-  }
-  redirect(`/dashboard/facturas?client=${base.client_id}`);
+function validateInvoice(d: ReturnType<typeof parseInvoice>): string | null {
+  if (!d.client_id) return 'Elegí un cliente.';
+  if (!d.concept) return 'El concepto es obligatorio.';
+  if (!(d.amount > 0)) return 'El monto debe ser mayor a 0.';
+  return null;
 }
 
-export async function updateInvoiceAction(id: string, fd: FormData) {
+export async function createInvoiceAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
-  await updateInvoice(id, parseInvoice(fd));
+  const base = parseInvoice(fd);
+  const invalid = validateInvoice(base);
+  if (invalid) return { error: invalid };
+
+  const cuotas = Math.max(1, Math.min(36, Number(fd.get('installments')) || 1));
+  let to: string;
+  try {
+    if (cuotas === 1) {
+      const i = await createInvoice(base);
+      to = `/dashboard/facturas/${i.id}`;
+    } else {
+      const each = Math.round((base.amount / cuotas) * 100) / 100;
+      for (let n = 1; n <= cuotas; n++) {
+        await createInvoice({ ...base, amount: each, concept: `${base.concept} · Cuota ${n}/${cuotas}` });
+      }
+      to = `/dashboard/facturas?client=${base.client_id}`;
+    }
+  } catch (e) { return actionError(e); }
+  redirect(to);
+}
+
+export async function updateInvoiceAction(id: string, _prev: FormState, fd: FormData): Promise<FormState> {
+  await requireUser();
+  const data = parseInvoice(fd);
+  const invalid = validateInvoice(data);
+  if (invalid) return { error: invalid };
+  try { await updateInvoice(id, data); }
+  catch (e) { return actionError(e); }
   redirect(`/dashboard/facturas/${id}`);
 }
 
@@ -84,19 +100,27 @@ export async function sendInvoiceAction(invoiceId: string) {
 
 export async function addPaymentAction(invoiceId: string, clientId: string, fd: FormData) {
   await requireUser();
-  const file = fd.get('receipt') as File | null;
-  let receipt_url: string | null = null;
-  if (file && typeof file === 'object' && file.size > 0) receipt_url = await uploadReceipt(invoiceId, file);
+  const base = `/dashboard/facturas/${invoiceId}`;
+  const amount = nN(fd, 'amount') ?? 0;
+  if (!(amount > 0)) redirect(`${base}?err=${encodeURIComponent('El monto del pago debe ser mayor a 0.')}`);
 
-  await addPayment({
-    invoice_id: invoiceId,
-    client_id: clientId,
-    amount: nN(fd, 'amount') ?? 0,
-    currency: sReq(fd, 'currency') || 'USD',
-    paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
-    method: s(fd, 'method'),
-    receipt_url,
-    notes: s(fd, 'notes'),
-  });
-  revalidatePath(`/dashboard/facturas/${invoiceId}`);
+  try {
+    const file = fd.get('receipt') as File | null;
+    let receipt_url: string | null = null;
+    if (file && typeof file === 'object' && file.size > 0) receipt_url = await uploadReceipt(invoiceId, file);
+
+    await addPayment({
+      invoice_id: invoiceId,
+      client_id: clientId,
+      amount,
+      currency: sReq(fd, 'currency') || 'USD',
+      paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
+      method: s(fd, 'method'),
+      receipt_url,
+      notes: s(fd, 'notes'),
+    });
+  } catch (e) {
+    redirect(`${base}?err=${encodeURIComponent(actionError(e).error ?? 'No se pudo registrar el pago.')}`);
+  }
+  revalidatePath(base);
 }
