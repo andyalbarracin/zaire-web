@@ -1,23 +1,29 @@
 // File: layout.tsx
 // Path: zaire-web/app/dashboard/(panel)/layout.tsx
-// Description: Shell autenticado de Zaire Ops (sidebar + topbar). requireUser()
-//              como defensa en profundidad (el middleware ya protege /dashboard).
+// Description: Shell autenticado de Zaire Ops (sidebar + topbar con perfil).
 
-import { requireUser } from '@/lib/zaire-ops/auth';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import Sidebar from '../_components/sidebar';
+import Avatar from '../_components/avatar';
 import { signOut } from '../actions';
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
+  const profile = await getMyProfile();
+  if (!profile) redirect('/dashboard/login');
 
   return (
     <div className="zo-shell">
-      <Sidebar />
+      <Sidebar role={profile.role} />
       <div className="zo-main">
         <header className="zo-topbar">
           <div className="zo-topbar-crumb">// ZAIRE OPS · PANEL</div>
           <div className="zo-topbar-right">
-            <span className="zo-user">{user.email}</span>
+            <Link href="/dashboard/cuenta">
+              <Avatar profile={profile} size={28} />
+              <span className="zo-user">{profile.full_name ?? profile.email}</span>
+            </Link>
             <form action={signOut}>
               <button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Salir</button>
             </form>

@@ -34,6 +34,9 @@ export default function LoginPage() {
             style={{ justifyContent: 'center', width: '100%' }}>
             {pending ? 'Ingresando…' : 'Ingresar →'}
           </button>
+          <div style={{ textAlign: 'center' }}>
+            <a href="/dashboard/recuperar" className="zo-sub" style={{ fontSize: 12 }}>¿Olvidaste tu contraseña?</a>
+          </div>
         </div>
       </form>
     </div>

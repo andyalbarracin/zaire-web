@@ -31,14 +31,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isLogin = request.nextUrl.pathname.startsWith('/dashboard/login');
+  // Rutas del panel accesibles sin sesión (setup inicial, recuperación, callback).
+  const PUBLIC = ['/dashboard/login', '/dashboard/setup', '/dashboard/recuperar', '/dashboard/auth'];
+  const path = request.nextUrl.pathname;
+  const isPublic = PUBLIC.some(p => path.startsWith(p));
 
-  // Sin sesión y no está en el login → al login.
-  if (!user && !isLogin) {
+  // Sin sesión y ruta protegida → al login.
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/dashboard/login', request.url));
   }
   // Con sesión y entra al login → al inicio del panel.
-  if (user && isLogin) {
+  if (user && path.startsWith('/dashboard/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

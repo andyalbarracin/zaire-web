@@ -1,14 +1,14 @@
-// File: sidebar.tsx
-// Path: zaire-web/app/dashboard/_components/sidebar.tsx
-// Description: Navegación lateral de Zaire Ops. Marca el ítem activo por ruta.
-
+// File: sidebar.tsx — navegación lateral de Zaire Ops (con sección Configuración)
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText } from 'lucide-react';
+import {
+  LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle,
+  type LucideIcon,
+} from 'lucide-react';
 
-const ITEMS = [
+const OPS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { href: '/dashboard/proyectos', label: 'Proyectos', icon: FolderKanban },
@@ -17,8 +17,19 @@ const ITEMS = [
   { href: '/dashboard/reportes', label: 'Reportes', icon: FileText },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: 'owner' | 'admin' | 'member' }) {
   const path = usePathname();
+
+  const Item = ({ href, label, Icon, exact }: { href: string; label: string; Icon: LucideIcon; exact?: boolean }) => {
+    const active = exact ? path === href : path.startsWith(href);
+    return (
+      <Link href={href} className={`zo-nav-item${active ? ' active' : ''}`}>
+        <Icon className="zo-nav-ico" strokeWidth={1.75} />
+        <span className="zo-nav-txt">{label}</span>
+      </Link>
+    );
+  };
+
   return (
     <aside className="zo-sidebar">
       <div className="zo-brand">
@@ -27,15 +38,11 @@ export default function Sidebar() {
       </div>
       <nav className="zo-nav">
         <div className="zo-nav-section">Operación</div>
-        {ITEMS.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? path === href : path.startsWith(href);
-          return (
-            <Link key={href} href={href} className={`zo-nav-item${active ? ' active' : ''}`}>
-              <Icon className="zo-nav-ico" strokeWidth={1.75} />
-              <span className="zo-nav-txt">{label}</span>
-            </Link>
-          );
-        })}
+        {OPS.map(it => <Item key={it.href} href={it.href} label={it.label} Icon={it.icon} exact={it.exact} />)}
+
+        <div className="zo-nav-section">Configuración</div>
+        {(role === 'owner' || role === 'admin') && <Item href="/dashboard/equipo" label="Equipo" Icon={UserCog} />}
+        <Item href="/dashboard/cuenta" label="Mi cuenta" Icon={UserCircle} />
       </nav>
     </aside>
   );
