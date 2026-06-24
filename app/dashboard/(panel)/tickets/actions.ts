@@ -3,11 +3,13 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
-  createTicket, updateTicket, getTicket, createTimeEntry,
+  createTicket, updateTicket, getTicket, getClient, createTimeEntry,
   addComment, uploadTicketFile, addAttachment, deleteAttachment, profileName,
 } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { requireUser } from '@/lib/zaire-ops/auth';
+import { Resend } from 'resend';
+import { buildTicketEmailHtml } from '@/lib/zaire-ops/ticket-email';
 import { s, sReq, b, hoursToMin, actionError, type FormState } from '@/lib/zaire-ops/form';
 import { STATUS_LABEL, type TicketPriority, type TicketStatus } from '@/lib/zaire-ops/types';
 
@@ -96,6 +98,28 @@ export async function deleteAttachmentAction(ticketId: string, id: string) {
   await requireUser();
   await deleteAttachment(id);
   revalidatePath(`/dashboard/tickets/${ticketId}`);
+}
+
+// Notificación MANUAL al cliente sobre la incidencia (botón, no automático).
+export async function notifyClientAction(ticketId: string) {
+  await requireUser();
+  const base = `/dashboard/tickets/${ticketId}`;
+  const ticket = await getTicket(ticketId);
+  if (!ticket) redirect(base);
+  const client = await getClient(ticket.client_id);
+  if (!client?.email) redirect(`${base}?err=${encodeURIComponent('El cliente no tiene email cargado. Agregalo en su ficha.')}`);
+  if (!process.env.RESEND_API_KEY) redirect(`${base}?err=${encodeURIComponent('Resend no está configurado (RESEND_API_KEY).')}`);
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
+  const fromDomain = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const { subject, html } = buildTicketEmailHtml(ticket, client.name);
+  try {
+    await resend.emails.send({ from: `ZAIRE <noreply@${fromDomain}>`, to: client.email, subject, html });
+  } catch {
+    redirect(`${base}?err=${encodeURIComponent('No se pudo enviar el email. Revisá el dominio verificado en Resend.')}`);
+  }
+  redirect(`${base}?sent=1`);
 }
 
 // Registrar horas directamente desde una incidencia.

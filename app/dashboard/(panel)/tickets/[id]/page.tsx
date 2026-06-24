@@ -10,7 +10,7 @@ import FormShell from '@/app/dashboard/_components/form-shell';
 import Avatar from '@/app/dashboard/_components/avatar';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import {
-  updateTicketAction, logTimeAction, addCommentAction, uploadAttachmentAction, deleteAttachmentAction,
+  updateTicketAction, logTimeAction, addCommentAction, uploadAttachmentAction, deleteAttachmentAction, notifyClientAction,
 } from '../actions';
 import {
   STATUS_LABEL, STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR,
@@ -21,8 +21,9 @@ export const dynamic = 'force-dynamic';
 
 const dt = (s: string) => new Date(s).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TicketDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; err?: string }> }) {
   const { id } = await params;
+  const { sent, err } = await searchParams;
   const ticket = await getTicket(id);
   if (!ticket) notFound();
 
@@ -48,8 +49,15 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
               : <span className="zo-chip" style={{ color: '#777' }}>Sin asignar</span>}
           </div>
         </div>
-        <Link href="/dashboard/tickets"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <form action={notifyClientAction.bind(null, ticket.id)}><button className="zo-btn zo-btn-sm" type="submit">Notificar al cliente</button></form>
+          <a href={`/dashboard/tickets-print?id=${ticket.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Exportar</button></a>
+          <Link href="/dashboard/tickets"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+        </div>
       </div>
+
+      {sent && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Notificación enviada al cliente por email. ✓</div>}
+      {err && <div className="zo-form-error" style={{ marginBottom: 16 }}>⚠ {err}</div>}
 
       <div className="zo-card">
         <div className="zo-card-title">// EDITAR INCIDENCIA</div>

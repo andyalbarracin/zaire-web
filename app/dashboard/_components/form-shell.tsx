@@ -16,11 +16,12 @@ function SubmitBtn({ label }: { label: string }) {
 }
 
 export default function FormShell({
-  action, submitLabel, cancelHref, children,
+  action, submitLabel, cancelHref, extra, children,
 }: {
   action: (prev: FormState, fd: FormData) => Promise<FormState>;
   submitLabel: string;
   cancelHref?: string;
+  extra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [state, formAction] = useActionState(action, {});
@@ -30,6 +31,7 @@ export default function FormShell({
       {state?.error && <div className="zo-form-error">⚠ {state.error}</div>}
       <div className="zo-form-actions">
         <SubmitBtn label={submitLabel} />
+        {extra}
         {cancelHref && <Link href={cancelHref}><button type="button" className="zo-btn">Cancelar</button></Link>}
       </div>
     </form>

@@ -64,14 +64,19 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
               <img src={a.signature_url} alt="firma" style={{ maxWidth: 320, background: '#fff', borderRadius: 8, border: '1px solid #222' }} />
             </div>
           )}
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <a href={link} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Ver acuerdo firmado</button></a>
+            <a href={`/dashboard/acuerdos-print?id=${a.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Descargar PDF</button></a>
           </div>
         </div>
       ) : (
         <div className="zo-card zo-section-gap">
           <div className="zo-card-title">// EDITAR ACUERDO</div>
-          <FormShell action={updateAgreementAction.bind(null, a.id)} submitLabel="Guardar cambios">
+          <FormShell
+            action={updateAgreementAction.bind(null, a.id)}
+            submitLabel="Guardar cambios"
+            extra={<a href={`/dashboard/acuerdos-print?id=${a.id}`} target="_blank" rel="noopener noreferrer"><button type="button" className="zo-btn">Descargar PDF</button></a>}
+          >
             <AgreementFields agreement={a} clients={clients} />
           </FormShell>
         </div>
