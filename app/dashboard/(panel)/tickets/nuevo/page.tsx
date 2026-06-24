@@ -1,6 +1,7 @@
 // File: page.tsx — Nueva incidencia
 import Link from 'next/link';
 import { listClients, listProjects } from '@/lib/zaire-ops/queries';
+import { listProfiles } from '@/lib/zaire-ops/profiles';
 import TicketFields from '@/app/dashboard/_components/ticket-fields';
 import { createTicketAction } from '../actions';
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function NuevoTicketPage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { client } = await searchParams;
-  const [clients, projects] = await Promise.all([listClients(), listProjects(client)]);
+  const [clients, projects, members] = await Promise.all([listClients(), listProjects(client), listProfiles()]);
 
   return (
     <>
@@ -20,7 +21,7 @@ export default async function NuevoTicketPage({ searchParams }: { searchParams: 
         <div className="zo-card"><div className="zo-empty">Primero creá un cliente. <Link href="/dashboard/clientes/nuevo" style={{ color: '#FF6A00' }}>Nuevo cliente →</Link></div></div>
       ) : (
         <form action={createTicketAction} className="zo-form">
-          <TicketFields clients={clients} projects={projects} defaultClientId={client} />
+          <TicketFields clients={clients} projects={projects} members={members} defaultClientId={client} />
           <div className="zo-form-actions">
             <button type="submit" className="zo-btn zo-btn-primary">Crear incidencia</button>
             <Link href="/dashboard/tickets"><button type="button" className="zo-btn">Cancelar</button></Link>

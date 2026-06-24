@@ -5,7 +5,7 @@
 //              Usa el cliente admin (service role), gateado por auth en las rutas.
 
 import { createSupabaseAdmin } from './supabase-admin';
-import type { ZoClient, ZoProject, ZoTicket, ZoTimeEntry } from './types';
+import type { ZoClient, ZoProject, ZoTicket, ZoTimeEntry, ZoComment, ZoAttachment } from './types';
 import { OPEN_STATUSES } from './types';
 
 const db = () => createSupabaseAdmin();
@@ -57,26 +57,83 @@ export async function updateProject(id: string, input: Partial<ZoProject>): Prom
 }
 
 // ── INCIDENCIAS / TICKETS ────────────────────────────────────────────────────
-interface TicketFilter { clientId?: string; status?: string; }
+interface TicketFilter { clientId?: string; status?: string; assignedTo?: string; }
+
+const TICKET_SELECT = '*, client:zo_clients(name), project:zo_projects(name), assignee:zo_profiles(full_name,avatar_url)';
 
 export async function listTickets(filter: TicketFilter = {}): Promise<ZoTicket[]> {
   let q = db()
     .from('zo_tickets')
-    .select('*, client:zo_clients(name), project:zo_projects(name)')
+    .select(TICKET_SELECT)
     .order('created_at', { ascending: false });
   if (filter.clientId) q = q.eq('client_id', filter.clientId);
   if (filter.status) q = q.eq('status', filter.status);
+  if (filter.assignedTo) q = q.eq('assigned_to', filter.assignedTo);
   const { data } = await q;
   return (data ?? []) as ZoTicket[];
 }
 
 export async function getTicket(id: string): Promise<ZoTicket | null> {
-  const { data } = await db()
-    .from('zo_tickets')
-    .select('*, client:zo_clients(name), project:zo_projects(name)')
-    .eq('id', id)
-    .single();
+  const { data } = await db().from('zo_tickets').select(TICKET_SELECT).eq('id', id).single();
   return (data as ZoTicket) ?? null;
+}
+
+// ── COMENTARIOS / ACTIVIDAD ──────────────────────────────────────────────────
+export async function listComments(ticketId: string): Promise<ZoComment[]> {
+  const { data } = await db()
+    .from('zo_ticket_comments')
+    .select('*, author:zo_profiles(full_name,avatar_url)')
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: true });
+  return (data ?? []) as ZoComment[];
+}
+
+export async function addComment(input: {
+  ticket_id: string; author_id?: string | null; body: string; is_internal?: boolean; is_system?: boolean;
+}): Promise<void> {
+  await db().from('zo_ticket_comments').insert(input);
+}
+
+// ── ADJUNTOS ─────────────────────────────────────────────────────────────────
+export async function listAttachments(ticketId: string): Promise<ZoAttachment[]> {
+  const { data } = await db()
+    .from('zo_attachments')
+    .select('*')
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as ZoAttachment[];
+}
+
+export async function addAttachment(input: {
+  ticket_id: string; file_url: string; file_name?: string | null; file_type?: string | null;
+}): Promise<void> {
+  await db().from('zo_attachments').insert(input);
+}
+
+export async function deleteAttachment(id: string): Promise<void> {
+  await db().from('zo_attachments').delete().eq('id', id);
+}
+
+// Sube un archivo de incidencia al bucket público zo-files.
+export async function uploadTicketFile(ticketId: string, file: File): Promise<{ url: string; name: string; type: string } | null> {
+  if (!file || file.size === 0) return null;
+  const admin = db();
+  const safe = file.name.replace(/[^\w.\-]/g, '_');
+  const path = `${ticketId}/${Date.now()}-${safe}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { error } = await admin.storage.from('zo-files').upload(path, buffer, {
+    contentType: file.type || 'application/octet-stream', upsert: false,
+  });
+  if (error) return null;
+  const { data } = admin.storage.from('zo-files').getPublicUrl(path);
+  return { url: data.publicUrl, name: file.name, type: file.type || '' };
+}
+
+// Nombre de perfil (para logs de actividad).
+export async function profileName(id: string | null): Promise<string> {
+  if (!id) return 'nadie';
+  const { data } = await db().from('zo_profiles').select('full_name').eq('id', id).single();
+  return (data?.full_name as string) ?? 'usuario';
 }
 
 async function nextTicketNumber(): Promise<string> {

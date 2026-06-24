@@ -157,6 +157,22 @@
 .zo-topbar-right a { display: flex; align-items: center; gap: 9px; }
 .zo-topbar-right a:hover .zo-user { color: #fff; }
 
+/* ── Timeline de actividad / comentarios ──────────────────────────────────── */
+.zo-timeline { display: flex; flex-direction: column; gap: 14px; }
+.zo-tl-system { font-size: 12px; color: #777; display: flex; gap: 9px; align-items: center; padding: 2px 0; }
+.zo-tl-system b { color: #aaa; font-weight: 600; }
+.zo-tl-system .zo-dot { background: #444; }
+.zo-comment { display: flex; gap: 11px; }
+.zo-comment-body { flex: 1; background: #161616; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; }
+.zo-comment-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 10px; }
+.zo-comment-author { font-size: 12.5px; font-weight: 600; color: #fff; }
+.zo-comment-time { font-family: var(--fm); font-size: 9px; color: #666; white-space: nowrap; }
+.zo-comment-text { font-size: 13.5px; color: #ccc; line-height: 1.6; white-space: pre-wrap; }
+.zo-badge-internal { font-family: var(--fm); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: #FFC107; border: 1px solid rgba(255,193,7,.3); padding: 2px 6px; border-radius: 10px; }
+.zo-attach { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: #161616; border: 1px solid #222; border-radius: 8px; }
+.zo-attach a { color: #cfcfcf; font-size: 13px; word-break: break-all; }
+.zo-attach a:hover { color: #FF6A00; }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
   .zo-shell { grid-template-columns: 1fr; }

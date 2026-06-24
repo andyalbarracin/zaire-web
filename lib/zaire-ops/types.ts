@@ -62,11 +62,33 @@ export interface ZoTicket {
   included_in_support: boolean;
   billable_extra: boolean;
   resolution: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
   closed_at: string | null;
   client?: { name: string } | null;
   project?: { name: string } | null;
+  assignee?: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+export interface ZoComment {
+  id: string;
+  ticket_id: string;
+  author_id: string | null;
+  body: string;
+  is_system: boolean;
+  is_internal: boolean;
+  created_at: string;
+  author?: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+export interface ZoAttachment {
+  id: string;
+  ticket_id: string | null;
+  file_url: string;
+  file_name: string | null;
+  file_type: string | null;
+  created_at: string;
 }
 
 export interface ZoTimeEntry {
