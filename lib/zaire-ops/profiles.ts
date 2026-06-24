@@ -95,7 +95,7 @@ export async function updateProfile(userId: string, input: { full_name?: string;
 
 // Sube avatar a Storage (bucket público) y devuelve la URL pública.
 export async function uploadAvatar(userId: string, file: File): Promise<string | null> {
-  if (!file || file.size === 0) return null;
+  if (!file || file.size === 0 || file.size > 50 * 1024 * 1024) return null;
   const admin = createSupabaseAdmin();
   const ext = (file.name.split('.').pop() || 'png').toLowerCase();
   const path = `${userId}/${Date.now()}.${ext}`;

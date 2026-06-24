@@ -1,6 +1,7 @@
 // File: page.tsx — Reporte mensual por cliente
 import { listClients, getMonthlyReport } from '@/lib/zaire-ops/queries';
 import { STATUS_LABEL, STATUS_COLOR, minutesToHours } from '@/lib/zaire-ops/types';
+import { sendReportAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 
 export default async function ReportesPage({
   searchParams,
-}: { searchParams: Promise<{ client?: string; year?: string; month?: string }> }) {
+}: { searchParams: Promise<{ client?: string; year?: string; month?: string; sent?: string; err?: string }> }) {
   const sp = await searchParams;
   const now = new Date();
   const year = Number(sp.year) || now.getFullYear();
@@ -23,6 +24,9 @@ export default async function ReportesPage({
       <div className="zo-pagehead">
         <div><div className="zo-lbl">// CLIENTES</div><h1 className="zo-h1">Reporte mensual</h1><div className="zo-sub">Resumen de soporte para enviar al cliente</div></div>
       </div>
+
+      {sp.sent && <div className="zo-card" style={{ marginBottom: 16, background: 'rgba(34,197,94,.08)', borderColor: 'rgba(34,197,94,.3)', color: '#9be8b3' }}>Reporte enviado por email al cliente.</div>}
+      {sp.err && <div className="zo-error" style={{ marginBottom: 16 }}>{sp.err}</div>}
 
       <div className="zo-card">
         <form method="get" className="zo-form" style={{ maxWidth: '100%' }}>
@@ -79,11 +83,20 @@ export default async function ReportesPage({
             </table></div>
           )}
 
-          <div style={{ marginTop: 22, display: 'flex', gap: 10 }}>
-            <button className="zo-btn" disabled title="Próximamente">Exportar PDF</button>
-            <button className="zo-btn" disabled title="Próximamente">Enviar por email</button>
+          <div style={{ marginTop: 22, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a href={`/dashboard/reportes-print?client=${sp.client}&year=${year}&month=${month}`} target="_blank" rel="noopener noreferrer">
+              <button className="zo-btn" type="button">Imprimir / PDF</button>
+            </a>
+            <form action={sendReportAction}>
+              <input type="hidden" name="client" value={sp.client ?? ''} />
+              <input type="hidden" name="year" value={String(year)} />
+              <input type="hidden" name="month" value={String(month)} />
+              <button className="zo-btn zo-btn-primary" type="submit">Enviar por email al cliente</button>
+            </form>
           </div>
-          <div className="zo-sub" style={{ marginTop: 10, fontSize: 12 }}>Export PDF y envío por email (Resend) quedan conectables en la próxima iteración.</div>
+          {report.client?.email
+            ? <div className="zo-sub" style={{ marginTop: 10, fontSize: 12 }}>Se enviará a {report.client.email}.</div>
+            : <div className="zo-sub" style={{ marginTop: 10, fontSize: 12, color: '#FFC107' }}>Cargá el email del cliente en su ficha para poder enviar.</div>}
         </div>
       )}
     </>

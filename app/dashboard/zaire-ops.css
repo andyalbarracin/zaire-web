@@ -190,3 +190,9 @@
   .zo-dl { grid-template-columns: 1fr; gap: 2px 0; }
   .zo-dl dd { margin-bottom: 8px; }
 }
+
+/* ── Impresión (reporte PDF vía navegador) ────────────────────────────────── */
+@media print {
+  .zo-noprint { display: none !important; }
+  .zo-root, body { background: #fff !important; }
+}

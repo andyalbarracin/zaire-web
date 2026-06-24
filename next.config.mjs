@@ -8,6 +8,12 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  experimental: {
+    // Permite subir adjuntos de hasta 50MB vía Server Actions (Zaire Ops).
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
 };
 
 export default nextConfig;

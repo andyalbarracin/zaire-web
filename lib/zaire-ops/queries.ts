@@ -115,8 +115,10 @@ export async function deleteAttachment(id: string): Promise<void> {
 }
 
 // Sube un archivo de incidencia al bucket público zo-files.
+export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
+
 export async function uploadTicketFile(ticketId: string, file: File): Promise<{ url: string; name: string; type: string } | null> {
-  if (!file || file.size === 0) return null;
+  if (!file || file.size === 0 || file.size > MAX_UPLOAD_BYTES) return null;
   const admin = db();
   const safe = file.name.replace(/[^\w.\-]/g, '_');
   const path = `${ticketId}/${Date.now()}-${safe}`;
