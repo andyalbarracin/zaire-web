@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import Sidebar from '../_components/sidebar';
 import Avatar from '../_components/avatar';
+import OpsFooter from '../_components/ops-footer';
 import { signOut } from '../actions';
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           </div>
         </header>
         <div className="zo-page">{children}</div>
+        <OpsFooter />
       </div>
     </div>
   );

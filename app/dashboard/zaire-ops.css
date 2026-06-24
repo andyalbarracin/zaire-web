@@ -56,7 +56,19 @@
 .zo-topbar-crumb { font-family: var(--fm); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #888; }
 .zo-topbar-right { display: flex; align-items: center; gap: 16px; }
 .zo-user { font-size: 12px; color: #888; }
-.zo-page { padding: 28px; max-width: 1280px; width: 100%; }
+.zo-page { padding: 28px; width: 100%; flex: 1 0 auto; }
+@media (min-width: 1700px) { .zo-page { padding: 32px 44px; } }
+
+/* ── Footer del panel ─────────────────────────────────────────────────────── */
+.zo-foot {
+  border-top: 1px solid #1d1d1d;
+  padding: 18px 28px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap;
+  font-family: var(--fm); font-size: 10px; letter-spacing: .06em; color: #555;
+}
+.zo-foot a { color: #888; }
+.zo-foot a:hover { color: var(--org); }
+.zo-foot-tag { text-transform: uppercase; letter-spacing: .14em; color: #777; }
 
 /* ── Tipografía de página ─────────────────────────────────────────────────── */
 .zo-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: #FF6A00; }
