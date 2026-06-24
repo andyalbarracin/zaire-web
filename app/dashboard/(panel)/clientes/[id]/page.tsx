@@ -5,6 +5,8 @@ import { getClient, listProjects, listTickets } from '@/lib/zaire-ops/queries';
 import ClientFields from '@/app/dashboard/_components/client-fields';
 import { updateClientAction } from '../actions';
 import { STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
+import RowLink from '@/app/dashboard/_components/row-link';
+import { clientAccount, listInvoices, liveInvoiceStatus, money } from '@/lib/zaire-ops/billing';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +15,9 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [projects, tickets] = await Promise.all([listProjects(id), listTickets({ clientId: id })]);
+  const [projects, tickets, account, invoices] = await Promise.all([
+    listProjects(id), listTickets({ clientId: id }), clientAccount(id), listInvoices(id),
+  ]);
 
   return (
     <>
@@ -24,7 +28,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
           <div className="zo-sub">{client.plan ?? 'Sin plan'} · {client.monthly_support_hours}h/mes incluidas</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Link href={`/dashboard/facturas?client=${client.id}`}><button className="zo-btn zo-btn-sm">Facturas</button></Link>
+          <Link href={`/dashboard/facturas?client=${client.id}`}><button className="zo-btn zo-btn-sm">Invoices</button></Link>
           <Link href={`/dashboard/reportes?client=${client.id}`}><button className="zo-btn zo-btn-sm">Reporte</button></Link>
           <Link href="/dashboard/clientes"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
         </div>
@@ -46,6 +50,38 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
 
       <div className="zo-section-gap">
         <div className="zo-pagehead">
+          <div className="zo-card-title">// ESTADO DE CUENTA</div>
+          <Link href={`/dashboard/facturas/nuevo?client=${client.id}`}><button className="zo-btn zo-btn-sm">+ Invoice</button></Link>
+        </div>
+        <div className="zo-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+          <div className="zo-kpi"><div className="zo-kpi-n">{money(account.invoiced, account.currency)}</div><div className="zo-kpi-l">Facturado</div></div>
+          <div className="zo-kpi"><div className="zo-kpi-n">{money(account.paid, account.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
+          <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: account.balance > 0 ? '#FFC107' : '#22c55e' }}>{money(account.balance, account.currency)}</div><div className="zo-kpi-l">Saldo / deuda</div></div>
+        </div>
+        {invoices.length === 0 ? (
+          <div className="zo-table-wrap"><div className="zo-empty">Sin invoices. <Link href={`/dashboard/facturas/nuevo?client=${client.id}`} style={{ color: '#FF6A00' }}>Crear invoice →</Link></div></div>
+        ) : (
+          <div className="zo-table-wrap"><table className="zo-table">
+            <thead><tr><th>Número</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Saldo</th></tr></thead>
+            <tbody>{invoices.map(i => {
+              const st = liveInvoiceStatus(i);
+              const saldo = i.amount - (i.paid ?? 0);
+              return (
+                <RowLink key={i.id} href={`/dashboard/facturas/${i.id}`}>
+                  <td className="zo-mono">{i.number ?? '—'}</td>
+                  <td className="zo-rowlink">{i.concept}</td>
+                  <td className="zo-mono">{money(i.amount, i.currency)}</td>
+                  <td><span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.label}</span></td>
+                  <td className="zo-mono">{i.status === 'anulada' ? '—' : money(saldo, i.currency)}</td>
+                </RowLink>
+              );
+            })}</tbody>
+          </table></div>
+        )}
+      </div>
+
+      <div className="zo-section-gap">
+        <div className="zo-pagehead">
           <div className="zo-card-title">// INCIDENCIAS DEL CLIENTE</div>
           <Link href={`/dashboard/tickets/nuevo?client=${client.id}`}><button className="zo-btn zo-btn-sm">+ Incidencia</button></Link>
         </div>
@@ -55,11 +91,11 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
           <div className="zo-table-wrap"><table className="zo-table">
             <thead><tr><th>ID</th><th>Título</th><th>Estado</th></tr></thead>
             <tbody>{tickets.map(t => (
-              <tr key={t.id}>
+              <RowLink key={t.id} href={`/dashboard/tickets/${t.id}`}>
                 <td className="zo-mono">{t.ticket_number ?? '—'}</td>
-                <td><Link href={`/dashboard/tickets/${t.id}`} className="zo-rowlink">{t.title}</Link></td>
+                <td className="zo-rowlink">{t.title}</td>
                 <td><span className="zo-chip"><span className="zo-dot" style={{ background: STATUS_COLOR[t.status] }} />{STATUS_LABEL[t.status]}</span></td>
-              </tr>
+              </RowLink>
             ))}</tbody>
           </table></div>
         )}

@@ -17,8 +17,20 @@ function parseInvoice(fd: FormData) {
 }
 
 export async function createInvoiceAction(fd: FormData) {
-  const i = await createInvoice(parseInvoice(fd));
-  redirect(`/dashboard/facturas/${i.id}`);
+  const base = parseInvoice(fd);
+  const cuotas = Math.max(1, Math.min(36, Number(fd.get('installments')) || 1));
+
+  if (cuotas === 1) {
+    const i = await createInvoice(base);
+    redirect(`/dashboard/facturas/${i.id}`);
+  }
+
+  // Plan de pagos: dividir el monto en N invoices (Cuota i/N).
+  const each = Math.round((base.amount / cuotas) * 100) / 100;
+  for (let n = 1; n <= cuotas; n++) {
+    await createInvoice({ ...base, amount: each, concept: `${base.concept} · Cuota ${n}/${cuotas}` });
+  }
+  redirect(`/dashboard/facturas?client=${base.client_id}`);
 }
 
 export async function updateInvoiceAction(id: string, fd: FormData) {
@@ -29,6 +41,17 @@ export async function updateInvoiceAction(id: string, fd: FormData) {
 export async function anularInvoiceAction(id: string) {
   await updateInvoice(id, { status: 'anulada' });
   redirect(`/dashboard/facturas/${id}`);
+}
+
+// Marca el invoice como pagado registrando el saldo restante como un pago.
+export async function markPaidAction(invoiceId: string, clientId: string, currency: string, saldo: number) {
+  if (saldo > 0) {
+    await addPayment({
+      invoice_id: invoiceId, client_id: clientId, amount: saldo, currency,
+      paid_date: new Date().toISOString().slice(0, 10), method: 'Marcado pagado',
+    });
+  }
+  revalidatePath(`/dashboard/facturas/${invoiceId}`);
 }
 
 export async function addPaymentAction(invoiceId: string, clientId: string, fd: FormData) {

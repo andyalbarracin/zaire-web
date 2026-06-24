@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { listTickets } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import Avatar from '@/app/dashboard/_components/avatar';
+import RowLink from '@/app/dashboard/_components/row-link';
 import {
   STATUS_LABEL, STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR,
   TICKET_STATUSES, minutesToHours,
@@ -41,9 +42,9 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
         <div className="zo-table-wrap"><table className="zo-table">
           <thead><tr><th>ID</th><th>Título</th><th>Cliente</th><th>Asignado</th><th>Prioridad</th><th>Estado</th><th>Horas</th></tr></thead>
           <tbody>{tickets.map(t => (
-            <tr key={t.id}>
+            <RowLink key={t.id} href={`/dashboard/tickets/${t.id}`}>
               <td className="zo-mono">{t.ticket_number ?? '—'}</td>
-              <td><Link href={`/dashboard/tickets/${t.id}`} className="zo-rowlink">{t.title}</Link></td>
+              <td className="zo-rowlink">{t.title}</td>
               <td>{t.client?.name ?? '—'}</td>
               <td>{t.assignee?.full_name
                 ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Avatar profile={t.assignee} size={20} /> {t.assignee.full_name}</span>
@@ -51,7 +52,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
               <td><span className="zo-chip"><span className="zo-dot" style={{ background: PRIORITY_COLOR[t.priority] }} />{PRIORITY_LABEL[t.priority]}</span></td>
               <td><span className="zo-chip"><span className="zo-dot" style={{ background: STATUS_COLOR[t.status] }} />{STATUS_LABEL[t.status]}</span></td>
               <td className="zo-mono">{minutesToHours(t.actual_minutes)}</td>
-            </tr>
+            </RowLink>
           ))}</tbody>
         </table></div>
       )}

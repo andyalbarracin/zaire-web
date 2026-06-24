@@ -5,6 +5,7 @@
 import Link from 'next/link';
 import { getDashboardStats } from '@/lib/zaire-ops/queries';
 import { minutesToHours, STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
+import RowLink from '@/app/dashboard/_components/row-link';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,13 +42,13 @@ export default async function InicioPage() {
             <thead><tr><th>ID</th><th>Título</th><th>Cliente</th><th>Estado</th><th>Creada</th></tr></thead>
             <tbody>
               {s.recentTickets.map(t => (
-                <tr key={t.id}>
+                <RowLink key={t.id} href={`/dashboard/tickets/${t.id}`}>
                   <td className="zo-mono">{t.ticket_number ?? '—'}</td>
-                  <td><Link href={`/dashboard/tickets/${t.id}`} className="zo-rowlink">{t.title}</Link></td>
+                  <td className="zo-rowlink">{t.title}</td>
                   <td>{t.client?.name ?? '—'}</td>
                   <td><span className="zo-chip"><span className="zo-dot" style={{ background: STATUS_COLOR[t.status] }} />{STATUS_LABEL[t.status]}</span></td>
                   <td className="zo-mono">{new Date(t.created_at).toLocaleDateString('es-AR')}</td>
-                </tr>
+                </RowLink>
               ))}
             </tbody>
           </table>

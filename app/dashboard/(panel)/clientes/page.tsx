@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { listClients } from '@/lib/zaire-ops/queries';
 import { humanLabel } from '@/lib/zaire-ops/types';
+import RowLink from '@/app/dashboard/_components/row-link';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +31,13 @@ export default async function ClientesPage() {
             <thead><tr><th>Cliente</th><th>Contacto</th><th>Plan</th><th>Horas/mes</th><th>Estado</th></tr></thead>
             <tbody>
               {clients.map(c => (
-                <tr key={c.id}>
-                  <td><Link href={`/dashboard/clientes/${c.id}`} className="zo-rowlink">{c.name}</Link></td>
+                <RowLink key={c.id} href={`/dashboard/clientes/${c.id}`}>
+                  <td className="zo-rowlink">{c.name}</td>
                   <td>{c.contact_name ?? '—'}</td>
                   <td>{c.plan ?? '—'}</td>
                   <td className="zo-mono">{c.monthly_support_hours ?? 0}h</td>
                   <td><span className="zo-chip"><span className="zo-dot" style={{ background: SC[c.status] }} />{humanLabel(c.status)}</span></td>
-                </tr>
+                </RowLink>
               ))}
             </tbody>
           </table>

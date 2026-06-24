@@ -27,7 +27,7 @@ export default async function FacturaPrintPage({ searchParams }: { searchParams:
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #111', paddingBottom: 16, marginBottom: 28 }}>
           <div>
             <div style={{ fontFamily: 'sans-serif', fontSize: 20, fontWeight: 900 }}>ZAIRE</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: '#FF6A00' }}>Factura / Cobro</div>
+            <div style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: '#FF6A00' }}>Invoice · Solicitud de pago</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 700 }}>{invoice.number ?? '—'}</div>
@@ -57,7 +57,10 @@ export default async function FacturaPrintPage({ searchParams }: { searchParams:
 
         <div style={{ marginTop: 16, fontFamily: 'monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: '#888' }}>Estado: {st.label}</div>
         {invoice.notes && <p style={{ marginTop: 16, fontSize: 12.5, color: '#555', whiteSpace: 'pre-wrap' }}>{invoice.notes}</p>}
-        <div style={{ marginTop: 40, fontFamily: 'monospace', fontSize: 9, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', borderTop: '1px solid #eee', paddingTop: 14 }}>Documento generado por Zaire Ops · zairetech.com</div>
+        <div style={{ marginTop: 28, fontSize: 11, color: '#888', fontStyle: 'italic', lineHeight: 1.6, background: '#faf9f6', border: '1px solid #eee', borderRadius: 6, padding: '12px 14px' }}>
+          Este documento es una <strong>solicitud de pago</strong> y no constituye una factura fiscal/contable. La factura fiscal correspondiente (ARCA) se emite por separado.
+        </div>
+        <div style={{ marginTop: 24, fontFamily: 'monospace', fontSize: 9, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', borderTop: '1px solid #eee', paddingTop: 14 }}>Documento generado por Zaire Ops · zairetech.com</div>
       </div>
     </div>
   );

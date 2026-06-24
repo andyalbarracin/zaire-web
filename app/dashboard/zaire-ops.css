@@ -87,8 +87,9 @@
 .zo-table tr:last-child td { border-bottom: none; }
 .zo-table tbody tr { transition: background .1s; }
 .zo-table tbody tr:hover { background: #181818; }
-.zo-table a.zo-rowlink { color: #fff; font-weight: 500; }
+.zo-table .zo-rowlink { color: #fff; font-weight: 500; }
 .zo-table a.zo-rowlink:hover { color: var(--org); }
+.zo-table tr.zo-rowclick:hover .zo-rowlink { color: var(--org); }
 .zo-mono { font-family: var(--fm); font-size: 11px; color: #888; letter-spacing: .04em; }
 
 /* ── Chips ────────────────────────────────────────────────────────────────── */

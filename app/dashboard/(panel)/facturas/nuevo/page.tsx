@@ -12,7 +12,7 @@ export default async function NuevaFacturaPage({ searchParams }: { searchParams:
   return (
     <>
       <div className="zo-pagehead">
-        <div><div className="zo-lbl">// COMERCIAL</div><h1 className="zo-h1">Nueva factura</h1></div>
+        <div><div className="zo-lbl">// COMERCIAL</div><h1 className="zo-h1">Nuevo invoice</h1></div>
         <Link href="/dashboard/facturas"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
       </div>
       {clients.length === 0 ? (
@@ -21,7 +21,7 @@ export default async function NuevaFacturaPage({ searchParams }: { searchParams:
         <form action={createInvoiceAction} className="zo-form">
           <InvoiceFields clients={clients} defaultClientId={client} />
           <div className="zo-form-actions">
-            <button type="submit" className="zo-btn zo-btn-primary">Crear factura</button>
+            <button type="submit" className="zo-btn zo-btn-primary">Crear invoice</button>
             <Link href="/dashboard/facturas"><button type="button" className="zo-btn">Cancelar</button></Link>
           </div>
         </form>

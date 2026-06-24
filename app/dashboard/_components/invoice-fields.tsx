@@ -27,6 +27,13 @@ export default function InvoiceFields({ invoice, clients, defaultClientId }: { i
         <div className="zo-field"><label className="zo-flabel">Vencimiento</label><input className="zo-input" name="due_date" type="date" defaultValue={i?.due_date ?? ''} /></div>
       </div>
       <div className="zo-field"><label className="zo-flabel">Notas</label><textarea className="zo-textarea" name="notes" defaultValue={i?.notes ?? ''} placeholder="Detalle / período facturado…" /></div>
+      {!invoice && (
+        <div className="zo-field" style={{ maxWidth: 260 }}>
+          <label className="zo-flabel">Dividir en cuotas</label>
+          <input className="zo-input" name="installments" type="number" min="1" max="36" defaultValue="1" />
+          <span style={{ fontSize: 11, color: '#888', marginTop: 4 }}>Ej: monto 3000 en 3 cuotas = 3 invoices de 1000.</span>
+        </div>
+      )}
     </>
   );
 }

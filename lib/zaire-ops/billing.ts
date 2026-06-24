@@ -61,7 +61,7 @@ export const money = (n?: number | null, cur = 'USD') => `${cur} ${Number(n ?? 0
 async function nextInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const { count } = await db().from('zo_invoices').select('id', { count: 'exact', head: true }).gte('issue_date', `${year}-01-01`);
-  return `FAC-${year}-${String((count ?? 0) + 1).padStart(4, '0')}`;
+  return `INV-${year}-${String((count ?? 0) + 1).padStart(4, '0')}`;
 }
 
 async function paidByInvoice(clientId?: string): Promise<Map<string, number>> {

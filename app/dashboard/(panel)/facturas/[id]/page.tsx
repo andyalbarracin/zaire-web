@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, money, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
-import { updateInvoiceAction, anularInvoiceAction, addPaymentAction } from '../actions';
+import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, markPaidAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +22,7 @@ export default async function FacturaDetailPage({ params }: { params: Promise<{ 
     <>
       <div className="zo-pagehead">
         <div>
-          <div className="zo-lbl">// {invoice.number ?? 'FACTURA'}</div>
+          <div className="zo-lbl">// {invoice.number ?? 'INVOICE'}</div>
           <h1 className="zo-h1">{invoice.concept}</h1>
           <div className="zo-sub" style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
             <span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.label}</span>
@@ -41,6 +41,12 @@ export default async function FacturaDetailPage({ params }: { params: Promise<{ 
         <div className="zo-kpi"><div className="zo-kpi-n">{money(paid, invoice.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
         <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
       </div>
+
+      {invoice.status !== 'anulada' && saldo > 0 && (
+        <form action={markPaidAction.bind(null, invoice.id, invoice.client_id, invoice.currency, saldo)} style={{ marginBottom: 14 }}>
+          <button className="zo-btn zo-btn-sm" type="submit">✓ Marcar como pagada</button>
+        </form>
+      )}
 
       {invoice.status !== 'anulada' && (
         <div className="zo-card">
@@ -74,12 +80,12 @@ export default async function FacturaDetailPage({ params }: { params: Promise<{ 
 
       {invoice.status !== 'anulada' && (
         <div className="zo-card zo-section-gap">
-          <div className="zo-card-title">// EDITAR FACTURA</div>
+          <div className="zo-card-title">// EDITAR INVOICE</div>
           <form action={updateInvoiceAction.bind(null, invoice.id)} className="zo-form">
             <InvoiceFields invoice={invoice} clients={clients} />
             <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar cambios</button></div>
           </form>
-          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Anular factura</button></form>
+          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><button className="zo-btn zo-btn-ghost zo-btn-sm" type="submit">Anular invoice</button></form>
         </div>
       )}
     </>

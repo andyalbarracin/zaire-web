@@ -1,7 +1,8 @@
-// File: page.tsx — Facturas (lista + estado de cuenta por cliente)
+// File: page.tsx — Invoices / solicitudes de pago (lista + estado de cuenta)
 import Link from 'next/link';
 import { listInvoices, clientAccount, liveInvoiceStatus, money } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
+import RowLink from '@/app/dashboard/_components/row-link';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +19,10 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       <div className="zo-pagehead">
         <div>
           <div className="zo-lbl">// COMERCIAL</div>
-          <h1 className="zo-h1">Facturas</h1>
-          <div className="zo-sub">{cli ? `${cli.name} · ` : ''}{invoices.length} factura(s)</div>
+          <h1 className="zo-h1">Invoices</h1>
+          <div className="zo-sub">{cli ? `${cli.name} · ` : ''}{invoices.length} solicitud(es) de pago</div>
         </div>
-        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nueva factura</button></Link>
+        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nuevo invoice</button></Link>
       </div>
 
       {account && (
@@ -33,7 +34,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       )}
 
       {invoices.length === 0 ? (
-        <div className="zo-table-wrap"><div className="zo-empty">Sin facturas. <Link href="/dashboard/facturas/nuevo" style={{ color: '#FF6A00' }}>Creá la primera →</Link></div></div>
+        <div className="zo-table-wrap"><div className="zo-empty">Sin invoices. <Link href="/dashboard/facturas/nuevo" style={{ color: '#FF6A00' }}>Creá el primero →</Link></div></div>
       ) : (
         <div className="zo-table-wrap"><table className="zo-table">
           <thead><tr><th>Número</th><th>Cliente</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Saldo</th></tr></thead>
@@ -41,14 +42,14 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
             const st = liveInvoiceStatus(i);
             const saldo = i.amount - (i.paid ?? 0);
             return (
-              <tr key={i.id}>
+              <RowLink key={i.id} href={`/dashboard/facturas/${i.id}`}>
                 <td className="zo-mono">{i.number ?? '—'}</td>
                 <td>{i.client?.name ?? '—'}</td>
-                <td><Link href={`/dashboard/facturas/${i.id}`} className="zo-rowlink">{i.concept}</Link></td>
+                <td className="zo-rowlink">{i.concept}</td>
                 <td className="zo-mono">{money(i.amount, i.currency)}</td>
                 <td><span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.label}</span></td>
                 <td className="zo-mono">{i.status === 'anulada' ? '—' : money(saldo, i.currency)}</td>
-              </tr>
+              </RowLink>
             );
           })}</tbody>
         </table></div>
