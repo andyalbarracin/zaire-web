@@ -7,12 +7,13 @@ import { listClients } from '@/lib/zaire-ops/queries';
 import AgreementFields from '@/app/dashboard/_components/agreement-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
 import CopyLink from '@/app/dashboard/_components/copy-link';
-import { updateAgreementAction, markSentAction } from '../actions';
+import { updateAgreementAction, markSentAction, sendAgreementLinkAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AgreementDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AgreementDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; err?: string }> }) {
   const { id } = await params;
+  const { sent, err } = await searchParams;
   const a = await getAgreement(id);
   if (!a) notFound();
   const clients = await listClients();
@@ -37,14 +38,20 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
         <Link href="/dashboard/acuerdos"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
       </div>
 
+      {sent && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Acuerdo enviado al cliente por email. ✓ Ya figura como “enviado” y aparece en su portal.</div>}
+      {err && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(231,29,10,.1)', border: '1px solid #E71D0A', color: '#ff6b5b', fontSize: 13 }}>{err}</div>}
+
       {a.status !== 'anulado' && (
         <div className="zo-card">
           <div className="zo-card-title">// LINK DE FIRMA (MAGIC LINK)</div>
           <CopyLink url={link} />
-          <div className="zo-sub" style={{ fontSize: 12, marginTop: 10 }}>Envialo al cliente. Al abrirlo lee los términos, firma y acepta — el estado se actualiza acá solo.</div>
-          {a.status === 'borrador' && (
-            <form action={markSentAction.bind(null, a.id)} style={{ marginTop: 14 }}><button className="zo-btn zo-btn-sm" type="submit">Marcar como enviado</button></form>
-          )}
+          <div className="zo-sub" style={{ fontSize: 12, marginTop: 10 }}>Enviáselo al cliente por email (o copiá el link). Al abrirlo lee los términos, firma y acepta — el estado se actualiza acá solo. Una vez “enviado”, el acuerdo también aparece en el portal del cliente.</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+            <form action={sendAgreementLinkAction.bind(null, a.id)}><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">Enviar al cliente por email</button></form>
+            {a.status === 'borrador' && (
+              <form action={markSentAction.bind(null, a.id)}><button className="zo-btn zo-btn-sm" type="submit">Marcar como enviado (sin email)</button></form>
+            )}
+          </div>
         </div>
       )}
 
