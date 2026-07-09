@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
-import { createInvoice, updateInvoice, addPayment, uploadReceipt, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
+import { createInvoice, updateInvoice, addPayment, uploadPaymentFile, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, nN, actionError, type FormState } from '@/lib/zaire-ops/form';
@@ -105,9 +105,12 @@ export async function addPaymentAction(invoiceId: string, clientId: string, fd: 
   if (!(amount > 0)) redirect(`${base}?err=${encodeURIComponent('El monto del pago debe ser mayor a 0.')}`);
 
   try {
-    const file = fd.get('receipt') as File | null;
+    const receiptFile = fd.get('receipt') as File | null;
+    const invoiceFile = fd.get('invoice_file') as File | null;
     let receipt_url: string | null = null;
-    if (file && typeof file === 'object' && file.size > 0) receipt_url = await uploadReceipt(invoiceId, file);
+    let invoice_file_url: string | null = null;
+    if (receiptFile && typeof receiptFile === 'object' && receiptFile.size > 0) receipt_url = await uploadPaymentFile(invoiceId, receiptFile, 'receipts');
+    if (invoiceFile && typeof invoiceFile === 'object' && invoiceFile.size > 0) invoice_file_url = await uploadPaymentFile(invoiceId, invoiceFile, 'invoices');
 
     await addPayment({
       invoice_id: invoiceId,
@@ -116,7 +119,9 @@ export async function addPaymentAction(invoiceId: string, clientId: string, fd: 
       currency: sReq(fd, 'currency') || 'USD',
       paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
       method: s(fd, 'method'),
+      bank: s(fd, 'bank'),
       receipt_url,
+      invoice_file_url,
       notes: s(fd, 'notes'),
     });
   } catch (e) {

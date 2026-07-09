@@ -34,7 +34,9 @@ export interface ZoPayment {
   currency: string;
   paid_date: string;
   method: string | null;
-  receipt_url: string | null;
+  bank: string | null;             // banco donde se depositó / acreditó
+  receipt_url: string | null;      // comprobante de transferencia
+  invoice_file_url: string | null; // factura fiscal (archivo separado)
   notes: string | null;
   created_at: string;
 }
@@ -52,6 +54,17 @@ export function isOverdue(i: ZoInvoice): boolean {
   if (i.status === 'anulada' || !i.due_date) return false;
   if ((i.paid ?? 0) >= i.amount) return false;
   return i.due_date < new Date().toISOString().slice(0, 10);
+}
+
+// Días de mora: diferencia positiva entre una fecha de referencia y el vencimiento.
+// - Con `refDate` (fecha de pago) → mora con que se pagó.
+// - Sin `refDate` → mora corriente a hoy (para saldo pendiente).
+// Base reutilizable para un futuro cálculo de intereses.
+export function daysLate(dueDate?: string | null, refDate?: string | null): number {
+  if (!dueDate) return 0;
+  const ref = refDate ?? new Date().toISOString().slice(0, 10);
+  const d = Math.floor((Date.parse(ref) - Date.parse(dueDate)) / 86_400_000);
+  return d > 0 ? d : 0;
 }
 
 // Estado "vivo" derivado de los pagos + vencimiento (pagada / vencida / parcial / pendiente / anulada).
@@ -129,16 +142,20 @@ export async function addPayment(input: Partial<ZoPayment>): Promise<void> {
   }
 }
 
-export async function uploadReceipt(invoiceId: string, file: File): Promise<string | null> {
+// Sube un archivo del pago a Storage. `kind` separa comprobante de factura.
+export async function uploadPaymentFile(invoiceId: string, file: File, kind: 'receipts' | 'invoices' = 'receipts'): Promise<string | null> {
   if (!file || file.size === 0 || file.size > 50 * 1024 * 1024) return null;
   const admin = db();
   const safe = file.name.replace(/[^\w.\-]/g, '_');
-  const path = `receipts/${invoiceId}/${Date.now()}-${safe}`;
+  const path = `${kind}/${invoiceId}/${Date.now()}-${safe}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   const { error } = await admin.storage.from('zo-files').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
   if (error) return null;
   return admin.storage.from('zo-files').getPublicUrl(path).data.publicUrl;
 }
+
+// Alias retrocompatible (comprobante de transferencia).
+export const uploadReceipt = (invoiceId: string, file: File) => uploadPaymentFile(invoiceId, file, 'receipts');
 
 export async function clientAccount(clientId: string): Promise<{ invoiced: number; paid: number; balance: number; currency: string }> {
   const supabase = db();

@@ -1,7 +1,7 @@
 // File: page.tsx — Detalle de factura (pagos, comprobantes, saldo, PDF)
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getInvoice, listPayments, liveInvoiceStatus, money, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
+import { getInvoice, listPayments, liveInvoiceStatus, money, daysLate, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
@@ -20,6 +20,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
   const st = liveInvoiceStatus(invoice);
   const paid = invoice.paid ?? 0;
   const saldo = invoice.amount - paid;
+  const moraActual = saldo > 0 ? daysLate(invoice.due_date) : 0; // días de mora corrientes sobre el saldo
 
   return (
     <>
@@ -31,6 +32,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
             <span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.label}</span>
             <span className="zo-chip">{invoice.client?.name}</span>
             {invoice.due_date && <span className="zo-chip">Vence {invoice.due_date}</span>}
+            {moraActual > 0 && <span className="zo-chip" style={{ background: 'rgba(231,29,10,.14)', color: '#ff6b5b' }}><span className="zo-dot" style={{ background: '#E71D0A' }} />{moraActual} día{moraActual === 1 ? '' : 's'} de mora</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -67,20 +69,35 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
             </div>
             <div className="zo-grid2">
               <div className="zo-field"><label className="zo-flabel">Método</label><select className="zo-select" name="method" defaultValue="Transferencia">{PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
-              <div className="zo-field"><label className="zo-flabel">Comprobante (archivo)</label><input className="zo-input" name="receipt" type="file" /></div>
+              <div className="zo-field"><label className="zo-flabel">Banco</label><input className="zo-input" name="bank" placeholder="Banco donde se acreditó" /></div>
+            </div>
+            <div className="zo-grid2">
+              <div className="zo-field"><label className="zo-flabel">Comprobante (transferencia)</label><input className="zo-input" name="receipt" type="file" /></div>
+              <div className="zo-field"><label className="zo-flabel">Factura (archivo)</label><input className="zo-input" name="invoice_file" type="file" /></div>
             </div>
             <input type="hidden" name="currency" value={invoice.currency} />
-            <div className="zo-field"><label className="zo-flabel">Notas</label><input className="zo-input" name="notes" placeholder="Referencia, banco…" /></div>
+            <div className="zo-field"><label className="zo-flabel">Observaciones del pago</label><input className="zo-input" name="notes" placeholder="Referencia, nº de operación, detalle…" /></div>
             <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">+ Registrar pago</button></div>
           </form>
 
           {payments.length > 0 && (
             <div className="zo-table-wrap" style={{ marginTop: 16 }}>
               <table className="zo-table">
-                <thead><tr><th>Fecha</th><th>Método</th><th>Monto</th><th>Comprobante</th></tr></thead>
-                <tbody>{payments.map(p => (
-                  <tr key={p.id}><td className="zo-mono">{p.paid_date}</td><td>{p.method ?? '—'}</td><td className="zo-mono">{money(p.amount, p.currency)}</td><td>{p.receipt_url ? <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink">Ver →</a> : '—'}</td></tr>
-                ))}</tbody>
+                <thead><tr><th>Fecha</th><th>Método</th><th>Banco</th><th>Monto</th><th>Mora</th><th>Comprobante</th><th>Factura</th></tr></thead>
+                <tbody>{payments.map(p => {
+                  const mora = daysLate(invoice.due_date, p.paid_date);
+                  return (
+                    <tr key={p.id}>
+                      <td className="zo-mono">{p.paid_date}</td>
+                      <td>{p.method ?? '—'}</td>
+                      <td>{p.bank ?? '—'}</td>
+                      <td className="zo-mono">{money(p.amount, p.currency)}</td>
+                      <td className="zo-mono" style={mora > 0 ? { color: '#ff6b5b' } : { color: '#22c55e' }}>{mora > 0 ? `${mora} d` : 'en fecha'}</td>
+                      <td>{p.receipt_url ? <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink">Ver →</a> : '—'}</td>
+                      <td>{p.invoice_file_url ? <a href={p.invoice_file_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink">Ver →</a> : '—'}</td>
+                    </tr>
+                  );
+                })}</tbody>
               </table>
             </div>
           )}

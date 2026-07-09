@@ -1,9 +1,20 @@
 // File: page.tsx — Factura imprimible (PDF vía navegador). Sin shell, fondo blanco.
+import type { Metadata } from 'next';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { getInvoice, liveInvoiceStatus, money } from '@/lib/zaire-ops/billing';
 import PrintButton from '@/app/dashboard/reportes-print/print-button';
 
 export const dynamic = 'force-dynamic';
+
+// El navegador usa el <title> como nombre del PDF al "Imprimir → Guardar como PDF".
+// `absolute` evita el template global "%s | ZAIRE". → "ZAIRE - Cliente - Concepto".
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ id?: string }> }): Promise<Metadata> {
+  const { id } = await searchParams;
+  const invoice = id ? await getInvoice(id) : null;
+  if (!invoice) return { title: { absolute: 'ZAIRE - Invoice' } };
+  const parts = ['ZAIRE', invoice.client?.name, invoice.concept].filter(Boolean);
+  return { title: { absolute: parts.join(' - ') } };
+}
 const lbl: React.CSSProperties = { fontFamily: 'monospace', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: '#888', marginBottom: 4 };
 
 export default async function FacturaPrintPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
