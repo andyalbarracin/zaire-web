@@ -8,6 +8,10 @@ import { updateClientAction } from '../actions';
 import { STATUS_LABEL, STATUS_COLOR, minutesToHours } from '@/lib/zaire-ops/types';
 import RowLink from '@/app/dashboard/_components/row-link';
 import { clientAccount, listInvoices, liveInvoiceStatus, money } from '@/lib/zaire-ops/billing';
+import { listClientUsers } from '@/lib/zaire-ops/portal';
+import { listDocuments, DOC_TYPES, DOC_TYPE_LABEL } from '@/lib/zaire-ops/documents';
+import { addPortalUserAction, removePortalUserAction, uploadDocumentAction, deleteDocumentAction } from '../actions';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +20,9 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [projects, tickets, account, invoices, hours] = await Promise.all([
+  const [projects, tickets, account, invoices, hours, portalUsers, documents] = await Promise.all([
     listProjects(id), listTickets({ clientId: id }), clientAccount(id), listInvoices(id), clientHoursThisMonth(id),
+    listClientUsers(id), listDocuments(id),
   ]);
   const monthName = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
@@ -114,6 +119,52 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
               </RowLink>
             ))}</tbody>
           </table></div>
+        )}
+      </div>
+
+      <div className="zo-card zo-section-gap">
+        <div className="zo-card-title">// ACCESO AL PORTAL</div>
+        <form action={addPortalUserAction.bind(null, client.id)} className="zo-form" style={{ maxWidth: '100%' }}>
+          <div className="zo-grid2">
+            <div className="zo-field"><label className="zo-flabel">Email autorizado</label><input className="zo-input" name="email" type="email" placeholder="cliente@empresa.com" /></div>
+            <div className="zo-field" style={{ alignSelf: 'end' }}><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">+ Autorizar</button></div>
+          </div>
+        </form>
+        {portalUsers.length > 0 && (
+          <div className="zo-table-wrap" style={{ marginTop: 12 }}>
+            <table className="zo-table"><thead><tr><th>Email</th><th>Alta</th><th></th></tr></thead>
+              <tbody>{portalUsers.map(u => (
+                <tr key={u.id}><td>{u.email}</td><td className="zo-mono">{new Date(u.created_at).toLocaleDateString('es-AR')}</td>
+                  <td><form action={removePortalUserAction.bind(null, client.id, u.id)}><ConfirmButton message="¿Quitar el acceso de este email?">Quitar</ConfirmButton></form></td></tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="zo-card zo-section-gap">
+        <div className="zo-card-title">// DOCUMENTOS DEL CLIENTE</div>
+        <form action={uploadDocumentAction.bind(null, client.id)} className="zo-form" style={{ maxWidth: '100%' }}>
+          <div className="zo-grid2">
+            <div className="zo-field"><label className="zo-flabel">Título</label><input className="zo-input" name="title" placeholder="Handoff — SAS Trace" /></div>
+            <div className="zo-field"><label className="zo-flabel">Tipo</label><select className="zo-select" name="type" defaultValue="handoff">{DOC_TYPES.map(t => <option key={t} value={t}>{DOC_TYPE_LABEL[t]}</option>)}</select></div>
+          </div>
+          <div className="zo-grid2">
+            <div className="zo-field"><label className="zo-flabel">Archivo</label><input className="zo-input" name="file" type="file" /></div>
+            <div className="zo-field" style={{ alignSelf: 'end' }}><label style={{ fontSize: 12, color: '#aaa' }}><input type="checkbox" name="visible" defaultChecked /> Visible para el cliente</label></div>
+          </div>
+          <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">+ Subir documento</button></div>
+        </form>
+        {documents.length > 0 && (
+          <div className="zo-table-wrap" style={{ marginTop: 12 }}>
+            <table className="zo-table"><thead><tr><th>Título</th><th>Tipo</th><th>Visible</th><th>Archivo</th><th></th></tr></thead>
+              <tbody>{documents.map(d => (
+                <tr key={d.id}><td>{d.title}</td><td>{DOC_TYPE_LABEL[d.type]}</td><td>{d.visible_to_client ? 'Sí' : 'No'}</td>
+                  <td><a href={d.file_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink">Ver →</a></td>
+                  <td><form action={deleteDocumentAction.bind(null, client.id, d.id)}><ConfirmButton message="¿Borrar este documento?">Borrar</ConfirmButton></form></td></tr>
+              ))}</tbody>
+            </table>
+          </div>
         )}
       </div>
     </>
