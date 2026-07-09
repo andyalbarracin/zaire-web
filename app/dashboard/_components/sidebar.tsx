@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle, FileSignature, Receipt, ChevronLeft,
+  LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle, FileSignature, Receipt, Inbox, ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -65,6 +65,7 @@ export default function Sidebar({ role, defaultCollapsed = false }: { role: 'own
         {OPS.map(it => <Item key={it.href} href={it.href} label={it.label} Icon={it.icon} exact={it.exact} />)}
 
         <div className="zo-nav-section">Comercial</div>
+        <Item href="/dashboard/leads" label="Leads" Icon={Inbox} />
         <Item href="/dashboard/acuerdos" label="Acuerdos" Icon={FileSignature} />
         <Item href="/dashboard/facturas" label="Invoices" Icon={Receipt} />
 
