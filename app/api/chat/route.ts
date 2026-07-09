@@ -3,25 +3,7 @@
 // Last modified: 2026-04-28
 
 import { NextRequest, NextResponse } from 'next/server';
-
-/* ── Rate limiting en memoria ──────────────────────────────────
-   Funciona en instancias persistentes. En Vercel serverless cada
-   cold start resetea el mapa — protección básica pero sin deps extra. */
-const rl = new Map<string, { count: number; reset: number }>();
-const RL_LIMIT  = 20;
-const RL_WINDOW = 60_000; // 1 minuto
-
-function checkRate(ip: string): boolean {
-  const now  = Date.now();
-  const entry = rl.get(ip);
-  if (!entry || now > entry.reset) {
-    rl.set(ip, { count: 1, reset: now + RL_WINDOW });
-    return true;
-  }
-  if (entry.count >= RL_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+import { rateLimit, clientIp, RL_CHAT } from '@/lib/rate-limit';
 
 /* ── Validación de mensajes ──────────────────────────────────── */
 const MAX_MSG_LEN  = 1000;
@@ -97,11 +79,8 @@ LÍMITES:
 - Si no sabés algo: "eso lo charlamos en el diagnóstico".`;
 
 export async function POST(req: NextRequest) {
-  /* Rate limit por IP */
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-          ?? req.headers.get('x-real-ip')
-          ?? 'unknown';
-  if (!checkRate(ip)) {
+  /* Rate limit por IP (Upstash persistente, con fallback in-memory) */
+  if (!(await rateLimit(RL_CHAT, clientIp(req)))) {
     return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 });
   }
 

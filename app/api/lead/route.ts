@@ -9,17 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-
-/* ── Rate limiting ──────────────────────────────────────────── */
-const rl = new Map<string, { count: number; reset: number }>();
-function checkRate(ip: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const e = rl.get(ip);
-  if (!e || now > e.reset) { rl.set(ip, { count: 1, reset: now + windowMs }); return true; }
-  if (e.count >= limit) return false;
-  e.count++;
-  return true;
-}
+import { rateLimit, clientIp, RL_LEAD } from '@/lib/rate-limit';
 
 /* ── Sanitización de campos de texto ───────────────────────── */
 function clean(val: unknown, maxLen = 500): string | null {
@@ -159,10 +149,8 @@ function internalNotification(d: {
 }
 
 export async function POST(req: NextRequest) {
-  /* Rate limit: máx 10 envíos por hora por IP */
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-          ?? req.headers.get('x-real-ip') ?? 'unknown';
-  if (!checkRate(ip, 10, 60 * 60_000)) {
+  /* Rate limit: máx 10 envíos por hora por IP (Upstash persistente, fallback in-memory) */
+  if (!(await rateLimit(RL_LEAD, clientIp(req)))) {
     return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 });
   }
 
