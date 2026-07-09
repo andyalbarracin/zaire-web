@@ -41,3 +41,62 @@
 .zp-alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
 .zp-alert-warn { background: rgba(231,29,10,.1); border: 1px solid #E71D0A; color: #ff8a7d; }
 .zp-alert-ok { background: rgba(34,197,94,.12); border: 1px solid #22c55e; color: #22c55e; }
+
+/* ── Shell con sidebar ─────────────────────────────────────────────────────── */
+.zp-app { display: flex; min-height: 100vh; }
+.zp-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.zp-content { flex: 1; width: 100%; max-width: 1080px; margin: 0 auto; padding: 30px 28px 48px; }
+.zp-footer { border-top: 1px solid #1a1a1a; padding: 16px 28px; text-align: center;
+  font-family: var(--fm, monospace); font-size: 10px; letter-spacing: .06em; color: #5a5a5a; }
+.zp-footer em { color: #FF6A00; font-style: normal; }
+
+/* Sidebar */
+.zp-sidebar { width: 236px; flex-shrink: 0; background: #0a0a0a; border-right: 1px solid #1a1a1a;
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; transition: width .15s ease; }
+.zp-app[data-collapsed="true"] .zp-sidebar { width: 66px; }
+.zp-side-brand { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 20px 18px; border-bottom: 1px solid #161616; }
+.zp-side-brand-txt { font-family: var(--fm, monospace); font-weight: 800; letter-spacing: .14em; font-size: 13px; white-space: nowrap; overflow: hidden; }
+.zp-side-brand-txt em { color: #FF6A00; font-style: normal; }
+.zp-collapse-btn { background: none; border: 1px solid #222; border-radius: 7px; color: #888; cursor: pointer;
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.zp-collapse-btn:hover { color: #fff; border-color: #333; }
+.zp-app[data-collapsed="true"] .zp-collapse-ico { transform: rotate(180deg); }
+.zp-nav-col { display: flex; flex-direction: column; padding: 12px 10px; gap: 2px; flex: 1; overflow-y: auto; }
+.zp-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px;
+  color: #a5a5a5; text-decoration: none; font-size: 13px; white-space: nowrap; }
+.zp-nav-item:hover { background: #151515; color: #fff; }
+.zp-nav-item.active { background: rgba(255,106,0,.14); color: #FF6A00; }
+.zp-nav-ico { width: 18px; height: 18px; flex-shrink: 0; }
+.zp-nav-txt { overflow: hidden; }
+.zp-app[data-collapsed="true"] .zp-nav-txt,
+.zp-app[data-collapsed="true"] .zp-side-brand-txt,
+.zp-app[data-collapsed="true"] .zp-side-foot-txt { display: none; }
+.zp-side-sep { border: none; border-top: 1px solid #161616; margin: 6px 10px; }
+.zp-side-foot { padding: 12px 14px; border-top: 1px solid #161616; display: flex; flex-direction: column; gap: 8px; }
+.zp-side-foot-txt { font-size: 11px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zp-side-foot-lbl { font-family: var(--fm, monospace); font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: #555; }
+.zp-logout { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; width: 100%;
+  background: none; border: 1px solid #222; color: #999; cursor: pointer; font-size: 12px; font-family: inherit; }
+.zp-logout:hover { color: #fff; border-color: #333; }
+
+/* Barra mobile (hamburguesa) */
+.zp-mobilebar { display: none; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid #1a1a1a; position: sticky; top: 0; background: #0d0d0d; z-index: 30; }
+.zp-hamb { background: none; border: 1px solid #222; border-radius: 8px; color: #ddd; cursor: pointer;
+  width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+.zp-overlay { display: none; }
+
+@media (max-width: 860px) {
+  .zp-mobilebar { display: flex; }
+  .zp-sidebar { position: fixed; left: 0; top: 0; z-index: 50; width: 250px !important;
+    transform: translateX(-100%); box-shadow: 0 0 40px rgba(0,0,0,.6); }
+  .zp-app[data-open="true"] .zp-sidebar { transform: translateX(0); }
+  .zp-app[data-open="true"] .zp-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 40; }
+  .zp-app[data-collapsed="true"] .zp-sidebar { width: 250px !important; }
+  .zp-app[data-collapsed="true"] .zp-nav-txt,
+  .zp-app[data-collapsed="true"] .zp-side-brand-txt,
+  .zp-app[data-collapsed="true"] .zp-side-foot-txt { display: block; }
+  .zp-collapse-btn { display: none; }
+  .zp-content { padding: 24px 18px 40px; }
+}

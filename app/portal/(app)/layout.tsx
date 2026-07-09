@@ -1,27 +1,23 @@
-// File: layout.tsx — Shell autenticado del portal. Gate + navegación.
-import Link from 'next/link';
+// File: layout.tsx — Shell autenticado del portal: sidebar colapsable + footer global.
+import { cookies } from 'next/headers';
 import { requirePortalClient } from '@/lib/zaire-ops/portal';
 import { getClient } from '@/lib/zaire-ops/queries';
-import { portalSignOut } from './actions';
-
-const NAV = [
-  ['/portal', 'Inicio'], ['/portal/finanzas', 'Finanzas'], ['/portal/acuerdos', 'Acuerdos'],
-  ['/portal/documentos', 'Documentos'], ['/portal/empresa', 'Mi empresa'], ['/portal/incidencias', 'Incidencias'],
-] as const;
+import { PortalSidebar, PortalMobileBar } from './portal-nav';
 
 export default async function PortalAppLayout({ children }: { children: React.ReactNode }) {
-  const { clientId } = await requirePortalClient();
+  const { clientId, email } = await requirePortalClient();
   const client = await getClient(clientId);
+  const collapsed = (await cookies()).get('zp_sidebar')?.value === 'collapsed';
+  const name = client?.name ?? 'Portal';
+
   return (
-    <div className="zp-shell">
-      <div className="zp-topbar">
-        <div className="zp-brand">ZAIRE <em>·</em> {client?.name ?? 'Portal'}</div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <nav className="zp-nav">{NAV.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}</nav>
-          <form action={portalSignOut}><button className="zp-btn" type="submit">Salir</button></form>
-        </div>
+    <div className="zp-app" data-collapsed={collapsed ? 'true' : 'false'} data-open="false">
+      <PortalSidebar clientName={name} email={email} />
+      <div className="zp-main">
+        <PortalMobileBar clientName={name} />
+        <div className="zp-content">{children}</div>
+        <footer className="zp-footer">© {new Date().getFullYear()} <em>ZAIRE</em> · Intelligent Operations Studio · zairetech.com</footer>
       </div>
-      {children}
     </div>
   );
 }
