@@ -114,6 +114,54 @@ export async function deleteAttachment(id: string): Promise<void> {
   await db().from('zo_attachments').delete().eq('id', id);
 }
 
+// Deriva el path dentro del bucket zo-files a partir de la URL pública.
+function storagePathFromUrl(url: string | null): string | null {
+  if (!url) return null;
+  const marker = '/zo-files/';
+  const i = url.indexOf(marker);
+  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length));
+}
+
+// Libera espacio: borra del storage + de la DB los adjuntos multimedia (imágenes
+// y videos) de una incidencia, dejando el registro de la incidencia intacto.
+// Reutilizable por un mantenimiento programado a futuro. Devuelve cuántos borró.
+export async function freeTicketMedia(ticketId: string): Promise<number> {
+  const admin = db();
+  const { data } = await admin.from('zo_attachments').select('id, file_url, file_type').eq('ticket_id', ticketId);
+  const media = (data ?? []).filter(a => {
+    const t = (a as { file_type: string | null }).file_type ?? '';
+    return t.startsWith('image/') || t.startsWith('video/');
+  }) as { id: string; file_url: string }[];
+  if (media.length === 0) return 0;
+  const paths = media.map(m => storagePathFromUrl(m.file_url)).filter((p): p is string => !!p);
+  if (paths.length) await admin.storage.from('zo-files').remove(paths);
+  await admin.from('zo_attachments').delete().in('id', media.map(m => m.id));
+  return media.length;
+}
+
+// Libera media de TODAS las incidencias resueltas/cerradas (acción masiva / cron).
+export async function freeResolvedTicketsMedia(): Promise<{ tickets: number; files: number }> {
+  const { data } = await db().from('zo_tickets').select('id').in('status', ['resuelta', 'cerrada']);
+  const ids = (data ?? []).map(t => (t as { id: string }).id);
+  let files = 0, tickets = 0;
+  for (const id of ids) {
+    const n = await freeTicketMedia(id);
+    if (n > 0) { files += n; tickets++; }
+  }
+  return { tickets, files };
+}
+
+// Borra una incidencia por completo: primero sus archivos del storage, luego la
+// fila (los adjuntos/comentarios se borran en cascada por FK).
+export async function deleteTicket(ticketId: string): Promise<void> {
+  const admin = db();
+  const { data } = await admin.from('zo_attachments').select('file_url').eq('ticket_id', ticketId);
+  const paths = (data ?? []).map(a => storagePathFromUrl((a as { file_url: string }).file_url)).filter((p): p is string => !!p);
+  if (paths.length) await admin.storage.from('zo-files').remove(paths);
+  const { error } = await admin.from('zo_tickets').delete().eq('id', ticketId);
+  if (error) throw new Error(error.message);
+}
+
 // Sube un archivo de incidencia al bucket público zo-files.
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
 

@@ -11,6 +11,7 @@ import Avatar from '@/app/dashboard/_components/avatar';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
 import {
   updateTicketAction, logTimeAction, addCommentAction, uploadAttachmentAction, deleteAttachmentAction, notifyClientAction,
+  deleteTicketAction, freeTicketMediaAction,
 } from '../actions';
 import {
   STATUS_LABEL, STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR,
@@ -52,6 +53,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <form action={notifyClientAction.bind(null, ticket.id)}><button className="zo-btn zo-btn-sm" type="submit">Notificar al cliente</button></form>
           <a href={`/dashboard/tickets-print?id=${ticket.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Exportar</button></a>
+          <form action={deleteTicketAction.bind(null, ticket.id)}><ConfirmButton message="¿Eliminar esta incidencia y todos sus archivos? No se puede deshacer.">Eliminar</ConfirmButton></form>
           <Link href="/dashboard/tickets"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
         </div>
       </div>
@@ -68,7 +70,14 @@ export default async function TicketDetailPage({ params, searchParams }: { param
 
       {/* Adjuntos */}
       <div className="zo-card zo-section-gap">
-        <div className="zo-card-title">// ADJUNTOS · {attachments.length}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div className="zo-card-title" style={{ marginBottom: 0 }}>// ADJUNTOS · {attachments.length}</div>
+          {attachments.some(a => (a.file_type ?? '').startsWith('image/') || (a.file_type ?? '').startsWith('video/')) && (
+            <form action={freeTicketMediaAction.bind(null, ticket.id)}>
+              <ConfirmButton message="¿Liberar la media (imágenes/videos) de esta incidencia? Se borran los archivos del almacenamiento para ahorrar espacio; la incidencia y sus datos quedan.">Liberar media</ConfirmButton>
+            </form>
+          )}
+        </div>
         <form action={uploadAttachmentAction.bind(null, ticket.id)} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: attachments.length ? 16 : 0 }}>
           <input className="zo-input" name="file" type="file" style={{ flex: 1 }} />
           <button className="zo-btn zo-btn-sm" type="submit">Subir</button>

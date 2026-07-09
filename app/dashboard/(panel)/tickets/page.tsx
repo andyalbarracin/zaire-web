@@ -4,6 +4,8 @@ import { listTickets } from '@/lib/zaire-ops/queries';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import Avatar from '@/app/dashboard/_components/avatar';
 import RowLink from '@/app/dashboard/_components/row-link';
+import ConfirmButton from '@/app/dashboard/_components/confirm-button';
+import { freeResolvedMediaAction } from './actions';
 import {
   STATUS_LABEL, STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR,
   TICKET_STATUSES, minutesToHours,
@@ -11,8 +13,8 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ status?: string; assigned?: string }> }) {
-  const { status, assigned } = await searchParams;
+export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ status?: string; assigned?: string; freed?: string; tk?: string }> }) {
+  const { status, assigned, freed, tk } = await searchParams;
   const me = await getMyProfile();
   const mine = assigned === 'me';
   const tickets = await listTickets({ status, assignedTo: mine ? me?.id : undefined });
@@ -21,8 +23,13 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
     <>
       <div className="zo-pagehead">
         <div><div className="zo-lbl">// OPERACIÓN</div><h1 className="zo-h1">Incidencias</h1><div className="zo-sub">{tickets.length} incidencia(s)</div></div>
-        <Link href="/dashboard/tickets/nuevo"><button className="zo-btn zo-btn-primary">+ Nueva incidencia</button></Link>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <form action={freeResolvedMediaAction}><ConfirmButton message="¿Liberar la media (imágenes/videos) de todas las incidencias resueltas y cerradas? Se borran esos archivos del almacenamiento para ahorrar espacio; los registros quedan.">Liberar media resueltas</ConfirmButton></form>
+          <Link href="/dashboard/tickets/nuevo"><button className="zo-btn zo-btn-primary">+ Nueva incidencia</button></Link>
+        </div>
       </div>
+
+      {freed !== undefined && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Media liberada: {freed} archivo(s) de {tk ?? 0} incidencia(s) resuelta(s). ✓</div>}
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
         <Link href="/dashboard/tickets"><span className="zo-chip" style={!status && !mine ? { background: '#FF6A00', color: '#111' } : {}}>Todas</span></Link>

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import {
   createTicket, updateTicket, getTicket, getClient, createTimeEntry,
   addComment, uploadTicketFile, addAttachment, deleteAttachment, profileName,
+  deleteTicket, freeTicketMedia, freeResolvedTicketsMedia,
 } from '@/lib/zaire-ops/queries';
 import { getMyProfile, getProfileById } from '@/lib/zaire-ops/profiles';
 import { requireUser } from '@/lib/zaire-ops/auth';
@@ -168,4 +169,25 @@ export async function logTimeAction(ticketId: string, clientId: string, projectI
     entry_date: sReq(fd, 'entry_date') || new Date().toISOString().slice(0, 10),
   });
   redirect(`/dashboard/tickets/${ticketId}`);
+}
+
+// Borra una incidencia por completo (incluye sus archivos del storage).
+export async function deleteTicketAction(ticketId: string) {
+  await requireUser();
+  await deleteTicket(ticketId);
+  redirect('/dashboard/tickets');
+}
+
+// Libera la media (imágenes/videos) de una incidencia para ahorrar espacio.
+export async function freeTicketMediaAction(ticketId: string) {
+  await requireUser();
+  await freeTicketMedia(ticketId);
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+}
+
+// Libera la media de todas las incidencias resueltas/cerradas (acción masiva).
+export async function freeResolvedMediaAction() {
+  await requireUser();
+  const { tickets, files } = await freeResolvedTicketsMedia();
+  redirect(`/dashboard/tickets?freed=${files}&tk=${tickets}`);
 }
