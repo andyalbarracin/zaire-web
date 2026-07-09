@@ -1,0 +1,43 @@
+/* Portal de Clientes — estilos namespaced zp-*. Aislado del sitio y de Ops. */
+.zp-root { min-height: 100vh; background: #0d0d0d; color: #eaeaea;
+  font-family: var(--fb, system-ui, sans-serif); }
+.zp-shell { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+.zp-topbar { display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0; border-bottom: 1px solid #1c1c1c; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.zp-brand { font-family: var(--fm, monospace); font-weight: 800; letter-spacing: .15em; }
+.zp-brand em { color: #FF6A00; font-style: normal; }
+.zp-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+.zp-nav a { font-family: var(--fm, monospace); font-size: 11px; letter-spacing: .06em;
+  text-transform: uppercase; color: #aaa; padding: 8px 12px; border-radius: 8px; text-decoration: none; }
+.zp-nav a:hover { background: #181818; color: #fff; }
+.zp-nav a.active { background: #FF6A00; color: #111; }
+.zp-h1 { font-size: 26px; font-weight: 800; margin: 0 0 4px; }
+.zp-lbl { font-family: var(--fm, monospace); font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: #666; margin-bottom: 6px; }
+.zp-sub { color: #888; font-size: 13px; margin-bottom: 24px; }
+.zp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.zp-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px 20px; }
+.zp-card-n { font-size: 24px; font-weight: 800; }
+.zp-card-l { font-family: var(--fm, monospace); font-size: 10px; letter-spacing: .08em;
+  text-transform: uppercase; color: #888; margin-top: 4px; }
+.zp-table-wrap { overflow-x: auto; border: 1px solid #1e1e1e; border-radius: 12px; }
+.zp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.zp-table th { text-align: left; font-family: var(--fm, monospace); font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: #777; padding: 12px 14px; border-bottom: 1px solid #1e1e1e; }
+.zp-table td { padding: 12px 14px; border-bottom: 1px solid #161616; }
+.zp-chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--fm, monospace);
+  font-size: 9px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px;
+  border-radius: 20px; background: #1d1d1d; color: #bbb; }
+.zp-dot { width: 7px; height: 7px; border-radius: 50%; }
+.zp-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--fm, monospace);
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding: 10px 18px; border-radius: 8px;
+  cursor: pointer; border: 1px solid #2c2c2c; background: #181818; color: #fff; text-decoration: none; }
+.zp-btn-primary { background: #FF6A00; border-color: #FF6A00; color: #111; font-weight: 600; }
+.zp-input, .zp-select, .zp-textarea { width: 100%; background: #101010; border: 1px solid #2a2a2a;
+  border-radius: 8px; padding: 10px 12px; color: #eee; font-size: 14px; }
+.zp-field { margin-bottom: 14px; }
+.zp-flabel { display: block; font-family: var(--fm, monospace); font-size: 10px; letter-spacing: .08em;
+  text-transform: uppercase; color: #999; margin-bottom: 6px; }
+.zp-alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+.zp-alert-warn { background: rgba(231,29,10,.1); border: 1px solid #E71D0A; color: #ff8a7d; }
+.zp-alert-ok { background: rgba(34,197,94,.12); border: 1px solid #22c55e; color: #22c55e; }
