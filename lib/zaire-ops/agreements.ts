@@ -159,8 +159,10 @@ Cliente: ${p.clientName ?? '[NOMBRE / RAZÓN SOCIAL]'}
 Firma / aceptación electrónica: __________________`;
 }
 
-export async function listAgreements(): Promise<ZoAgreement[]> {
-  const { data } = await db().from('zo_agreements').select('*, client:zo_clients(name)').order('created_at', { ascending: false });
+export async function listAgreements(clientId?: string): Promise<ZoAgreement[]> {
+  let q = db().from('zo_agreements').select('*, client:zo_clients(name)').order('created_at', { ascending: false });
+  if (clientId) q = q.eq('client_id', clientId);
+  const { data } = await q;
   return (data ?? []) as ZoAgreement[];
 }
 
