@@ -4,10 +4,13 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { Resend } from 'resend';
 import { requirePortalClient, logPortalEvent } from '@/lib/zaire-ops/portal';
-import { createTicket, getClient } from '@/lib/zaire-ops/queries';
-import { buildPortalTicketEmail } from '@/lib/zaire-ops/portal-email';
+import { createTicket, getClient, uploadTicketFile, addAttachment } from '@/lib/zaire-ops/queries';
+import { buildPortalTicketEmail, type PortalTicketAttachment } from '@/lib/zaire-ops/portal-email';
 import { rateLimit, RL_LEAD } from '@/lib/rate-limit';
 import type { TicketPriority } from '@/lib/zaire-ops/types';
+
+const MAX_FILE = 50 * 1024 * 1024; // 50MB por archivo
+const okMedia = (t: string) => t.startsWith('image/') || t.startsWith('video/');
 
 const clean = (v: FormDataEntryValue | null, max = 2000) => String(v ?? '').trim().slice(0, max).replace(/[<>]/g, '');
 
@@ -33,13 +36,25 @@ export async function createPortalTicketAction(_prev: { error?: string }, fd: Fo
 
   await logPortalEvent({ clientId, email, event: 'create_ticket', entityType: 'ticket', entityId: ticket.id });
 
+  // Adjuntos: solo imágenes y videos, hasta 50MB cada uno. Los inválidos se ignoran.
+  const attachments: PortalTicketAttachment[] = [];
+  const files = fd.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
+  for (const f of files) {
+    if (!okMedia(f.type) || f.size > MAX_FILE) continue;
+    const up = await uploadTicketFile(ticket.id, f);
+    if (up) {
+      await addAttachment({ ticket_id: ticket.id, file_url: up.url, file_name: up.name, file_type: up.type });
+      attachments.push({ name: up.name, type: up.type, url: up.url });
+    }
+  }
+
   if (process.env.RESEND_API_KEY) {
     try {
       const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
       const fromDomain = site.replace(/^https?:\/\//, '').replace(/\/$/, '');
       const notify = (process.env.NOTIFY_EMAILS || process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com').split(',').map(e => e.trim()).filter(Boolean);
       const { subject, html } = buildPortalTicketEmail({
-        clientName: client?.name ?? 'Cliente', ticketNumber: ticket.ticket_number ?? '', title, description, priority, email,
+        clientName: client?.name ?? 'Cliente', ticketNumber: ticket.ticket_number ?? '', title, description, priority, email, attachments,
       });
       await new Resend(process.env.RESEND_API_KEY).emails.send({ from: `ZAIRE Portal <noreply@${fromDomain}>`, to: notify, subject, html });
     } catch { /* el ticket ya quedó creado; el email no bloquea */ }
