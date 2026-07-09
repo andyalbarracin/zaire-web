@@ -108,6 +108,12 @@ export default function ContactoPage() {
                   hola@zairetech.com
                 </a>
               </div>
+
+              <div style={{ marginTop: 16 }}>
+                <a href="/portal/login" style={{ fontFamily: 'var(--fm)', fontSize: 12, letterSpacing: '.04em', color: '#888', textDecoration: 'underline' }}>
+                  ¿Ya sos cliente? Entrá a tu portal →
+                </a>
+              </div>
             </div>
 
             {/* Formulario */}
