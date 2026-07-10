@@ -16,10 +16,14 @@ export interface ZoInvoice {
   concept: string;
   amount: number;
   currency: string;
-  status: InvoiceStatus;
+  status: InvoiceStatus;          // eje de PAGO (pendiente/pagada/anulada)
   issue_date: string;
   due_date: string | null;
   notes: string | null;
+  invoiced: boolean;              // eje de FACTURACIÓN (fiscal ARCA)
+  invoice_file_url: string | null; // archivo de la factura fiscal
+  invoiced_at: string | null;     // fecha de facturación
+  fiscal_number: string | null;   // nº de factura fiscal
   created_at: string;
   updated_at: string;
   client?: { name: string } | null;
@@ -77,6 +81,11 @@ export function liveInvoiceStatus(i: ZoInvoice): { label: string; color: string 
   return { label: 'Pendiente', color: '#FFC107' };
 }
 
+// Eje de facturación (independiente del pago).
+export function facturacionStatus(i: ZoInvoice): { label: string; color: string } {
+  return i.invoiced ? { label: 'Facturada', color: '#22c55e' } : { label: 'Sin facturar', color: '#9ca3af' };
+}
+
 export const money = (n?: number | null, cur = 'USD') => `${cur} ${Number(n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`;
 
 async function nextInvoiceNumber(): Promise<string> {
@@ -129,21 +138,39 @@ export async function listPayments(invoiceId: string): Promise<ZoPayment[]> {
   return (data ?? []) as ZoPayment[];
 }
 
+// Recalcula el estado de PAGO de una solicitud según la suma de sus pagos.
+// No toca el eje de facturación (invoiced).
+export async function recalcInvoiceStatus(invoiceId: string): Promise<void> {
+  const inv = await getInvoice(invoiceId);
+  if (!inv || inv.status === 'anulada') return;
+  const status: InvoiceStatus = inv.amount > 0 && (inv.paid ?? 0) >= inv.amount ? 'pagada' : 'pendiente';
+  if (status !== inv.status) await updateInvoice(inv.id, { status });
+}
+
 export async function addPayment(input: Partial<ZoPayment>): Promise<void> {
   const { error } = await db().from('zo_payments').insert(input);
   if (error) throw new Error(error.message);
-  // Recalcular estado de la factura.
-  if (input.invoice_id) {
-    const inv = await getInvoice(input.invoice_id);
-    if (inv && inv.status !== 'anulada') {
-      const status: InvoiceStatus = (inv.paid ?? 0) >= inv.amount ? 'pagada' : 'pendiente';
-      if (status !== inv.status) await updateInvoice(inv.id, { status });
-    }
-  }
+  if (input.invoice_id) await recalcInvoiceStatus(input.invoice_id);
 }
 
-// Sube un archivo del pago a Storage. `kind` separa comprobante de factura.
-export async function uploadPaymentFile(invoiceId: string, file: File, kind: 'receipts' | 'invoices' = 'receipts'): Promise<string | null> {
+export async function editPayment(id: string, patch: Partial<ZoPayment>): Promise<void> {
+  const { data: before } = await db().from('zo_payments').select('invoice_id').eq('id', id).single();
+  const { error } = await db().from('zo_payments').update(patch).eq('id', id);
+  if (error) throw new Error(error.message);
+  const invId = patch.invoice_id ?? (before as { invoice_id: string | null } | null)?.invoice_id;
+  if (invId) await recalcInvoiceStatus(invId);
+}
+
+export async function deletePayment(id: string): Promise<void> {
+  const { data } = await db().from('zo_payments').select('invoice_id').eq('id', id).single();
+  const { error } = await db().from('zo_payments').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  const invId = (data as { invoice_id: string | null } | null)?.invoice_id;
+  if (invId) await recalcInvoiceStatus(invId);
+}
+
+// Sube un archivo a Storage bajo una carpeta por `kind` (receipts, fiscal, …).
+export async function uploadPaymentFile(invoiceId: string, file: File, kind = 'receipts'): Promise<string | null> {
   if (!file || file.size === 0 || file.size > 50 * 1024 * 1024) return null;
   const admin = db();
   const safe = file.name.replace(/[^\w.\-]/g, '_');

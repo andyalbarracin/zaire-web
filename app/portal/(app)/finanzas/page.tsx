@@ -1,6 +1,6 @@
 // File: page.tsx — Finanzas del cliente: facturas, saldo, mora. Solo lectura.
 import { requirePortalClient, logPortalEvent } from '@/lib/zaire-ops/portal';
-import { listInvoices, liveInvoiceStatus, isOverdue, daysLate, money } from '@/lib/zaire-ops/billing';
+import { listInvoices, liveInvoiceStatus, facturacionStatus, isOverdue, daysLate, money } from '@/lib/zaire-ops/billing';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +22,9 @@ export default async function PortalFinanzas() {
         <div className="zp-table-wrap"><div style={{ padding: 24, color: '#888' }}>Todavía no hay facturas.</div></div>
       ) : (
         <div className="zp-table-wrap"><table className="zp-table">
-          <thead><tr><th>Número</th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Estado</th><th>Saldo</th><th>PDF</th></tr></thead>
+          <thead><tr><th>Número</th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Estado</th><th>Saldo</th><th>Solicitud</th><th>Factura</th></tr></thead>
           <tbody>{invoices.map(i => {
-            const st = liveInvoiceStatus(i); const saldoI = i.amount - (i.paid ?? 0);
+            const st = liveInvoiceStatus(i); const fst = facturacionStatus(i); const saldoI = i.amount - (i.paid ?? 0);
             const mora = saldoI > 0 && i.due_date ? daysLate(i.due_date) : 0;
             return (
               <tr key={i.id}>
@@ -35,6 +35,9 @@ export default async function PortalFinanzas() {
                 <td><span className="zp-chip"><span className="zp-dot" style={{ background: st.color }} />{st.label}</span></td>
                 <td style={{ fontFamily: 'var(--fm,monospace)' }}>{i.status === 'anulada' ? '—' : money(saldoI, i.currency)}</td>
                 <td><a className="zp-chip" href={`/portal/finanzas/${i.id}/print`} target="_blank" rel="noopener noreferrer">Ver →</a></td>
+                <td>{i.invoice_file_url
+                  ? <a className="zp-chip" href={i.invoice_file_url} target="_blank" rel="noopener noreferrer" style={{ background: 'rgba(34,197,94,.14)', color: '#22c55e' }}>Descargar →</a>
+                  : <span className="zp-chip" title={fst.label}><span className="zp-dot" style={{ background: fst.color }} />{i.invoiced ? 'Facturada' : 'Sin facturar'}</span>}</td>
               </tr>
             );
           })}</tbody>

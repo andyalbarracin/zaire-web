@@ -67,7 +67,7 @@ export default function Sidebar({ role, defaultCollapsed = false }: { role: 'own
         <div className="zo-nav-section">Comercial</div>
         <Item href="/dashboard/leads" label="Leads" Icon={Inbox} />
         <Item href="/dashboard/acuerdos" label="Acuerdos" Icon={FileSignature} />
-        <Item href="/dashboard/facturas" label="Invoices" Icon={Receipt} />
+        <Item href="/dashboard/facturas" label="Finanzas" Icon={Receipt} />
 
         <div className="zo-nav-section">Configuración</div>
         {(role === 'owner' || role === 'admin') && <Item href="/dashboard/equipo" label="Equipo" Icon={UserCog} />}

@@ -1,6 +1,6 @@
-// File: page.tsx — Invoices / solicitudes de pago (lista + estado de cuenta + cuentas por cobrar)
+// File: page.tsx — Finanzas / solicitudes de pago (lista + estado de cuenta + cuentas por cobrar)
 import Link from 'next/link';
-import { listInvoices, clientAccount, receivables, liveInvoiceStatus, isOverdue, money } from '@/lib/zaire-ops/billing';
+import { listInvoices, clientAccount, receivables, liveInvoiceStatus, facturacionStatus, isOverdue, money } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
 import RowLink from '@/app/dashboard/_components/row-link';
 
@@ -51,10 +51,10 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       <div className="zo-pagehead">
         <div>
           <div className="zo-lbl">// COMERCIAL</div>
-          <h1 className="zo-h1">Invoices</h1>
+          <h1 className="zo-h1">Finanzas</h1>
           <div className="zo-sub">{cli ? `${cli.name} · ` : ''}{filtered.length} solicitud(es) de pago</div>
         </div>
-        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nuevo invoice</button></Link>
+        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nueva solicitud</button></Link>
       </div>
 
       {account && (
@@ -92,12 +92,13 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       </div>
 
       {filtered.length === 0 ? (
-        <div className="zo-table-wrap"><div className="zo-empty">{term ? 'Sin resultados para tu búsqueda.' : <>Sin invoices. <Link href="/dashboard/facturas/nuevo" style={{ color: '#FF6A00' }}>Creá el primero →</Link></>}</div></div>
+        <div className="zo-table-wrap"><div className="zo-empty">{term ? 'Sin resultados para tu búsqueda.' : <>Sin solicitudes de pago. <Link href="/dashboard/facturas/nuevo" style={{ color: '#FF6A00' }}>Creá la primera →</Link></>}</div></div>
       ) : (
         <div className="zo-table-wrap"><table className="zo-table">
-          <thead><tr><th>Número</th><th>Cliente</th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Estado</th><th>Saldo</th></tr></thead>
+          <thead><tr><th>Número</th><th>Cliente</th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Pago</th><th>Fact.</th><th>Saldo</th></tr></thead>
           <tbody>{pageItems.map(i => {
             const st = liveInvoiceStatus(i);
+            const fst = facturacionStatus(i);
             const saldo = i.amount - (i.paid ?? 0);
             return (
               <RowLink key={i.id} href={`/dashboard/facturas/${i.id}`}>
@@ -107,6 +108,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
                 <td className="zo-mono" style={isOverdue(i) ? { color: '#E71D0A' } : undefined}>{i.due_date ?? '—'}</td>
                 <td className="zo-mono">{money(i.amount, i.currency)}</td>
                 <td><span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.label}</span></td>
+                <td><span className="zo-chip" title={fst.label}><span className="zo-dot" style={{ background: fst.color }} />{i.invoiced ? 'Sí' : 'No'}</span></td>
                 <td className="zo-mono">{i.status === 'anulada' ? '—' : money(saldo, i.currency)}</td>
               </RowLink>
             );

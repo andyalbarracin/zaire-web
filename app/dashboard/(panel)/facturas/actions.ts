@@ -3,10 +3,10 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
-import { createInvoice, updateInvoice, addPayment, uploadPaymentFile, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
+import { createInvoice, updateInvoice, addPayment, editPayment, deletePayment, uploadPaymentFile, getInvoice, buildInvoiceEmailHtml } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { s, sReq, nN, actionError, type FormState } from '@/lib/zaire-ops/form';
+import { s, sReq, nN, b, actionError, type FormState } from '@/lib/zaire-ops/form';
 
 function parseInvoice(fd: FormData) {
   return {
@@ -106,11 +106,8 @@ export async function addPaymentAction(invoiceId: string, clientId: string, fd: 
 
   try {
     const receiptFile = fd.get('receipt') as File | null;
-    const invoiceFile = fd.get('invoice_file') as File | null;
     let receipt_url: string | null = null;
-    let invoice_file_url: string | null = null;
     if (receiptFile && typeof receiptFile === 'object' && receiptFile.size > 0) receipt_url = await uploadPaymentFile(invoiceId, receiptFile, 'receipts');
-    if (invoiceFile && typeof invoiceFile === 'object' && invoiceFile.size > 0) invoice_file_url = await uploadPaymentFile(invoiceId, invoiceFile, 'invoices');
 
     await addPayment({
       invoice_id: invoiceId,
@@ -121,11 +118,64 @@ export async function addPaymentAction(invoiceId: string, clientId: string, fd: 
       method: s(fd, 'method'),
       bank: s(fd, 'bank'),
       receipt_url,
-      invoice_file_url,
       notes: s(fd, 'notes'),
     });
   } catch (e) {
     redirect(`${base}?err=${encodeURIComponent(actionError(e).error ?? 'No se pudo registrar el pago.')}`);
   }
   revalidatePath(base);
+}
+
+// Edita un pago existente (fecha/monto/método/banco/notas + reemplazo opcional del comprobante).
+export async function editPaymentAction(paymentId: string, invoiceId: string, fd: FormData) {
+  await requireUser();
+  const base = `/dashboard/facturas/${invoiceId}`;
+  const amount = nN(fd, 'amount') ?? 0;
+  if (!(amount > 0)) redirect(`${base}?err=${encodeURIComponent('El monto del pago debe ser mayor a 0.')}`);
+  try {
+    const patch: Record<string, unknown> = {
+      amount,
+      paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
+      method: s(fd, 'method'),
+      bank: s(fd, 'bank'),
+      notes: s(fd, 'notes'),
+    };
+    const receiptFile = fd.get('receipt') as File | null;
+    if (receiptFile && typeof receiptFile === 'object' && receiptFile.size > 0) {
+      const url = await uploadPaymentFile(invoiceId, receiptFile, 'receipts');
+      if (url) patch.receipt_url = url;
+    }
+    await editPayment(paymentId, patch);
+  } catch (e) {
+    redirect(`${base}?err=${encodeURIComponent(actionError(e).error ?? 'No se pudo guardar el pago.')}`);
+  }
+  redirect(`${base}?psaved=1`);
+}
+
+export async function deletePaymentAction(paymentId: string, invoiceId: string) {
+  await requireUser();
+  await deletePayment(paymentId);
+  redirect(`/dashboard/facturas/${invoiceId}?pdeleted=1`);
+}
+
+// Actualiza el eje de FACTURACIÓN de la solicitud (facturada, factura fiscal, fecha, nº).
+export async function setInvoicingAction(invoiceId: string, fd: FormData) {
+  await requireUser();
+  const base = `/dashboard/facturas/${invoiceId}`;
+  try {
+    const patch: Record<string, unknown> = {
+      invoiced: b(fd, 'invoiced'),
+      invoiced_at: s(fd, 'invoiced_at'),
+      fiscal_number: s(fd, 'fiscal_number'),
+    };
+    const file = fd.get('invoice_file') as File | null;
+    if (file && typeof file === 'object' && file.size > 0) {
+      const url = await uploadPaymentFile(invoiceId, file, 'fiscal');
+      if (url) patch.invoice_file_url = url;
+    }
+    await updateInvoice(invoiceId, patch);
+  } catch (e) {
+    redirect(`${base}?err=${encodeURIComponent(actionError(e).error ?? 'No se pudo guardar la facturación.')}`);
+  }
+  redirect(`${base}?fsaved=1`);
 }
