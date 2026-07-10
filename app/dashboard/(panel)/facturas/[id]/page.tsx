@@ -45,22 +45,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
             {moraActual > 0 && <span className="zo-chip" style={{ background: 'rgba(231,29,10,.14)', color: '#ff6b5b' }}><span className="zo-dot" style={{ background: '#E71D0A' }} />{moraActual} día{moraActual === 1 ? '' : 's'} de mora</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {activa && (
-            <SendInvoiceButton
-              action={sendInvoiceAction.bind(null, invoice.id)}
-              clientEmail={client?.email ?? null}
-              clientName={invoice.client?.name ?? ''}
-              number={invoice.number ?? '—'}
-              concept={invoice.concept}
-              dueDate={invoice.due_date}
-              amountLabel={money(invoice.amount, invoice.currency)}
-              saldoLabel={money(saldo, invoice.currency)}
-            />
-          )}
-          <a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Imprimir / PDF</button></a>
-          <Link href={`/dashboard/facturas?client=${invoice.client_id}`}><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
-        </div>
+        <Link href={`/dashboard/facturas?client=${invoice.client_id}`}><button className="zo-btn zo-back">← Volver</button></Link>
       </div>
 
       {sent && okBanner('Solicitud de pago enviada al cliente por email. ✓')}
@@ -69,25 +54,48 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
       {fsaved && okBanner('Facturación actualizada. ✓')}
       {err && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(231,29,10,.1)', border: '1px solid #E71D0A', color: '#ff6b5b', fontSize: 13 }}>{err}</div>}
 
-      <div className="zo-kpis c3">
-        <div className="zo-kpi"><div className="zo-kpi-n">{money(invoice.amount, invoice.currency)}</div><div className="zo-kpi-l">Monto</div></div>
-        <div className="zo-kpi"><div className="zo-kpi-n">{money(paid, invoice.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
-        <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
-      </div>
+      {/* KPIs stack (cuando está anulada, a lo ancho) */}
+      {!activa && (
+        <div className="zo-kpis c3">
+          <div className="zo-kpi"><div className="zo-kpi-n">{money(invoice.amount, invoice.currency)}</div><div className="zo-kpi-l">Monto</div></div>
+          <div className="zo-kpi"><div className="zo-kpi-n">{money(paid, invoice.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
+          <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
+        </div>
+      )}
 
-      {/* 1 ── GENERAR INVOICE ─────────────────────────────────── */}
+      {/* 1 ── GENERAR INVOICE (izq) + KPIs (der) ──────────────── */}
       {activa && (
-        <div className="zo-card">
-          <div className="zo-card-title">// GENERAR INVOICE</div>
-          <div className="zo-sub" style={{ fontSize: 12, marginBottom: 14 }}>Definí los datos de la solicitud de pago. Con “Imprimir / PDF” generás el documento.</div>
-          <FormShell
-            action={updateInvoiceAction.bind(null, invoice.id)}
-            submitLabel="Guardar cambios"
-            extra={<a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button type="button" className="zo-btn">Imprimir / PDF</button></a>}
-          >
-            <InvoiceFields invoice={invoice} clients={clients} />
-          </FormShell>
-          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><ConfirmButton message="¿Anular esta solicitud? Ya no se podrá cobrar.">Anular solicitud</ConfirmButton></form>
+        <div className="zo-2col">
+          <div className="zo-card">
+            <div className="zo-card-title">// GENERAR INVOICE</div>
+            <div className="zo-sub" style={{ fontSize: 12, marginBottom: 14 }}>Definí los datos de la solicitud de pago. Con “Imprimir / PDF” generás el documento.</div>
+            <FormShell
+              action={updateInvoiceAction.bind(null, invoice.id)}
+              submitLabel="Guardar cambios"
+              extra={<a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button type="button" className="zo-btn">Imprimir / PDF</button></a>}
+            >
+              <InvoiceFields invoice={invoice} clients={clients} />
+            </FormShell>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
+              <SendInvoiceButton
+                action={sendInvoiceAction.bind(null, invoice.id)}
+                clientEmail={client?.email ?? null}
+                clientName={invoice.client?.name ?? ''}
+                number={invoice.number ?? '—'}
+                concept={invoice.concept}
+                dueDate={invoice.due_date}
+                amountLabel={money(invoice.amount, invoice.currency)}
+                saldoLabel={money(saldo, invoice.currency)}
+              />
+              <form action={anularInvoiceAction.bind(null, invoice.id)}><ConfirmButton message="¿Anular esta solicitud? Ya no se podrá cobrar.">Anular solicitud</ConfirmButton></form>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="zo-kpi"><div className="zo-kpi-n">{money(invoice.amount, invoice.currency)}</div><div className="zo-kpi-l">Monto</div></div>
+            <div className="zo-kpi"><div className="zo-kpi-n">{money(paid, invoice.currency)}</div><div className="zo-kpi-l">Pagado</div></div>
+            <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
+          </div>
         </div>
       )}
 

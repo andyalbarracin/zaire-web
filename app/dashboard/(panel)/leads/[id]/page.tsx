@@ -61,7 +61,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <div style={{ display: 'flex', gap: 8 }}>
           <a href={`mailto:${lead.email}`}><button className="zo-btn zo-btn-sm" type="button">Responder email</button></a>
           {waHref && <a href={waHref} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">WhatsApp</button></a>}
-          <Link href="/dashboard/leads"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+          <Link href="/dashboard/leads"><button className="zo-btn zo-back">← Volver</button></Link>
         </div>
       </div>
 

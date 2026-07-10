@@ -13,7 +13,7 @@ export default async function NuevoAcuerdoPage() {
     <>
       <div className="zo-pagehead">
         <div><div className="zo-lbl">// COMERCIAL</div><h1 className="zo-h1">Nuevo acuerdo</h1></div>
-        <Link href="/dashboard/acuerdos"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+        <Link href="/dashboard/acuerdos"><button className="zo-btn zo-back">← Volver</button></Link>
       </div>
       {clients.length === 0 ? (
         <div className="zo-card"><div className="zo-empty">Creá un cliente primero. <Link href="/dashboard/clientes/nuevo" style={{ color: '#FF6A00' }}>Nuevo cliente →</Link></div></div>

@@ -35,7 +35,7 @@ export default async function AgreementDetailPage({ params, searchParams }: { pa
             {a.plan && <span className="zo-chip">{a.plan}</span>}
           </div>
         </div>
-        <Link href="/dashboard/acuerdos"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+        <Link href="/dashboard/acuerdos"><button className="zo-btn zo-back">← Volver</button></Link>
       </div>
 
       {sent && <div style={{ padding: '10px 14px', borderRadius: 6, marginBottom: 16, background: 'rgba(34,197,94,.12)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13 }}>Acuerdo enviado al cliente por email. ✓ Ya figura como “enviado” y aparece en su portal.</div>}

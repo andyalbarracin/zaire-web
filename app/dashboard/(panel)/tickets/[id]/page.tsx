@@ -54,7 +54,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
           <form action={notifyClientAction.bind(null, ticket.id)}><button className="zo-btn zo-btn-sm" type="submit">Notificar al cliente</button></form>
           <a href={`/dashboard/tickets-print?id=${ticket.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Exportar</button></a>
           <form action={deleteTicketAction.bind(null, ticket.id)}><ConfirmButton message="¿Eliminar esta incidencia y todos sus archivos? No se puede deshacer.">Eliminar</ConfirmButton></form>
-          <Link href="/dashboard/tickets"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+          <Link href="/dashboard/tickets"><button className="zo-btn zo-back">← Volver</button></Link>
         </div>
       </div>
 

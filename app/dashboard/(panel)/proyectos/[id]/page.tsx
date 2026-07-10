@@ -25,7 +25,7 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
           <h1 className="zo-h1">{project.name}</h1>
           <div className="zo-sub">{project.client?.name} · {project.type}{project.phase ? ` · ${project.phase}` : ''}</div>
         </div>
-        <Link href="/dashboard/proyectos"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+        <Link href="/dashboard/proyectos"><button className="zo-btn zo-back">← Volver</button></Link>
       </div>
 
       <div className="zo-card">

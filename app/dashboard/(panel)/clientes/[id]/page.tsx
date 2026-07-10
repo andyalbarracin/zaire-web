@@ -37,7 +37,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
         <div style={{ display: 'flex', gap: 8 }}>
           <Link href={`/dashboard/facturas?client=${client.id}`}><button className="zo-btn zo-btn-sm">Invoices</button></Link>
           <Link href={`/dashboard/reportes?client=${client.id}`}><button className="zo-btn zo-btn-sm">Reporte</button></Link>
-          <Link href="/dashboard/clientes"><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
+          <Link href="/dashboard/clientes"><button className="zo-btn zo-back">← Volver</button></Link>
         </div>
       </div>
 
