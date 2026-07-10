@@ -28,12 +28,12 @@ export default async function PortalFinanzas() {
             const mora = saldoI > 0 && i.due_date ? daysLate(i.due_date) : 0;
             return (
               <tr key={i.id}>
-                <td style={{ fontFamily: 'var(--fm,monospace)' }}>{i.number ?? '—'}</td>
-                <td>{i.concept}{mora > 0 && <span className="zp-chip" style={{ marginLeft: 8, background: 'rgba(231,29,10,.14)', color: '#ff8a7d' }}>{mora} d mora</span>}</td>
-                <td style={{ fontFamily: 'var(--fm,monospace)', color: isOverdue(i) ? '#ff8a7d' : undefined }}>{i.due_date ?? '—'}</td>
-                <td style={{ fontFamily: 'var(--fm,monospace)' }}>{money(i.amount, i.currency)}</td>
+                <td className="zp-nowrap" style={{ fontFamily: 'var(--fm,monospace)' }}><a className="zp-rowlink" href={`/portal/finanzas/${i.id}`}>{i.number ?? '—'}</a></td>
+                <td><a className="zp-rowlink" href={`/portal/finanzas/${i.id}`}>{i.concept}</a>{mora > 0 && <span className="zp-chip" style={{ marginLeft: 8, background: 'rgba(231,29,10,.14)', color: '#ff8a7d' }}>{mora} d mora</span>}</td>
+                <td className="zp-nowrap" style={{ fontFamily: 'var(--fm,monospace)', color: isOverdue(i) ? '#ff8a7d' : undefined }}>{i.due_date ?? '—'}</td>
+                <td className="zp-nowrap" style={{ fontFamily: 'var(--fm,monospace)' }}>{money(i.amount, i.currency)}</td>
                 <td><span className="zp-chip"><span className="zp-dot" style={{ background: st.color }} />{st.label}</span></td>
-                <td style={{ fontFamily: 'var(--fm,monospace)' }}>{i.status === 'anulada' ? '—' : money(saldoI, i.currency)}</td>
+                <td className="zp-nowrap" style={{ fontFamily: 'var(--fm,monospace)' }}>{i.status === 'anulada' ? '—' : money(saldoI, i.currency)}</td>
                 <td><a className="zp-chip" href={`/portal/finanzas/${i.id}/print`} target="_blank" rel="noopener noreferrer">Ver →</a></td>
                 <td>{i.invoice_file_url
                   ? <a className="zp-chip" href={i.invoice_file_url} target="_blank" rel="noopener noreferrer" style={{ background: 'rgba(34,197,94,.14)', color: '#22c55e' }}>Descargar →</a>

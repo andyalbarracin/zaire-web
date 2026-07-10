@@ -65,7 +65,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
 
       {/* 1 ── GENERAR INVOICE (izq) + KPIs (der) ──────────────── */}
       {activa && (
-        <div className="zo-2col">
+        <div className="zo-2col status-first">
           <div className="zo-card">
             <div className="zo-card-title">// GENERAR INVOICE</div>
             <div className="zo-sub" style={{ fontSize: 12, marginBottom: 14 }}>Definí los datos de la solicitud de pago. Con “Imprimir / PDF” generás el documento.</div>

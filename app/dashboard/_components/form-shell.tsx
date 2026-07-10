@@ -16,17 +16,18 @@ function SubmitBtn({ label }: { label: string }) {
 }
 
 export default function FormShell({
-  action, submitLabel, cancelHref, extra, children,
+  action, submitLabel, cancelHref, extra, children, wide,
 }: {
   action: (prev: FormState, fd: FormData) => Promise<FormState>;
   submitLabel: string;
   cancelHref?: string;
   extra?: React.ReactNode;
   children: React.ReactNode;
+  wide?: boolean;
 }) {
   const [state, formAction] = useActionState(action, {});
   return (
-    <form action={formAction} className="zo-form">
+    <form action={formAction} className={`zo-form${wide ? ' zo-form-wide' : ''}`}>
       {children}
       {state?.error && <div className="zo-form-error">⚠ {state.error}</div>}
       <div className="zo-form-actions">

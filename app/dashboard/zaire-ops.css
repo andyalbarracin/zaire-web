@@ -153,11 +153,16 @@
 .zo-back:hover { background: #1a1a1a; color: #fff; }
 /* Fila de 2 columnas (card + panel lateral), colapsa en mobile. */
 .zo-2col { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; align-items: start; }
-@media (max-width: 900px) { .zo-2col { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .zo-2col { grid-template-columns: 1fr; }
+  /* Al apilar, el panel de status (último hijo) sube arriba. */
+  .zo-2col.status-first > :last-child { order: -1; }
+}
 .zo-btn-ghost:hover { background: #181818; color: #fff; }
 
 /* ── Forms ────────────────────────────────────────────────────────────────── */
 .zo-form { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
+.zo-form-wide { max-width: 100%; }
 .zo-form-error { padding: 11px 14px; border-radius: 8px; background: rgba(231,29,10,.1); border: 1px solid #E71D0A; color: #ff6b5b; font-size: 13px; }
 .zo-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .zo-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }

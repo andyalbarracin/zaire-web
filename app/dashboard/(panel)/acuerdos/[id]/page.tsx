@@ -7,6 +7,7 @@ import { listClients } from '@/lib/zaire-ops/queries';
 import AgreementFields from '@/app/dashboard/_components/agreement-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
 import CopyLink from '@/app/dashboard/_components/copy-link';
+import SendAgreementButton from '@/app/dashboard/_components/send-agreement-button';
 import { updateAgreementAction, markSentAction, sendAgreementLinkAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -47,9 +48,16 @@ export default async function AgreementDetailPage({ params, searchParams }: { pa
           <CopyLink url={link} />
           <div className="zo-sub" style={{ fontSize: 12, marginTop: 10 }}>Enviáselo al cliente por email (o copiá el link). Al abrirlo lee los términos, firma y acepta — el estado se actualiza acá solo. Una vez “enviado”, el acuerdo también aparece en el portal del cliente.</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-            <form action={sendAgreementLinkAction.bind(null, a.id)}><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">Enviar al cliente por email</button></form>
+            <SendAgreementButton
+              action={sendAgreementLinkAction.bind(null, a.id)}
+              recipient={a.signer_email || clients.find(c => c.id === a.client_id)?.email || null}
+              clientName={a.client?.name ?? ''}
+              projectName={a.project_name}
+              plan={a.plan}
+              pdfHref={`/dashboard/acuerdos-print?id=${a.id}`}
+            />
             {a.status === 'borrador' && (
-              <form action={markSentAction.bind(null, a.id)}><button className="zo-btn zo-btn-sm" type="submit">Marcar como enviado (sin email)</button></form>
+              <form action={markSentAction.bind(null, a.id)}><button className="zo-btn zo-btn-sm" type="submit">Confirmar acuerdo (mostrar en portal)</button></form>
             )}
           </div>
         </div>
@@ -80,6 +88,7 @@ export default async function AgreementDetailPage({ params, searchParams }: { pa
         <div className="zo-card zo-section-gap">
           <div className="zo-card-title">// EDITAR ACUERDO</div>
           <FormShell
+            wide
             action={updateAgreementAction.bind(null, a.id)}
             submitLabel="Guardar cambios"
             extra={<a href={`/dashboard/acuerdos-print?id=${a.id}`} target="_blank" rel="noopener noreferrer"><button type="button" className="zo-btn">Descargar PDF</button></a>}
