@@ -201,3 +201,28 @@ export async function signAgreement(token: string, data: {
     .neq('status', 'firmado');
   return !error && (count ?? 0) > 0;
 }
+
+// Firma TIPEADA: el nombre se renderiza en cursiva como imagen (SVG data URI), así
+// se reutiliza el mismo renderizado de firma (signature_url) sin cambios de schema.
+export function typedSignatureSvg(name: string): string {
+  const safe = name.replace(/[<>&"]/g, '').slice(0, 80);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="380" height="96"><text x="14" y="60" font-family="'Segoe Script','Brush Script MT','Snell Roundhand',cursive" font-size="44" fill="#111">${safe}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// Firma electrónica tipeada desde el portal (por id, con dueño ya verificado).
+// Guard: no re-firma si ya está firmado. Devuelve true si firmó.
+export async function signAgreementTyped(id: string, data: {
+  signed_name: string; sign_ip: string | null; sign_user_agent: string | null;
+}): Promise<boolean> {
+  const { error, count } = await db()
+    .from('zo_agreements')
+    .update({
+      status: 'firmado', accepted: true, signed_at: new Date().toISOString(),
+      signed_name: data.signed_name, signature_url: typedSignatureSvg(data.signed_name),
+      sign_ip: data.sign_ip, sign_user_agent: data.sign_user_agent,
+    }, { count: 'exact' })
+    .eq('id', id)
+    .neq('status', 'firmado');
+  return !error && (count ?? 0) > 0;
+}

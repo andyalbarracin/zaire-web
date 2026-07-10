@@ -39,6 +39,22 @@ export default async function PortalSoporte() {
         seguir el estado desde la misma sección; también te contactamos por email.
       </Block>
 
+      <Block title="Cómo firmar un acuerdo">
+        En <strong>Acuerdos</strong>, abrí el acuerdo pendiente (clic en el proyecto). Vas a ver
+        los términos completos y, abajo, un espacio de firma. Hacé clic en <strong>“Firmá acá”</strong>,
+        escribí tu nombre completo (aparece en cursiva como tu firma), tildá que aceptás los términos
+        y confirmá. Listo: queda firmado.
+        <br /><br />
+        <strong>¿Para qué sirve?</strong> Es una <strong>firma electrónica</strong>: deja una
+        constancia formal y trazable de que aceptaste el servicio y sus condiciones —con tu nombre,
+        la fecha, la hora y los datos de tu acceso—, mucho más sólida que un “ok” informal.
+        <br /><br />
+        <strong>Alcance:</strong> sirve como prueba del consentimiento y del alcance de lo contratado.
+        No es una “firma digital” con certificado (esa tiene una presunción legal más fuerte); es una
+        firma electrónica válida cuyo valor se apoya en el registro que guardamos. Para cualquier
+        duda, escribinos a <a href="mailto:hola@zairetech.com" style={{ color: '#FF6A00' }}>hola@zairetech.com</a>.
+      </Block>
+
       <Block title="Prioridades — cómo elegir">
         <ul style={{ margin: 0, paddingLeft: 18 }}>
           <li><strong>Baja:</strong> consulta o mejora sin urgencia.</li>

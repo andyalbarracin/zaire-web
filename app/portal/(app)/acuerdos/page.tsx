@@ -17,13 +17,14 @@ export default async function PortalAcuerdos() {
         <div className="zp-table-wrap"><div style={{ padding: 24, color: '#888' }}>No hay acuerdos para mostrar.</div></div>
       ) : (
         <div className="zp-table-wrap"><table className="zp-table">
-          <thead><tr><th>Proyecto</th><th>Plan</th><th>Estado</th><th>Firmado</th><th>PDF</th></tr></thead>
+          <thead><tr><th>Proyecto</th><th>Plan</th><th>Estado</th><th>Firmado</th><th>Acuerdo</th><th>PDF</th></tr></thead>
           <tbody>{agreements.map(a => (
             <tr key={a.id}>
-              <td>{a.project_name}</td>
-              <td>{a.plan ?? '—'}</td>
-              <td><span className="zp-chip"><span className="zp-dot" style={{ background: AGREEMENT_STATUS_COLOR[a.status] }} />{AGREEMENT_STATUS_LABEL[a.status]}</span></td>
-              <td style={{ fontFamily: 'var(--fm,monospace)' }}>{a.signed_at ? new Date(a.signed_at).toLocaleDateString('es-AR') : '—'}</td>
+              <td><a className="zp-rowlink" href={`/portal/acuerdos/${a.id}`}>{a.project_name}</a></td>
+              <td><a className="zp-rowlink" href={`/portal/acuerdos/${a.id}`}>{a.plan ?? '—'}</a></td>
+              <td><span className="zp-chip"><span className="zp-dot" style={{ background: AGREEMENT_STATUS_COLOR[a.status] }} />{a.status === 'enviado' ? 'Pendiente de firma' : AGREEMENT_STATUS_LABEL[a.status]}</span></td>
+              <td className="zp-nowrap" style={{ fontFamily: 'var(--fm,monospace)' }}>{a.signed_at ? new Date(a.signed_at).toLocaleDateString('es-AR') : '—'}</td>
+              <td><a className="zp-chip" href={`/portal/acuerdos/${a.id}`} style={a.status === 'enviado' ? { background: 'rgba(255,106,0,.16)', color: '#FF6A00' } : undefined}>{a.status === 'enviado' ? 'Firmar →' : 'Abrir →'}</a></td>
               <td><a className="zp-chip" href={`/portal/acuerdos/${a.id}/print`} target="_blank" rel="noopener noreferrer">Ver →</a></td>
             </tr>
           ))}</tbody>
