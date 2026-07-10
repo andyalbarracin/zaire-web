@@ -1,6 +1,6 @@
 // File: page.tsx — Finanzas / solicitudes de pago (lista + estado de cuenta + cuentas por cobrar)
 import Link from 'next/link';
-import { listInvoices, clientAccount, receivables, liveInvoiceStatus, facturacionStatus, isOverdue, money } from '@/lib/zaire-ops/billing';
+import { listInvoices, clientAccount, receivables, liveInvoiceStatus, facturacionStatus, isOverdue, money, type ZoInvoice } from '@/lib/zaire-ops/billing';
 import { getClient } from '@/lib/zaire-ops/queries';
 import RowLink from '@/app/dashboard/_components/row-link';
 
@@ -9,19 +9,34 @@ export const dynamic = 'force-dynamic';
 const FILTERS: [string, string][] = [['', 'Todas'], ['porcobrar', 'Por cobrar'], ['vencidas', 'Vencidas'], ['pagadas', 'Pagadas']];
 const PAGE_SIZE = 15;
 
+// Columnas ordenables. `num` ordena de mayor a menor por defecto; `text` alfabético.
+type Col = { label: string; type: 'num' | 'text'; get: (i: ZoInvoice) => number | string };
+const SORT_COLS: Record<string, Col> = {
+  numero:   { label: 'Número',   type: 'text', get: i => i.number ?? '' },
+  cliente:  { label: 'Cliente',  type: 'text', get: i => i.client?.name ?? '' },
+  concepto: { label: 'Concepto', type: 'text', get: i => i.concept },
+  vence:    { label: 'Vence',    type: 'num',  get: i => (i.due_date ? Date.parse(i.due_date) : 0) },
+  monto:    { label: 'Monto',    type: 'num',  get: i => i.amount },
+  pago:     { label: 'Pago',     type: 'text', get: i => liveInvoiceStatus(i).label },
+  fact:     { label: 'Fact.',    type: 'num',  get: i => (i.invoiced ? 1 : 0) },
+  saldo:    { label: 'Saldo',    type: 'num',  get: i => i.amount - (i.paid ?? 0) },
+};
+
 // Arma un href a /dashboard/facturas conservando los params activos.
-function hrefWith(base: { client?: string; filter?: string; q?: string; page?: number }): string {
+function hrefWith(base: { client?: string; filter?: string; q?: string; page?: number; sort?: string; dir?: string }): string {
   const sp = new URLSearchParams();
   if (base.client) sp.set('client', base.client);
   if (base.filter) sp.set('filter', base.filter);
   if (base.q) sp.set('q', base.q);
   if (base.page && base.page > 1) sp.set('page', String(base.page));
+  if (base.sort) sp.set('sort', base.sort);
+  if (base.dir) sp.set('dir', base.dir);
   const qs = sp.toString();
   return `/dashboard/facturas${qs ? `?${qs}` : ''}`;
 }
 
-export default async function FacturasPage({ searchParams }: { searchParams: Promise<{ client?: string; filter?: string; q?: string; page?: string }> }) {
-  const { client, filter, q, page } = await searchParams;
+export default async function FacturasPage({ searchParams }: { searchParams: Promise<{ client?: string; filter?: string; q?: string; page?: string; sort?: string; dir?: string }> }) {
+  const { client, filter, q, page, sort, dir } = await searchParams;
   const [invoices, account, cli, rec] = await Promise.all([
     listInvoices(client),
     client ? clientAccount(client) : Promise.resolve(null),
@@ -42,6 +57,33 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
     return true;
   });
 
+  // Orden por columna (si se pidió).
+  const col = sort ? SORT_COLS[sort] : null;
+  if (col) {
+    const d = dir === 'asc' ? 1 : -1;
+    filtered.sort((a, b) => {
+      const va = col.get(a), vb = col.get(b);
+      if (col.type === 'num') return (Number(va) - Number(vb)) * d;
+      return String(va).localeCompare(String(vb), 'es') * d;
+    });
+  }
+
+  // Header ordenable: alterna dir en la columna activa; default desc para num, asc para text.
+  const Th = ({ id }: { id: string }) => {
+    const c = SORT_COLS[id];
+    const active = sort === id;
+    const defDir = c.type === 'num' ? 'desc' : 'asc';
+    const nextDir = active ? (dir === 'asc' ? 'desc' : 'asc') : defDir;
+    const arrow = active ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+    return (
+      <th style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <Link href={hrefWith({ client, filter, q, sort: id, dir: nextDir })} style={{ color: active ? '#FF6A00' : 'inherit', textDecoration: 'none' }}>
+          {c.label}{arrow}
+        </Link>
+      </th>
+    );
+  };
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, Number(page) || 1), totalPages);
   const pageItems = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
@@ -54,7 +96,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
           <h1 className="zo-h1">Finanzas</h1>
           <div className="zo-sub">{cli ? `${cli.name} · ` : ''}{filtered.length} solicitud(es) de pago</div>
         </div>
-        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nueva solicitud</button></Link>
+        <Link href={`/dashboard/facturas/nuevo${client ? `?client=${client}` : ''}`}><button className="zo-btn zo-btn-primary">+ Nuevo Registro</button></Link>
       </div>
 
       {account && (
@@ -76,7 +118,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
         {!client ? (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {FILTERS.map(([f, label]) => (
-              <Link key={f || 'all'} href={hrefWith({ client, filter: f || undefined, q })}>
+              <Link key={f || 'all'} href={hrefWith({ client, filter: f || undefined, q, sort, dir })}>
                 <span className="zo-chip" style={(filter ?? '') === f ? { background: '#FF6A00', color: '#111' } : {}}>{label}</span>
               </Link>
             ))}
@@ -85,9 +127,11 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
         <form method="get" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {client && <input type="hidden" name="client" value={client} />}
           {filter && <input type="hidden" name="filter" value={filter} />}
+          {sort && <input type="hidden" name="sort" value={sort} />}
+          {dir && <input type="hidden" name="dir" value={dir} />}
           <input className="zo-input" name="q" defaultValue={q ?? ''} placeholder="Buscar nº, concepto o cliente…" style={{ minWidth: 240, padding: '7px 12px', fontSize: 12 }} />
           <button className="zo-btn zo-btn-sm" type="submit">Buscar</button>
-          {term && <Link href={hrefWith({ client, filter })}><span className="zo-chip">Limpiar ✕</span></Link>}
+          {term && <Link href={hrefWith({ client, filter, sort, dir })}><span className="zo-chip">Limpiar ✕</span></Link>}
         </form>
       </div>
 
@@ -95,7 +139,7 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
         <div className="zo-table-wrap"><div className="zo-empty">{term ? 'Sin resultados para tu búsqueda.' : <>Sin solicitudes de pago. <Link href="/dashboard/facturas/nuevo" style={{ color: '#FF6A00' }}>Creá la primera →</Link></>}</div></div>
       ) : (
         <div className="zo-table-wrap"><table className="zo-table">
-          <thead><tr><th>Número</th><th>Cliente</th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Pago</th><th>Fact.</th><th>Saldo</th></tr></thead>
+          <thead><tr><Th id="numero" /><Th id="cliente" /><Th id="concepto" /><Th id="vence" /><Th id="monto" /><Th id="pago" /><Th id="fact" /><Th id="saldo" /></tr></thead>
           <tbody>{pageItems.map(i => {
             const st = liveInvoiceStatus(i);
             const fst = facturacionStatus(i);
@@ -119,11 +163,11 @@ export default async function FacturasPage({ searchParams }: { searchParams: Pro
       {totalPages > 1 && (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 18 }}>
           {current > 1
-            ? <Link href={hrefWith({ client, filter, q, page: current - 1 })}><span className="zo-chip">← Anterior</span></Link>
+            ? <Link href={hrefWith({ client, filter, q, sort, dir, page: current - 1 })}><span className="zo-chip">← Anterior</span></Link>
             : <span className="zo-chip" style={{ opacity: .35 }}>← Anterior</span>}
           <span style={{ fontFamily: 'var(--fm)', fontSize: 11, color: '#888', letterSpacing: '.06em' }}>Página {current} de {totalPages}</span>
           {current < totalPages
-            ? <Link href={hrefWith({ client, filter, q, page: current + 1 })}><span className="zo-chip">Siguiente →</span></Link>
+            ? <Link href={hrefWith({ client, filter, q, sort, dir, page: current + 1 })}><span className="zo-chip">Siguiente →</span></Link>
             : <span className="zo-chip" style={{ opacity: .35 }}>Siguiente →</span>}
         </div>
       )}

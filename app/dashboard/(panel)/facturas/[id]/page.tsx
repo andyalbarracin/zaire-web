@@ -1,4 +1,4 @@
-// File: page.tsx — Detalle de solicitud de pago: pago (comprobantes), facturación, saldo, PDF
+// File: page.tsx — Detalle de solicitud de pago: generar invoice, facturación, pagos.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, facturacionStatus, money, daysLate, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
@@ -6,6 +6,8 @@ import { listClients } from '@/lib/zaire-ops/queries';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
+import FileDrop from '@/app/dashboard/_components/file-drop';
+import SendInvoiceButton from '@/app/dashboard/_components/send-invoice-button';
 import { updateInvoiceAction, anularInvoiceAction, addPaymentAction, editPaymentAction, deletePaymentAction, markPaidAction, sendInvoiceAction, setInvoicingAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -21,11 +23,13 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
   if (!invoice) notFound();
 
   const [clients, payments] = await Promise.all([listClients(), listPayments(id)]);
+  const client = clients.find(c => c.id === invoice.client_id);
   const st = liveInvoiceStatus(invoice);
   const fst = facturacionStatus(invoice);
   const paid = invoice.paid ?? 0;
   const saldo = invoice.amount - paid;
   const moraActual = saldo > 0 ? daysLate(invoice.due_date) : 0;
+  const activa = invoice.status !== 'anulada';
 
   return (
     <>
@@ -42,8 +46,17 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {invoice.status !== 'anulada' && (
-            <form action={sendInvoiceAction.bind(null, invoice.id)}><button className="zo-btn zo-btn-sm" type="submit">Enviar al cliente</button></form>
+          {activa && (
+            <SendInvoiceButton
+              action={sendInvoiceAction.bind(null, invoice.id)}
+              clientEmail={client?.email ?? null}
+              clientName={invoice.client?.name ?? ''}
+              number={invoice.number ?? '—'}
+              concept={invoice.concept}
+              dueDate={invoice.due_date}
+              amountLabel={money(invoice.amount, invoice.currency)}
+              saldoLabel={money(saldo, invoice.currency)}
+            />
           )}
           <a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">Imprimir / PDF</button></a>
           <Link href={`/dashboard/facturas?client=${invoice.client_id}`}><button className="zo-btn zo-btn-ghost">← Volver</button></Link>
@@ -62,28 +75,57 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
         <div className="zo-kpi accent"><div className="zo-kpi-n" style={{ color: saldo > 0 ? '#FFC107' : '#22c55e' }}>{money(saldo, invoice.currency)}</div><div className="zo-kpi-l">Saldo</div></div>
       </div>
 
-      {invoice.status !== 'anulada' && saldo > 0 && (
-        <form action={markPaidAction.bind(null, invoice.id, invoice.client_id, invoice.currency, saldo)} style={{ marginBottom: 14 }}>
-          <button className="zo-btn zo-btn-sm" type="submit">✓ Marcar como pagada</button>
-        </form>
+      {/* 1 ── GENERAR INVOICE ─────────────────────────────────── */}
+      {activa && (
+        <div className="zo-card">
+          <div className="zo-card-title">// GENERAR INVOICE</div>
+          <div className="zo-sub" style={{ fontSize: 12, marginBottom: 14 }}>Definí los datos de la solicitud de pago. Con “Imprimir / PDF” generás el documento.</div>
+          <FormShell
+            action={updateInvoiceAction.bind(null, invoice.id)}
+            submitLabel="Guardar cambios"
+            extra={<a href={`/dashboard/facturas-print?id=${invoice.id}`} target="_blank" rel="noopener noreferrer"><button type="button" className="zo-btn">Imprimir / PDF</button></a>}
+          >
+            <InvoiceFields invoice={invoice} clients={clients} />
+          </FormShell>
+          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><ConfirmButton message="¿Anular esta solicitud? Ya no se podrá cobrar.">Anular solicitud</ConfirmButton></form>
+        </div>
       )}
 
-      {/* ── PAGOS ─────────────────────────────────────────────── */}
-      {invoice.status !== 'anulada' && (
-        <div className="zo-card">
-          <div className="zo-card-title">// REGISTRAR PAGO</div>
-          <form action={addPaymentAction.bind(null, invoice.id, invoice.client_id)} className="zo-form" style={{ maxWidth: '100%' }}>
-            <div className="zo-grid2">
+      {/* 2 ── FACTURACIÓN ─────────────────────────────────────── */}
+      {activa && (
+        <div className="zo-card zo-section-gap">
+          <div className="zo-card-title">// FACTURACIÓN (FISCAL / ARCA)</div>
+          <div className="zo-sub" style={{ fontSize: 12, marginBottom: 14 }}>Independiente del pago. Los cambios se guardan solo al presionar “Guardar facturación”.</div>
+          <form action={setInvoicingAction.bind(null, invoice.id)} className="zo-form" style={{ maxWidth: '100%' }}>
+            <div className="zo-grid3">
+              <div className="zo-field"><label className="zo-flabel">Nº de factura fiscal</label><input className="zo-input" name="fiscal_number" defaultValue={invoice.fiscal_number ?? ''} placeholder="A-0001-00001234" /></div>
+              <div className="zo-field"><label className="zo-flabel">Fecha de facturación</label><input className="zo-input" name="invoiced_at" type="date" defaultValue={invoice.invoiced_at ?? ''} /></div>
+              <div className="zo-field" style={{ justifyContent: 'flex-end' }}><label className="zo-checkbox"><input type="checkbox" name="invoiced" defaultChecked={invoice.invoiced} /> Facturada (emitida)</label></div>
+              <div className="zo-field zo-span3">
+                <FileDrop name="invoice_file" label="Archivo de factura fiscal" hint="PDF o imagen · hasta 50MB" />
+                {invoice.invoice_file_url && <a href={invoice.invoice_file_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink" style={{ fontSize: 12, marginTop: 6 }}>Ver factura actual →</a>}
+              </div>
+            </div>
+            <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">Guardar facturación</button></div>
+          </form>
+        </div>
+      )}
+
+      {/* 3 ── REGISTRAR PAGO ──────────────────────────────────── */}
+      {activa && (
+        <div className="zo-card zo-section-gap">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div className="zo-card-title" style={{ marginBottom: 0 }}>// REGISTRAR PAGO</div>
+            {saldo > 0 && <form action={markPaidAction.bind(null, invoice.id, invoice.client_id, invoice.currency, saldo)}><button className="zo-btn zo-btn-sm" type="submit">✓ Marcar como pagada</button></form>}
+          </div>
+          <form action={addPaymentAction.bind(null, invoice.id, invoice.client_id)} className="zo-form" style={{ maxWidth: '100%', marginTop: 14 }}>
+            <div className="zo-grid3">
               <div className="zo-field"><label className="zo-flabel">Monto *</label><input className="zo-input" name="amount" type="number" min="0" step="0.01" required defaultValue={saldo > 0 ? saldo : ''} /></div>
               <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="paid_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></div>
-            </div>
-            <div className="zo-grid2">
               <div className="zo-field"><label className="zo-flabel">Método</label><select className="zo-select" name="method" defaultValue="Transferencia">{PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
               <div className="zo-field"><label className="zo-flabel">Banco</label><input className="zo-input" name="bank" placeholder="Banco donde se acreditó" /></div>
-            </div>
-            <div className="zo-grid2">
-              <div className="zo-field"><label className="zo-flabel">Comprobante (transferencia)</label><input className="zo-input" name="receipt" type="file" /></div>
-              <div className="zo-field"><label className="zo-flabel">Observaciones del pago</label><input className="zo-input" name="notes" placeholder="Referencia, nº de operación, detalle…" /></div>
+              <div className="zo-field zo-span2"><label className="zo-flabel">Observaciones del pago</label><input className="zo-input" name="notes" placeholder="Referencia, nº de operación, detalle…" /></div>
+              <div className="zo-field zo-span3"><FileDrop name="receipt" label="Comprobante (transferencia)" hint="PDF o imagen · hasta 50MB" /></div>
             </div>
             <input type="hidden" name="currency" value={invoice.currency} />
             <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">+ Registrar pago</button></div>
@@ -105,24 +147,18 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
                         {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink">Comprobante →</a>}
                         {p.notes && <span style={{ color: '#888' }}>· {p.notes}</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <form action={deletePaymentAction.bind(null, p.id, invoice.id)}><ConfirmButton message="¿Eliminar este pago? Se recalcula el saldo.">Eliminar</ConfirmButton></form>
-                      </div>
+                      <form action={deletePaymentAction.bind(null, p.id, invoice.id)}><ConfirmButton message="¿Eliminar este pago? Se recalcula el saldo.">Eliminar</ConfirmButton></form>
                     </div>
                     <details style={{ marginTop: 8 }}>
                       <summary style={{ cursor: 'pointer', fontSize: 12, color: '#888' }}>Editar pago</summary>
                       <form action={editPaymentAction.bind(null, p.id, invoice.id)} className="zo-form" style={{ maxWidth: '100%', marginTop: 10 }}>
-                        <div className="zo-grid2">
+                        <div className="zo-grid3">
                           <div className="zo-field"><label className="zo-flabel">Monto *</label><input className="zo-input" name="amount" type="number" min="0" step="0.01" required defaultValue={p.amount} /></div>
                           <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="paid_date" type="date" defaultValue={p.paid_date} /></div>
-                        </div>
-                        <div className="zo-grid2">
                           <div className="zo-field"><label className="zo-flabel">Método</label><select className="zo-select" name="method" defaultValue={p.method ?? 'Transferencia'}>{PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
                           <div className="zo-field"><label className="zo-flabel">Banco</label><input className="zo-input" name="bank" defaultValue={p.bank ?? ''} /></div>
-                        </div>
-                        <div className="zo-grid2">
-                          <div className="zo-field"><label className="zo-flabel">Reemplazar comprobante (opcional)</label><input className="zo-input" name="receipt" type="file" /></div>
-                          <div className="zo-field"><label className="zo-flabel">Observaciones</label><input className="zo-input" name="notes" defaultValue={p.notes ?? ''} /></div>
+                          <div className="zo-field zo-span2"><label className="zo-flabel">Observaciones</label><input className="zo-input" name="notes" defaultValue={p.notes ?? ''} /></div>
+                          <div className="zo-field zo-span3"><FileDrop name="receipt" label="Reemplazar comprobante (opcional)" hint="PDF o imagen · hasta 50MB" /></div>
                         </div>
                         <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">Guardar cambios del pago</button></div>
                       </form>
@@ -132,32 +168,6 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── FACTURACIÓN (independiente del pago) ───────────────── */}
-      {invoice.status !== 'anulada' && (
-        <div className="zo-card zo-section-gap">
-          <div className="zo-card-title">// FACTURACIÓN (FISCAL / ARCA)</div>
-          <form action={setInvoicingAction.bind(null, invoice.id)} className="zo-form" style={{ maxWidth: '100%' }}>
-            <label className="zo-checkbox" style={{ marginBottom: 12 }}><input type="checkbox" name="invoiced" defaultChecked={invoice.invoiced} /> Facturada (factura fiscal emitida)</label>
-            <div className="zo-grid2">
-              <div className="zo-field"><label className="zo-flabel">Nº de factura fiscal</label><input className="zo-input" name="fiscal_number" defaultValue={invoice.fiscal_number ?? ''} placeholder="Ej: A-0001-00001234" /></div>
-              <div className="zo-field"><label className="zo-flabel">Fecha de facturación</label><input className="zo-input" name="invoiced_at" type="date" defaultValue={invoice.invoiced_at ?? ''} /></div>
-            </div>
-            <div className="zo-field"><label className="zo-flabel">Archivo de factura fiscal {invoice.invoice_file_url && <a href={invoice.invoice_file_url} target="_blank" rel="noopener noreferrer" className="zo-rowlink" style={{ marginLeft: 8 }}>Ver actual →</a>}</label><input className="zo-input" name="invoice_file" type="file" /></div>
-            <div className="zo-form-actions"><button className="zo-btn zo-btn-primary zo-btn-sm" type="submit">Guardar facturación</button></div>
-          </form>
-        </div>
-      )}
-
-      {invoice.status !== 'anulada' && (
-        <div className="zo-card zo-section-gap">
-          <div className="zo-card-title">// EDITAR SOLICITUD</div>
-          <FormShell action={updateInvoiceAction.bind(null, invoice.id)} submitLabel="Guardar cambios">
-            <InvoiceFields invoice={invoice} clients={clients} />
-          </FormShell>
-          <form action={anularInvoiceAction.bind(null, invoice.id)} style={{ marginTop: 12 }}><ConfirmButton message="¿Anular esta solicitud? Ya no se podrá cobrar.">Anular solicitud</ConfirmButton></form>
         </div>
       )}
     </>

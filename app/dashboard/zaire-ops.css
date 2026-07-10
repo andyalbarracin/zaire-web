@@ -154,6 +154,9 @@
 .zo-form { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
 .zo-form-error { padding: 11px 14px; border-radius: 8px; background: rgba(231,29,10,.1); border: 1px solid #E71D0A; color: #ff6b5b; font-size: 13px; }
 .zo-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.zo-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.zo-span2 { grid-column: span 2; }
+.zo-span3 { grid-column: span 3; }
 .zo-field { display: flex; flex-direction: column; gap: 7px; }
 .zo-flabel { font-family: var(--fm); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #888; }
 .zo-input, .zo-select, .zo-textarea {
@@ -167,6 +170,32 @@
 .zo-form-actions { display: flex; gap: 10px; margin-top: 6px; }
 .zo-checkbox { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #ccc; cursor: pointer; }
 .zo-checkbox input { width: 16px; height: 16px; accent-color: var(--org); }
+
+/* Dropzone de archivos */
+.zo-drop { border: 1.5px dashed #303030; border-radius: 10px; padding: 16px; text-align: center;
+  color: #888; font-size: 12.5px; cursor: pointer; transition: border-color .12s, background .12s; }
+.zo-drop:hover { border-color: #3d3d3d; background: #161616; }
+.zo-drop.over { border-color: var(--org); background: rgba(255,106,0,.06); color: #ddd; }
+.zo-drop-file { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px;
+  background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 7px 11px; font-size: 12px; color: #ddd; }
+.zo-drop-file button { background: none; border: none; color: #ff6b5b; cursor: pointer; font-size: 11px; }
+
+/* Modal de confirmación */
+.zo-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px; }
+.zo-modal { background: #141414; border: 1px solid #262626; border-radius: 14px; max-width: 460px; width: 100%;
+  padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.zo-modal h3 { font-size: 17px; font-weight: 800; margin: 0 0 6px; }
+.zo-modal-sub { font-size: 13px; color: #999; margin: 0 0 16px; line-height: 1.6; }
+.zo-modal-box { background: #101010; border: 1px solid #222; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.zo-modal-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
+.zo-modal-row span:first-child { color: #888; }
+.zo-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+@media (max-width: 880px) {
+  .zo-grid3 { grid-template-columns: 1fr; }
+  .zo-span2, .zo-span3 { grid-column: span 1; }
+}
 
 /* ── Empty / error states ─────────────────────────────────────────────────── */
 .zo-empty { text-align: center; padding: 56px 20px; color: #666; font-size: 13.5px; }
