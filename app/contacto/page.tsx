@@ -109,9 +109,15 @@ export default function ContactoPage() {
                 </a>
               </div>
 
-              <div style={{ marginTop: 16 }}>
-                <a href="/portal/login" style={{ fontFamily: 'var(--fm)', fontSize: 12, letterSpacing: '.04em', color: '#888', textDecoration: 'underline' }}>
-                  ¿Ya sos cliente? Entrá a tu portal →
+              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: 9, color: '#888', letterSpacing: '.1em', textTransform: 'uppercase' }}>¿Sos cliente?</span>
+                <a
+                  href="/portal/login"
+                  style={{ alignSelf: 'flex-start', background: 'var(--org)', color: '#111', fontFamily: 'var(--fm)', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', padding: '12px 22px', borderRadius: 2, transition: 'background .15s', display: 'inline-block' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#e85e00')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--org)')}
+                >
+                  Acceso al Portal →
                 </a>
               </div>
             </div>

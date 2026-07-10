@@ -68,20 +68,34 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links — columna vertical */}
-          <nav style={{ display: 'flex', flexDirection: 'row', gap: 15, paddingTop: 4 }}>
-            {navLinks.map(l => (
+          {/* Links + acceso al portal */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 20, paddingTop: 4 }}>
+            <nav style={{ display: 'flex', flexDirection: 'row', gap: 15 }}>
+              {navLinks.map(l => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  style={{ fontSize: 11, color: '#aaa', letterSpacing: '.04em', transition: 'color .15s', fontFamily: 'var(--fu)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#444')}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7 }}>
+              <span style={{ fontFamily: 'var(--fm)', fontSize: 9, color: '#888', letterSpacing: '.1em', textTransform: 'uppercase' }}>¿Sos cliente?</span>
               <Link
-                key={l.href}
-                href={l.href}
-                style={{ fontSize: 11, color: '#aaa', letterSpacing: '.04em', transition: 'color .15s', fontFamily: 'var(--fu)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#444')}
+                href="/portal/login"
+                style={{ background: 'var(--org)', color: '#111', fontFamily: 'var(--fm)', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', padding: '11px 20px', borderRadius: 2, transition: 'background .15s', display: 'inline-block' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#e85e00')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--org)')}
               >
-                {l.label}
+                Acceso al Portal →
               </Link>
-            ))}
-          </nav>
+            </div>
+          </div>
         </div>
 
         {/* Barra inferior: copyright | mantra | email */}
