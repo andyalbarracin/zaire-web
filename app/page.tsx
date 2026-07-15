@@ -37,6 +37,27 @@ const problems = [
   { n: '06', title: 'Procesos que No Escalan', body: 'Lo que funcionaba con 5 clientes colapsa con 50. Sin sistema, no hay escala.' },
 ];
 
+const products = [
+  {
+    name: 'Zaire Trace',
+    label: 'Trazabilidad · Órdenes de trabajo',
+    body: 'Órdenes de trabajo y de servicio con numeración correlativa, estados, ítems técnicos y auditoría. Para operar bajo ISO 9001 sin preparar nada.',
+    chips: ['OT/OTS', 'Trazabilidad', 'Auditoría', 'Reportes'],
+  },
+  {
+    name: 'Zaire Field',
+    label: 'Trabajo de campo · GPS',
+    body: 'Visitas con arribo confirmado por geocerca, reporte técnico con fotos, viáticos y documentos con vencimiento.',
+    chips: ['Visitas', 'Geocercas', 'Gastos', 'Documentos'],
+  },
+  {
+    name: 'NIMO',
+    label: 'CRM · Web inmobiliaria',
+    body: 'CRM inmobiliario con administrador de propiedades, consultas, estados e imágenes, y frontend público autoadministrable.',
+    chips: ['CRM', 'Propiedades', 'Consultas', 'Web'],
+  },
+];
+
 const services = [
   { icon: <IWorkflow s="#fff" size={40} />, title: 'Automatización y Orquestación', tag: 'n8n · Make · Zapier · Webhooks · APIs REST', org: false },
   { icon: <IAgent s="#fff" size={40} />, title: 'Arquitectura IA y Agentes', tag: 'Claude · GPT-4o · LangChain · MCP · Ollama', org: false },
@@ -89,7 +110,7 @@ const stack = [
 const plans = [
   {
     tier: 'Automatiza tu primer flujo',
-    name: 'ZAIRE\nFLOW',
+    name: 'FLOW',
     setup: '$249',        // ← SETUP FLOW
     maintenance: '$99',   // ← MANTENIMIENTO FLOW /mes
     feats: ['1 workflow principal automatizado', 'Integración CRM + Email', 'Dashboard básico de seguimiento', 'Documentación del sistema', 'Soporte mensual dedicado'],
@@ -98,7 +119,7 @@ const plans = [
   },
   {
     tier: 'Opera sin fricción',
-    name: 'ZAIRE\nPERFORMANCE',
+    name: 'PERFORMANCE',
     setup: '$399',        // ← SETUP PERFORMANCE
     maintenance: '$250',  // ← MANTENIMIENTO PERFORMANCE /mes
     feats: ['Hasta 5 workflows conectados', 'Agente IA integrado a tu CRM', 'Knowledge base de marca propia', 'Reporting avanzado en tiempo real', 'Soporte semanal + optimización', 'Revisión mensual de arquitectura'],
@@ -107,7 +128,7 @@ const plans = [
   },
   {
     tier: 'Arquitectura total',
-    name: 'ZAIRE\nINTELLIGENCE',
+    name: 'INTELLIGENCE',
     setup: 'A medida',   // ← sin precio fijo
     maintenance: null,
     feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
@@ -167,13 +188,13 @@ export default function Home() {
         <div className="hero-grid">
           {/* Columna izquierda: copy + CTAs */}
           <div>
-            <div className="hero-label">// ZAIRE · INTELLIGENT OPERATIONS STUDIO</div>
+            <div className="hero-label">// ZAIRE TECHNOLOGIES · SOFTWARE INDUSTRIAL Y SISTEMAS OPERATIVOS</div>
             <h1 className="hero-h1">
               SISTEMAS<br />
               INTELI-<br /><em>GENTES</em>
             </h1>
             <p className="hero-sub">
-Diseñamos sistemas para ventas, operación y crecimiento con automatizaciones, agentes con IA e información conectada.            </p>
+Construimos software para empresas que mantienen, reparan y operan activos. Y sistemas a medida para las que necesitan algo propio.            </p>
             <div className="hero-btns">
               <button className="btn btn-primary" onClick={() => setShowContact(true)}>
                 Solicitar diagnóstico →
@@ -241,6 +262,40 @@ Diseñamos sistemas para ventas, operación y crecimiento con automatizaciones, 
                 <div className="prob-body">{p.body}</div>
               </div>
             ))}
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ── SOFTWARE PROPIO · PRODUCTOS ──────────────────── */}
+      <Reveal>
+        <section className="section" id="software">
+          <div className="s-lbl">// SOFTWARE PROPIO</div>
+          <h2 className="s-h2" style={{ marginBottom: 8 }}>
+            EL SOFTWARE QUE<br /><em>CONSTRUIMOS</em>
+          </h2>
+          <p style={{ fontSize: 14, color: '#888', marginBottom: 40, fontWeight: 300, maxWidth: 560 }}>
+            Productos propios, en producción. Nacen de la operación real de clientes reales.
+          </p>
+
+          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {products.map(p => (
+              <div key={p.name} className="case-card">
+                <div className="case-sector">{p.label}</div>
+                <div className="case-title">{p.name}</div>
+                <div className="case-body">{p.body}</div>
+                <div className="case-chips">
+                  {p.chips.map(ch => (
+                    <span key={ch} className="case-chip">{ch}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 32 }}>
+            <Link href="/sistemas">
+              <button className="btn btn-dark">Ver todo el software →</button>
+            </Link>
           </div>
         </section>
       </Reveal>
@@ -331,7 +386,7 @@ Diseñamos sistemas para ventas, operación y crecimiento con automatizaciones, 
       {/* ── PLANES ───────────────────────────────────────── */}
       <Reveal>
         <section className="section" id="plans">
-          <div className="s-lbl">// PLANES</div>
+          <div className="s-lbl">// PLANES DE ZAIRE STUDIO · ELEGÍ TU NIVEL</div>
           <h2 className="s-h2" style={{ marginBottom: 8 }}>ELIGE TU NIVEL</h2>
           <p style={{ fontSize: 14, color: '#888', marginBottom: 40, fontWeight: 300 }}>
             Cada plan es un sistema completo, no una lista de funciones.

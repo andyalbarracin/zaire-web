@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Nav from '@/components/nav';
 import Footer from '@/components/footer';
 import Stripe from '@/components/stripe';
@@ -13,6 +14,15 @@ import ContactModal from '@/components/contact-modal';
 import Reveal from '@/components/reveal';
 
 const casos = [
+  {
+    sector: 'INDUSTRIA',
+    title: 'Trazabilidad y Trabajo de Campo',
+    challenge: 'Un proveedor industrial de sellos mecánicos y bombas para oil & gas gestionaba sus órdenes de trabajo en un Access de hace quince años, con técnicos visitando plantas en cuatro provincias y relevamientos que llegaban por WhatsApp.',
+    solution: 'Zaire Trace para la trazabilidad de órdenes con numeración correlativa por sucursal y auditoría ISO 9001. Zaire Field para las visitas: geocercas que confirman el arribo, reporte técnico con fotos y control de viáticos por región.',
+    results: ['Arribo a planta verificado por dato, no por palabra', 'El reporte de campo alimenta la orden sin recarga manual', 'Trazabilidad lista para auditoría todos los días, no la semana previa'],
+    chips: ['Next.js', 'Supabase', 'PostgreSQL', 'GPS'],
+    hl: false,
+  },
   {
     sector: 'VENTAS B2B',
     title: 'Pipeline Inteligente',
@@ -56,15 +66,7 @@ const casos = [
     solution: 'Agente en WhatsApp que responde al instante, califica el lead, agenda visitas y registra todo en el CRM. El broker humano solo entra cuando el lead está listo.',
     results: ['Respuesta instantánea 24/7 en WhatsApp', '3× más visitas agendadas', 'Pipeline siempre actualizado sin carga manual'],
     chips: ['WhatsApp API', 'n8n', 'Claude', 'CRM'],
-    hl: false,
-  },
-  {
-    sector: 'ACADEMIA / EDTECH',
-    title: 'Nurturing y Onboarding',
-    challenge: 'Una academia online con alta tasa de abandono en los primeros 30 días y equipo pedagógico saturado con consultas repetitivas.',
-    solution: 'Sistema de nurturing automático con secuencias según progreso del alumno, agente de soporte pedagógico para consultas frecuentes y alertas de abandono temprano.',
-    results: ['Tasa de finalización +35%', 'Consultas repetitivas resueltas por agente', 'Equipo pedagógico enfocado en casos complejos'],
-    chips: ['n8n', 'Claude', 'Email', 'Supabase', 'RAG'],
+    link: { href: '/sistemas', label: 'Conocé NIMO →' },
     hl: false,
   },
 ];
@@ -136,6 +138,15 @@ export default function CasosPage() {
                     <span key={ch} className="case-chip">{ch}</span>
                   ))}
                 </div>
+
+                {'link' in c && c.link && (
+                  <Link
+                    href={c.link.href}
+                    style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: c.hl ? '#111' : '#FF6A00' }}
+                  >
+                    {c.link.label}
+                  </Link>
+                )}
               </div>
             ))}
           </div>

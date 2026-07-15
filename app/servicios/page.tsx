@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Nav from '@/components/nav';
 import Footer from '@/components/footer';
 import Stripe from '@/components/stripe';
@@ -17,6 +18,7 @@ import { IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IInfra } from '@/comp
 const servicesData = [
   {
     layer: '// AUTOMATIZACIÓN · CAPA 1',
+    blurb: 'Automatizaciones predecibles y auditables: cada paso definido, documentado y fácil de mantener. Lógica limpia, sin IA de por medio.',
     items: [
       { icon: <IWorkflow s="#FF6A00" size={48} />, title: 'Automatización de Flujos', tag: 'n8n · Make · Zapier · Webhooks · APIs REST', body: 'Procesos automáticos bien definidos que conectan tus herramientas sin vueltas. Todo queda ordenado, documentado y fácil de mantener.' },
       { icon: <IAgent s="#FF6A00" size={48} />, title: 'Agentes IA', tag: 'Claude · GPT-4o · LangChain · MCP · Ollama', body: 'Agentes especializados que clasifican, deciden y ejecutan. Integrados a tu operación real, no como demos sino como infraestructura.' },
@@ -24,6 +26,7 @@ const servicesData = [
   },
   {
     layer: '// KNOWLEDGE INFRASTRUCTURE · CAPA 2–3',
+    blurb: 'Workflows que incorporan inteligencia. Clasifican, deciden y responden con contexto real, sobre una base de conocimiento propia consultable en tiempo real.',
     items: [
       { icon: <IKnowledge s="#FF6A00" size={48} />, title: 'Knowledge Infrastructure', tag: 'Supabase · PostgreSQL · pgvector · RAG · MCP', body: 'Base de conocimiento propia sobre tus documentos, procesos y marca. Los agentes la consultan, los equipos la actualizan.' },
       { icon: <IRevenue s="#FF6A00" size={48} />, title: 'Revenue Systems', tag: 'HubSpot · Pipedrive · n8n · WhatsApp API · Email', body: 'Sistemas de ventas que trabajan de forma automática: priorizan oportunidades, hacen seguimiento y generan propuestas con mejor contexto.' },
@@ -31,6 +34,7 @@ const servicesData = [
   },
   {
     layer: '// ARQUITECTURA · CÓMO SE ORGANIZA TODO',
+    blurb: 'Agentes especializados que operan de forma autónoma, coordinados por un sistema que les da contexto, herramientas y límites claros. Software operativo propio.',
     items: [
       { icon: <IGrowth s="#FF6A00" size={48} />, title: 'Growth y Performance', tag: 'Analytics · contenido · SEO automatizado · A/B', body: 'Sistemas que escalan tu presencia digital sin escalar tu equipo. Contenido a escala con brand voice preservado.' },
       { icon: <IInfra s="#FF6A00" size={48} />, title: 'Infraestructura Híbrida', tag: 'Supabase · PostgreSQL · APIs · webhooks · auth', body: 'La base técnica que conecta todo lo demás. Base de datos, autenticación, APIs internas y seguridad operativa.' },
@@ -48,10 +52,12 @@ export default function ServiciosPage() {
       <section className="pg-hero">
         <div className="pg-hero-inner">
           <div>
-            <div className="pg-hero-label">// SERVICIOS · ARQUITECTURA OPERATIVA</div>
+            <div className="pg-hero-label">// ZAIRE STUDIO · ARQUITECTURA OPERATIVA</div>
             <h1 className="pg-hero-h1">LO QUE<br /><em>CONSTRUIMOS</em></h1>
             <p className="pg-hero-sub">
-              No hacemos solo automatizaciones. Construimos sistemas conectados en tres capas que operan como infraestructura real de tu negocio.
+              Zaire Studio es nuestra rama de servicios: diseñamos e implementamos sistemas a medida.
+              Si buscás software de producto, mirá{' '}
+              <Link href="/sistemas" style={{ color: '#FF6A00', fontWeight: 500 }}>Zaire →</Link>
             </p>
           </div>
           <div className="pg-hero-visual">
@@ -73,7 +79,10 @@ export default function ServiciosPage() {
         <Reveal key={layer.layer}>
           <section className={`section${i % 2 === 1 ? ' s-dk' : ''}`}>
             <div className="s-lbl" style={i % 2 === 1 ? { color: '#aaa' } : {}}>{layer.layer}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 32 }}>
+            <p style={{ fontSize: 15, fontWeight: 300, color: i % 2 === 1 ? '#888' : '#777', lineHeight: 1.7, maxWidth: 620, marginTop: 16 }}>
+              {layer.blurb}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 28 }}>
               {layer.items.map(item => (
                 <div key={item.title} className={i % 2 === 1 ? 'svc-card' : 'prob-card'} style={{ minHeight: 300 }}>
                   <div className="svc-icon" style={{ width: 48, height: 48 }}>{item.icon}</div>

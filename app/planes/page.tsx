@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Nav from '@/components/nav';
 import Footer from '@/components/footer';
 import Stripe from '@/components/stripe';
@@ -22,7 +23,7 @@ import Reveal from '@/components/reveal';
 const plans = [
   {
     tier: 'Automatiza tu primer flujo',
-    name: 'ZAIRE\nFLOW',
+    name: 'FLOW',
     setup: '$249',        // ← SETUP FLOW
     maintenance: '$99',  // ← MANTENIMIENTO FLOW /mes
     promise: 'Para equipos que quieren dejar de hacer tareas manuales repetitivas y empezar a operar con estructura.',
@@ -32,7 +33,7 @@ const plans = [
   },
   {
     tier: 'Opera sin fricción',
-    name: 'ZAIRE\nPERFORMANCE',
+    name: 'PERFORMANCE',
     setup: '$399',        // ← SETUP PERFORMANCE
     maintenance: '$250',  // ← MANTENIMIENTO PERFORMANCE /mes
     promise: 'Para operaciones que necesitan inteligencia real integrada en su día a día, no solo automatizaciones básicas.',
@@ -42,7 +43,7 @@ const plans = [
   },
   {
     tier: 'Arquitectura total',
-    name: 'ZAIRE\nINTELLIGENCE',
+    name: 'INTELLIGENCE',
     setup: 'A medida',   // ← sin precio fijo
     maintenance: null,
     promise: 'Para empresas que quieren construir infraestructura operativa real con agentes autónomos, sistemas multi-capa y software operativo.',
@@ -73,10 +74,10 @@ export default function PlanesPage() {
       <section className="pg-hero">
         <div className="pg-hero-inner">
           <div>
-            <div className="pg-hero-label">// PLANES · ELIGE TU NIVEL</div>
+            <div className="pg-hero-label">// PLANES DE ZAIRE STUDIO · ELEGÍ TU NIVEL</div>
             <h1 className="pg-hero-h1">SISTEMAS<br /><em>COMPLETOS</em></h1>
             <p className="pg-hero-sub">
-              Cada plan es un sistema completo, no una lista de funciones. Elegí el nivel de profundidad según donde está tu operación hoy.
+              Los planes de Zaire Studio, nuestra rama de servicios: consultoría, automatización y software a medida.
             </p>
           </div>
           <div className="pg-hero-visual">
@@ -136,6 +137,12 @@ export default function PlanesPage() {
                 {p.accent && (
                   <p style={{ fontSize: 11, color: '#999', lineHeight: 1.55 }}>
                     Los proyectos de software a medida se cotizan según alcance, módulos, integraciones y soporte requerido.
+                  </p>
+                )}
+                {p.accent && (
+                  <p style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+                    Si tu operación es industrial, quizás no necesites software a medida. Mirá{' '}
+                    <Link href="/sistemas" style={{ color: '#FF6A00', fontWeight: 500 }}>Zaire →</Link>
                   </p>
                 )}
                 <button

@@ -22,7 +22,8 @@ interface FormState {
 }
 
 const employees = ['1–5', '6–20', '21–50', '50+'];
-const challenges = ['Automatización de procesos', 'Agentes IA y chatbots', 'App / sistema a medida', 'Revenue y ventas', 'Knowledge management', 'Otro'];
+const DEMO_CHALLENGE = 'Demo de software (Zaire)';
+const challenges = [DEMO_CHALLENGE, 'Automatización de procesos', 'Agentes IA y chatbots', 'App / sistema a medida', 'Revenue y ventas', 'Knowledge management', 'Otro'];
 
 export default function ContactoPage() {
   const [form, setForm] = useState<FormState>({ name: '', email: '', company: '', employees: '', challenge: '', message: '' });
@@ -56,7 +57,7 @@ export default function ContactoPage() {
             <div className="pg-hero-label">// CONTACTO · PRIMER PASO</div>
             <h1 className="pg-hero-h1">VEAMOS QUÉ<br /><em>CONSTRUIMOS</em><br />JUNTOS</h1>
             <p className="pg-hero-sub">
-              Un diagnóstico de 30 minutos es suficiente para identificar el proceso de mayor impacto y definir si tiene sentido avanzar.
+              Un diagnóstico de 30 minutos para ordenar tu operación, o una demo si buscás el software industrial de Zaire. Elegí abajo qué necesitás.
             </p>
           </div>
           <div className="pg-hero-visual">
@@ -187,7 +188,9 @@ export default function ContactoPage() {
                   )}
 
                   <button className="fsub" type="submit" disabled={status === 'sending'}>
-                    {status === 'sending' ? 'ENVIANDO...' : 'SOLICITAR DIAGNÓSTICO →'}
+                    {status === 'sending'
+                      ? 'ENVIANDO...'
+                      : form.challenge === DEMO_CHALLENGE ? 'SOLICITAR DEMO →' : 'SOLICITAR DIAGNÓSTICO →'}
                   </button>
                   <p style={{ fontSize: 11, color: '#aaa', marginTop: 12, lineHeight: 1.6 }}>
                     Al enviar aceptás nuestra{' '}

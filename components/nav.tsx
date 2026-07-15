@@ -19,8 +19,8 @@ interface NavProps {
 
 const links = [
   { href: '/',          label: 'Inicio'    },
+  { href: '/sistemas',  label: 'Software'  },
   { href: '/servicios', label: 'Servicios' },
-  { href: '/sistemas',  label: 'Sistemas'  },
   { href: '/planes',    label: 'Planes'    },
   { href: '/proceso',   label: 'Proceso'   },
   { href: '/casos',     label: 'Casos'     },

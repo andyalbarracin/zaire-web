@@ -26,13 +26,17 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ZAIRE — Intelligent Operations Studio',
+    default: 'ZAIRE — Software industrial y sistemas operativos',
     template: '%s | ZAIRE',
   },
   description:
-    'Diseñamos operaciones conectadas con workflows, IA y agentes. Sistemas inteligentes para ventas, operación y crecimiento.',
-  keywords: ['automatización', 'agentes IA', 'n8n', 'Claude', 'workflows', 'operaciones', 'Argentina'],
-  authors: [{ name: 'ZAIRE Studio' }],
+    'Software para empresas que mantienen, reparan y operan activos. Y sistemas a medida cuando hace falta algo propio.',
+  keywords: [
+    'automatización', 'agentes IA', 'n8n', 'Claude', 'workflows', 'operaciones', 'Argentina',
+    'FSM', 'EAM', 'CMMS', 'field service', 'órdenes de trabajo', 'trazabilidad',
+    'mantenimiento', 'gestión de activos', 'industria',
+  ],
+  authors: [{ name: 'Zaire Technologies' }],
   icons: {
     icon: [
       { url: '/assets/favicon.ico' },
@@ -44,13 +48,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'ZAIRE',
-    title: 'ZAIRE — Intelligent Operations Studio',
-    description: 'Diseñamos operaciones conectadas con workflows, IA y agentes.',
+    title: 'ZAIRE — Software industrial y sistemas operativos',
+    description: 'Software para empresas que mantienen, reparan y operan activos. Y sistemas a medida cuando hace falta algo propio.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ZAIRE — Intelligent Operations Studio',
-    description: 'Diseñamos operaciones conectadas con workflows, IA y agentes.',
+    title: 'ZAIRE — Software industrial y sistemas operativos',
+    description: 'Software para empresas que mantienen, reparan y operan activos. Y sistemas a medida cuando hace falta algo propio.',
   },
 };
 

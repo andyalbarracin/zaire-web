@@ -25,7 +25,7 @@ const TOPIC_BTNS = [
   'Marketing / Ventas',
   'Atención al Cliente',
   'Operaciones internas',
-  'Otros...',
+  'Operación industrial',
 ];
 
 /* ── Helpers de localStorage ──────────────────────────────── */

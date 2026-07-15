@@ -20,6 +20,7 @@ const MANTRA = 'Infraestructura para lo que viene.';
 // 'Construimos antes de que lo pidan.'
 
 const navLinks = [
+  { href: '/sistemas',  label: 'Software'  },
   { href: '/servicios', label: 'Servicios' },
   { href: '/planes',    label: 'Planes'    },
   { href: '/proceso',   label: 'Proceso'   },
@@ -64,7 +65,7 @@ export default function Footer() {
               textTransform: 'uppercase',
               marginTop: 12,
             }}>
-              Intelligent Operations Studio
+              Zaire Technologies — Software industrial y sistemas operativos
             </div>
           </div>
 
