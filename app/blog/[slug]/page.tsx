@@ -28,17 +28,53 @@ export async function generateStaticParams() {
   return posts.map(p => ({ slug: p.slug }));
 }
 
+/* Parser inline: soporta links [texto](/url) y negrita **texto** dentro de una línea */
+function inline(text: string): React.ReactNode {
+  return text
+    .split(/(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*)/g)
+    .map((part, i) => {
+      if (!part) return null;
+      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (link) return <Link key={i} href={link[2]} style={{ color: '#FF6A00', fontWeight: 500 }}>{link[1]}</Link>;
+      const bold = part.match(/^\*\*([^*]+)\*\*$/);
+      if (bold) return <strong key={i}>{bold[1]}</strong>;
+      return <span key={i}>{part}</span>;
+    });
+}
+
 /* Convierte markdown básico a JSX */
 function renderContent(md: string) {
   return md.split('\n').map((line, i) => {
-    if (line.startsWith('## ')) return <h2 key={i} style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(24px,3vw,36px)', fontWeight: 800, textTransform: 'uppercase', marginTop: 48, marginBottom: 16 }}>{line.slice(3)}</h2>;
-    if (line.startsWith('### ')) return <h3 key={i} style={{ fontFamily: 'var(--fd)', fontSize: 20, fontWeight: 700, textTransform: 'uppercase', marginTop: 32, marginBottom: 12 }}>{line.slice(4)}</h3>;
+    if (line.startsWith('## ')) return <h2 key={i} style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(24px,3vw,36px)', fontWeight: 800, textTransform: 'uppercase', marginTop: 48, marginBottom: 16 }}>{inline(line.slice(3))}</h2>;
+    if (line.startsWith('### ')) return <h3 key={i} style={{ fontFamily: 'var(--fd)', fontSize: 20, fontWeight: 700, textTransform: 'uppercase', marginTop: 32, marginBottom: 12 }}>{inline(line.slice(4))}</h3>;
     if (line.startsWith('**') && line.endsWith('**')) {
-      return <p key={i} style={{ fontWeight: 700, marginBottom: 8 }}>{line.slice(2, -2)}</p>;
+      return <p key={i} style={{ fontWeight: 700, marginBottom: 8 }}>{inline(line.slice(2, -2))}</p>;
     }
     if (line.trim() === '') return <div key={i} style={{ height: 16 }} />;
-    return <p key={i} style={{ fontSize: 16, lineHeight: 1.8, color: '#555', marginBottom: 8 }}>{line}</p>;
+    return <p key={i} style={{ fontSize: 16, lineHeight: 1.8, color: '#555', marginBottom: 8 }}>{inline(line)}</p>;
   });
+}
+
+/* Extrae las FAQ del contenido (sección "Preguntas frecuentes") para el JSON-LD */
+function extractFaq(md: string): { q: string; a: string }[] {
+  const idx = md.indexOf('## Preguntas frecuentes');
+  if (idx === -1) return [];
+  const strip = (s: string) => s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+  const faqs: { q: string; a: string }[] = [];
+  let q: string | null = null;
+  const ans: string[] = [];
+  for (const raw of md.slice(idx).split('\n').slice(1)) {
+    const line = raw.trim();
+    const m = line.match(/^\*\*(.+)\*\*$/);
+    if (m) {
+      if (q) { faqs.push({ q, a: ans.join(' ').trim() }); ans.length = 0; }
+      q = strip(m[1]);
+    } else if (line && q) {
+      ans.push(strip(line));
+    }
+  }
+  if (q) faqs.push({ q, a: ans.join(' ').trim() });
+  return faqs;
 }
 
 export default async function BlogPostPage({ params }: Props) {
@@ -49,8 +85,40 @@ export default async function BlogPostPage({ params }: Props) {
   const allPosts = await getAllPosts();
   const related = allPosts.filter(p => p.id !== post.id && p.category === post.category).slice(0, 2);
 
+  /* ── Structured data (JSON-LD) para SEO/AEO ── */
+  const faqs = extractFaq(post.content);
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.published_at,
+    inLanguage: 'es-AR',
+    author: { '@type': 'Organization', name: 'Zaire Technologies', url: 'https://zairetech.com' },
+    publisher: { '@type': 'Organization', name: 'Zaire Technologies', url: 'https://zairetech.com' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://zairetech.com/blog/${post.slug}` },
+  };
+  const faqLd = faqs.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map(f => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      }
+    : null;
+
   return (
     <>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }} />
+      {faqLd && (
+        /* eslint-disable-next-line react/no-danger */
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+      )}
+
       {/* Nav sin botón de contacto visible en modo server */}
       <nav className="zn dark" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <Link href="/" className="zn-logo">
