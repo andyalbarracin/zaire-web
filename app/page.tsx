@@ -20,6 +20,7 @@ const ChatBox = dynamic(() => import('@/components/chat-box'), {
   loading: () => <div className="ai-box" style={{ minHeight: 420 }} />,
 });
 import Reveal from '@/components/reveal';
+import Image from 'next/image';
 import {
   IWorkflow, IAgent, IKnowledge, IRevenue, IGrowth, IApps,
   IN8n, IClaude, IOpenAI, ISupabase, IMCP, IPostgres, IRAG, IOllama, IAPI, ICRM,
@@ -37,24 +38,34 @@ const problems = [
   { n: '06', title: 'Procesos que No Escalan', body: 'Lo que funcionaba con 5 clientes colapsa con 50. Sin sistema, no hay escala.' },
 ];
 
-const products = [
-  {
-    name: 'Zaire Trace',
-    label: 'Trazabilidad · Órdenes de trabajo',
-    body: 'Órdenes de trabajo y de servicio con numeración correlativa, estados, ítems técnicos y auditoría. Para operar bajo ISO 9001 sin preparar nada.',
-    chips: ['OT/OTS', 'Trazabilidad', 'Auditoría', 'Reportes'],
-  },
-  {
-    name: 'Zaire Field',
-    label: 'Trabajo de campo · GPS',
-    body: 'Visitas con arribo confirmado por geocerca, reporte técnico con fotos, viáticos y documentos con vencimiento.',
-    chips: ['Visitas', 'Geocercas', 'Gastos', 'Documentos'],
-  },
+/* Dolores industriales — conviven con los de automatización (Studio) */
+const industrialPains = [
+  { n: '01', title: 'Campo a Ciegas', body: 'La visita a planta se confirma con la palabra del técnico, no con un dato.' },
+  { n: '02', title: 'Reportes Perdidos', body: 'El relevamiento del sello llega por WhatsApp, o llega tarde, o no llega.' },
+  { n: '03', title: 'Viáticos sin Control', body: 'Combustible, peajes y hoteles se aprueban de memoria y se cierran a fin de mes.' },
+  { n: '04', title: 'Vencimientos Ocultos', body: 'Licencias, VTV y seguros aparecen cuando ya son una multa.' },
+  { n: '05', title: 'Doble Carga', body: 'Lo que el técnico anota en la planta, alguien lo vuelve a tipear en la oficina.' },
+  { n: '06', title: 'Auditoría a Último Momento', body: 'La trazabilidad se arma la semana previa a la auditoría, no todos los días.' },
+];
+
+/* Módulos disponibles de Zaire Industrial (chips del panel destacado) */
+const industrialModules = ['Zaire Trace', 'Zaire Field', 'Zaire Assets', 'Zaire Stock', 'Zaire CRM'];
+
+/* Productos secundarios */
+const secondaryProducts = [
   {
     name: 'NIMO',
     label: 'CRM · Web inmobiliaria',
-    body: 'CRM inmobiliario con administrador de propiedades, consultas, estados e imágenes, y frontend público autoadministrable.',
+    body: 'Vertical inmobiliario por Zaire: administrador de propiedades, consultas, estados e imágenes, y frontend público autoadministrable.',
     chips: ['CRM', 'Propiedades', 'Consultas', 'Web'],
+    href: '/sistemas',
+  },
+  {
+    name: 'Software a medida',
+    label: 'Zaire Studio · Sistemas propios',
+    body: 'Cuando la operación necesita algo propio: CRMs, dashboards, portales y sistemas verticales, diseñados alrededor del proceso real.',
+    chips: ['Next.js', 'Supabase', 'Dashboards', 'APIs'],
+    href: '/servicios',
   },
 ];
 
@@ -241,7 +252,32 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
 
       <Stripe />
 
-      {/* ── PROBLEMAS REALES ──────────────────────────────── */}
+      {/* ── DOLORES INDUSTRIALES ──────────────────────────── */}
+      <Reveal>
+        <section className="section s-wh" id="industrial-pains">
+          <div className="split2">
+            <h2 className="s-h2">
+              SI OPERÁS<br />ACTIVOS Y <em>CAMPO</em>
+            </h2>
+            <p>
+              Sellos, bombas, equipos, técnicos en planta. Zaire Industrial ordena la operación
+              industrial donde hoy manda la planilla, el WhatsApp y la memoria.
+            </p>
+          </div>
+
+          <div className="prob-grid">
+            {industrialPains.map(p => (
+              <div key={p.n} className="prob-card">
+                <div className="prob-num">{p.n}</div>
+                <div className="prob-title">{p.title}</div>
+                <div className="prob-body">{p.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ── PROBLEMAS REALES (automatización · Studio) ─────── */}
       <Reveal>
         <section className="section" id="problems">
           <div className="split2">
@@ -274,12 +310,58 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
             EL SOFTWARE QUE<br /><em>CONSTRUIMOS</em>
           </h2>
           <p style={{ fontSize: 14, color: '#888', marginBottom: 40, fontWeight: 300, maxWidth: 560 }}>
-            Productos propios, en producción. Nacen de la operación real de clientes reales.
+            Producto propio, en producción. Nace de la operación real, no de una demo.
           </p>
 
-          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            {products.map(p => (
-              <div key={p.name} className="case-card">
+          {/* Destacado: Zaire Industrial (la suite) */}
+          <div className="soft-card">
+            <div className="split2" style={{ alignItems: 'center', marginBottom: 0, gap: 44 }}>
+              <div>
+                <div className="s-lbl">// ZAIRE INDUSTRIAL · SUITE INDUSTRIAL</div>
+                <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(28px,3vw,42px)', fontWeight: 800, textTransform: 'uppercase', color: '#111', lineHeight: .95, margin: '12px 0 16px' }}>
+                  Zaire Industrial
+                </h3>
+                <p style={{ fontSize: 15, fontWeight: 300, color: '#555', lineHeight: 1.75, marginBottom: 20 }}>
+                  Nuestra suite industrial modular: órdenes, campo, activos, stock y comercial sobre un
+                  mismo backend. El dato se carga una vez y viaja solo. En producción hoy en oil & gas.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                  {industrialModules.map(m => (
+                    <span key={m} className="case-chip" style={{ background: '#f0efe9', color: '#555' }}>{m}</span>
+                  ))}
+                </div>
+                <Link href="/sistemas">
+                  <button className="btn btn-primary">Ver la suite →</button>
+                </Link>
+              </div>
+              <div>
+                <Image
+                  src="/zaire-industrial-mockups/webapp-light-mode.png"
+                  alt="Dashboard web de Zaire Industrial en modo claro, con la suite y las órdenes de Trace"
+                  width={1448} height={1086}
+                  sizes="(max-width: 860px) 92vw, 520px"
+                  style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4, border: '1px solid #e5e3dd' }}
+                />
+                <Link href="/sistemas" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
+                  <Image
+                    src="/zaire-industrial-mockups/zaire-industrial-homepage-mockup-1.png"
+                    alt="App móvil de Zaire Industrial: pantalla Mi Jornada"
+                    width={1122} height={1402} sizes="60px"
+                    style={{ width: 52, height: 'auto', display: 'block', borderRadius: 4 }}
+                  />
+                  <span style={{ fontFamily: 'var(--fm)', fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase', color: '#FF6A00' }}>
+                    También en el celular →
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Secundarios: NIMO + software a medida */}
+          <div className="s-lbl" style={{ marginTop: 40, marginBottom: 20 }}>// OTROS PRODUCTOS</div>
+          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+            {secondaryProducts.map(p => (
+              <Link key={p.name} href={p.href} className="case-card" style={{ textDecoration: 'none' }}>
                 <div className="case-sector">{p.label}</div>
                 <div className="case-title">{p.name}</div>
                 <div className="case-body">{p.body}</div>
@@ -288,14 +370,8 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
                     <span key={ch} className="case-chip">{ch}</span>
                   ))}
                 </div>
-              </div>
+              </Link>
             ))}
-          </div>
-
-          <div style={{ marginTop: 32 }}>
-            <Link href="/sistemas">
-              <button className="btn btn-dark">Ver todo el software →</button>
-            </Link>
           </div>
         </section>
       </Reveal>
