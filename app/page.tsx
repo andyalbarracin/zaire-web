@@ -38,16 +38,6 @@ const problems = [
   { n: '06', title: 'Procesos que No Escalan', body: 'Lo que funcionaba con 5 clientes colapsa con 50. Sin sistema, no hay escala.' },
 ];
 
-/* Dolores industriales — conviven con los de automatización (Studio) */
-const industrialPains = [
-  { n: '01', title: 'Campo a Ciegas', body: 'La visita a planta se confirma con la palabra del técnico, no con un dato.' },
-  { n: '02', title: 'Reportes Perdidos', body: 'El relevamiento del sello llega por WhatsApp, o llega tarde, o no llega.' },
-  { n: '03', title: 'Viáticos sin Control', body: 'Combustible, peajes y hoteles se aprueban de memoria y se cierran a fin de mes.' },
-  { n: '04', title: 'Vencimientos Ocultos', body: 'Licencias, VTV y seguros aparecen cuando ya son una multa.' },
-  { n: '05', title: 'Doble Carga', body: 'Lo que el técnico anota en la planta, alguien lo vuelve a tipear en la oficina.' },
-  { n: '06', title: 'Auditoría a Último Momento', body: 'La trazabilidad se arma la semana previa a la auditoría, no todos los días.' },
-];
-
 /* Módulos disponibles de Zaire Industrial (chips del panel destacado) */
 const industrialModules = ['Zaire Trace', 'Zaire Field', 'Zaire Assets', 'Zaire Stock', 'Zaire CRM'];
 
@@ -110,80 +100,6 @@ const stack = [
   { icon: <IRAG s="#FF6A00" size={32} />, name: 'Vector / RAG' },
   { icon: <IAPI s="#FF6A00" size={32} />, name: 'APIs REST' },
   { icon: <ICRM s="#FF6A00" size={32} />, name: 'CRM' },
-];
-
-// ── PRECIOS ─────────────────────────────────────────────────────────────────
-// Para cambiar precios, edita los campos `setup` y `maintenance` de cada plan.
-// setup: precio único de implementación (string, ej. '$300')
-// maintenance: cuota mensual (string, ej. '$150') — null para "A medida"
-// Estos valores deben mantenerse sincronizados con app/planes/page.tsx.
-// ────────────────────────────────────────────────────────────────────────────
-const plans = [
-  {
-    tier: 'Automatiza tu primer flujo',
-    name: 'FLOW',
-    setup: '$249',        // ← SETUP FLOW
-    maintenance: '$99',   // ← MANTENIMIENTO FLOW /mes
-    feats: ['1 workflow principal automatizado', 'Integración CRM + Email', 'Dashboard básico de seguimiento', 'Documentación del sistema', 'Soporte mensual dedicado'],
-    cta: 'EMPEZAR',
-    feat: false,
-  },
-  {
-    tier: 'Opera sin fricción',
-    name: 'PERFORMANCE',
-    setup: '$399',        // ← SETUP PERFORMANCE
-    maintenance: '$250',  // ← MANTENIMIENTO PERFORMANCE /mes
-    feats: ['Hasta 5 workflows conectados', 'Agente IA integrado a tu CRM', 'Knowledge base de marca propia', 'Reporting avanzado en tiempo real', 'Soporte semanal + optimización', 'Revisión mensual de arquitectura'],
-    cta: 'EMPEZAR',
-    feat: true,
-  },
-  {
-    tier: 'Arquitectura total',
-    name: 'INTELLIGENCE',
-    setup: 'A medida',   // ← sin precio fijo
-    maintenance: null,
-    feats: ['Workflows y agentes ilimitados', 'Arquitectura agentic completa', 'Infraestructura dedicada', 'Team de ingeniería ZAIRE', 'SLA + soporte prioritario 24/7', 'Evolución trimestral del sistema'],
-    cta: 'HABLAR',
-    feat: false,
-  },
-];
-
-const process = [
-  { n: '01', title: 'Discovery', body: 'Mapeamos tu operación actual, identificamos fricciones y definimos el punto de mayor impacto.' },
-  { n: '02', title: 'Diseño', body: 'Organizamos todo el sistema para que procesos, herramientas e información funcionen juntos.' },
-  { n: '03', title: 'Implementación', body: 'Construimos y conectamos todo. Cada pieza documentada y lista para operar.' },
-  { n: '04', title: 'Estabilización', body: 'Monitoreamos, ajustamos y entrenamos al equipo. El sistema entra en producción real.' },
-];
-
-const cases = [
-  {
-    sector: 'VENTAS B2B',
-    title: 'Pipeline Inteligente',
-    body: 'Leads calificados automáticamente, seguimiento por agente IA y propuestas generadas con contexto real del cliente.',
-    chips: ['n8n', 'Claude', 'HubSpot'],
-    hl: false,
-  },
-  {
-    sector: 'MARKETING',
-    title: 'Contenido Operativo',
-    body: 'Generación, revisión y publicación de contenido a escala. Brand voice preservado por knowledge base propia.',
-    chips: ['OpenAI', 'Supabase', 'RAG'],
-    hl: true,
-  },
-  {
-    sector: 'OPERACIONES',
-    title: 'Onboarding Automatizado',
-    body: 'Contratos, accesos, comunicaciones y tareas de equipo ejecutados sin coordinación manual.',
-    chips: ['Webhooks', 'n8n', 'Notion'],
-    hl: false,
-  },
-  {
-    sector: 'SOPORTE',
-    title: 'Agente 24/7',
-    body: 'Agente IA entrenado con la información de tu empresa, capaz de resolver consultas, derivar casos complejos y mejorar con cada interacción..',
-    chips: ['Claude', 'RAG', 'Supabase'],
-    hl: false,
-  },
 ];
 
 /* ── Componente principal ────────────────────────────────── */
@@ -252,56 +168,6 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
 
       <Stripe />
 
-      {/* ── DOLORES INDUSTRIALES ──────────────────────────── */}
-      <Reveal>
-        <section className="section s-wh" id="industrial-pains">
-          <div className="split2">
-            <h2 className="s-h2">
-              SI OPERÁS<br />ACTIVOS Y <em>CAMPO</em>
-            </h2>
-            <p>
-              Sellos, bombas, equipos, técnicos en planta. Zaire Industrial ordena la operación
-              industrial donde hoy manda la planilla, el WhatsApp y la memoria.
-            </p>
-          </div>
-
-          <div className="prob-grid">
-            {industrialPains.map(p => (
-              <div key={p.n} className="prob-card">
-                <div className="prob-num">{p.n}</div>
-                <div className="prob-title">{p.title}</div>
-                <div className="prob-body">{p.body}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
-
-      {/* ── PROBLEMAS REALES (automatización · Studio) ─────── */}
-      <Reveal>
-        <section className="section" id="problems">
-          <div className="split2">
-            <h2 className="s-h2">
-              TUS OPERACIONES<br />MERECEN <em>MÁS</em>
-            </h2>
-            <p>
-              La mayoría de las empresas gestionan su operación con herramientas desconectadas.
-              ZAIRE las unifica en un sistema inteligente que trabaja solo.
-            </p>
-          </div>
-
-          <div className="prob-grid">
-            {problems.map(p => (
-              <div key={p.n} className="prob-card">
-                <div className="prob-num">{p.n}</div>
-                <div className="prob-title">{p.title}</div>
-                <div className="prob-body">{p.body}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
-
       {/* ── SOFTWARE PROPIO · PRODUCTOS ──────────────────── */}
       <Reveal>
         <section className="section" id="software">
@@ -336,18 +202,18 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
               </div>
               <div>
                 <Image
-                  src="/zaire-industrial-mockups/webapp-light-mode.png"
-                  alt="Dashboard web de Zaire Industrial en modo claro, con la suite y las órdenes de Trace"
-                  width={1448} height={1086}
+                  src="/zaire-industrial-mockups/transparent/webapp-dark-mode-transparent.png"
+                  alt="Dashboard web de Zaire Industrial en modo oscuro, con la suite y las órdenes de Trace"
+                  width={1283} height={1122}
                   sizes="(max-width: 860px) 92vw, 520px"
-                  style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4, border: '1px solid #e5e3dd' }}
+                  style={{ width: '100%', height: 'auto', display: 'block' }}
                 />
-                <Link href="/sistemas" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
+                <Link href="/sistemas" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
                   <Image
-                    src="/zaire-industrial-mockups/zaire-industrial-homepage-mockup-1.png"
+                    src="/zaire-industrial-mockups/transparent/zaire-industrial-homepage-mockup-transparent.png"
                     alt="App móvil de Zaire Industrial: pantalla Mi Jornada"
-                    width={1122} height={1402} sizes="60px"
-                    style={{ width: 52, height: 'auto', display: 'block', borderRadius: 4 }}
+                    width={736} height={1290} sizes="60px"
+                    style={{ width: 46, height: 'auto', display: 'block' }}
                   />
                   <span style={{ fontFamily: 'var(--fm)', fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase', color: '#FF6A00' }}>
                     También en el celular →
@@ -371,6 +237,31 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
                   ))}
                 </div>
               </Link>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ── PROBLEMAS REALES (automatización · Studio) ─────── */}
+      <Reveal>
+        <section className="section" id="problems">
+          <div className="split2">
+            <h2 className="s-h2">
+              TUS OPERACIONES<br />MERECEN <em>MÁS</em>
+            </h2>
+            <p>
+              La mayoría de las empresas gestionan su operación con herramientas desconectadas.
+              ZAIRE las unifica en un sistema inteligente que trabaja solo.
+            </p>
+          </div>
+
+          <div className="prob-grid">
+            {problems.map(p => (
+              <div key={p.n} className="prob-card">
+                <div className="prob-num">{p.n}</div>
+                <div className="prob-title">{p.title}</div>
+                <div className="prob-body">{p.body}</div>
+              </div>
             ))}
           </div>
         </section>
@@ -403,16 +294,16 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
 
           <div style={{ marginTop: 32 }}>
             <Link href="/servicios">
-              <button className="btn btn-white">Ver todos los servicios →</button>
+              <button className="btn btn-white">Conocé Zaire Studio →</button>
             </Link>
           </div>
         </section>
       </Reveal>
 
-      {/* ── CAPAS DEL SISTEMA ─────────────────────────────── */}
+      {/* ── CAPAS DEL SISTEMA (Zaire Studio) ──────────────── */}
       <Reveal>
         <section className="section" id="layers">
-          <div className="s-lbl">// SISTEMA EN CAPAS</div>
+          <div className="s-lbl">// ZAIRE STUDIO · SISTEMA EN CAPAS</div>
           <h2 className="s-h2" style={{ marginBottom: 40 }}>
             TRES NIVELES.<br />UN <em>SISTEMA</em>.
           </h2>
@@ -435,8 +326,8 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
           </div>
 
           <div style={{ marginTop: 32 }}>
-            <Link href="/sistemas">
-              <button className="btn btn-dark">Explorar arquitectura →</button>
+            <Link href="/servicios">
+              <button className="btn btn-dark">Explorar Zaire Studio →</button>
             </Link>
           </div>
         </section>
@@ -455,116 +346,6 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
                 <div className="stack-name">{s.name}</div>
               </div>
             ))}
-          </div>
-        </section>
-      </Reveal>
-
-      {/* ── PLANES ───────────────────────────────────────── */}
-      <Reveal>
-        <section className="section" id="plans">
-          <div className="s-lbl">// PLANES DE ZAIRE STUDIO · ELEGÍ TU NIVEL</div>
-          <h2 className="s-h2" style={{ marginBottom: 8 }}>ELIGE TU NIVEL</h2>
-          <p style={{ fontSize: 14, color: '#888', marginBottom: 40, fontWeight: 300 }}>
-            Cada plan es un sistema completo, no una lista de funciones.
-          </p>
-
-          <div className="plans-grid">
-            {plans.map(p => (
-              <div key={p.name} className={`plan-card${p.feat ? ' feat' : ''}`}>
-                <div className="plan-tier">{p.tier}</div>
-                <div className="plan-name" style={{ whiteSpace: 'pre-line' }}>{p.name}</div>
-                <div className="plan-price" style={{ color: p.feat ? '#fff' : '#111', fontSize: p.setup === 'A medida' ? 38 : undefined }}>
-                  {p.setup !== 'A medida' && (
-                    <span style={{ fontSize: 14, fontWeight: 400, color: p.feat ? '#999' : '#111' }}>setups desde</span>
-                  )}
-                  {p.setup}
-                  {p.setup !== 'A medida' && (
-                    <span style={{ fontSize: 16, fontWeight: 400, color: p.feat ? '#999' : '#111' }}>usd</span>
-                  )}
-                </div>
-                {p.maintenance && (
-                  <div style={{ fontSize: 13, fontWeight: 400, color: p.feat ? '#888' : '#111', marginTop: 6 }}>
-                    Mantenimiento desde {p.maintenance}
-                    <span style={{ fontSize: 13, fontWeight: 400, color: p.feat ? '#999' : '#111' }}> usd /mes</span>
-                  </div>
-                )}
-                <div className="plan-feats">
-                  {p.feats.map(f => (
-                    <div key={f} className="plan-feat">{f}</div>
-                  ))}
-                </div>
-                <button
-                  className={`btn ${p.feat ? 'btn-primary' : 'btn-dark'}`}
-                  style={{ justifyContent: 'center', width: '100%' }}
-                  onClick={() => setShowContact(true)}
-                >
-                  {p.cta} →
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 32, textAlign: 'center' }}>
-            <Link href="/planes">
-              <button className="btn btn-outline">Comparar planes en detalle →</button>
-            </Link>
-          </div>
-        </section>
-      </Reveal>
-
-      {/* ── CÓMO TRABAJAMOS ───────────────────────────────── */}
-      <Reveal>
-        <section className="section s-wh" id="process">
-          <div className="s-lbl">// PROCESO</div>
-          <h2 className="s-h2" style={{ marginBottom: 40 }}>
-            CÓMO<br />TRABAJAMOS
-          </h2>
-
-          <div className="proc-grid">
-            {process.map(p => (
-              <div key={p.n} className="proc-card">
-                <div className="proc-num">{p.n}</div>
-                <div className="proc-title">{p.title}</div>
-                <div className="proc-body">{p.body}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 32 }}>
-            <Link href="/proceso">
-              <button className="btn btn-dark">Ver proceso completo →</button>
-            </Link>
-          </div>
-        </section>
-      </Reveal>
-
-      {/* ── CASOS DE USO ──────────────────────────────────── */}
-      <Reveal>
-        <section className="section s-dk" id="cases">
-          <div className="s-lbl s-lbl-dk">// CASOS DE USO</div>
-          <h2 className="s-h2" style={{ color: '#fff', marginBottom: 40 }}>
-            SISTEMAS EN<br /><em>OPERACIÓN</em>
-          </h2>
-
-          <div className="cases-grid">
-            {cases.map(c => (
-              <div key={c.title} className={`case-card${c.hl ? ' hl' : ''}`}>
-                <div className="case-sector">{c.sector}</div>
-                <div className="case-title">{c.title}</div>
-                <div className="case-body">{c.body}</div>
-                <div className="case-chips">
-                  {c.chips.map(ch => (
-                    <span key={ch} className="case-chip">{ch}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 32 }}>
-            <Link href="/casos">
-              <button className="btn btn-white">Ver todos los casos →</button>
-            </Link>
           </div>
         </section>
       </Reveal>
