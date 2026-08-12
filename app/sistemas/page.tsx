@@ -157,6 +157,7 @@ export default function SistemasPage() {
       <Reveal>
         <section className="section s-wh">
           <div className="split2" style={{ alignItems: 'center', marginBottom: 0, gap: 56 }}>
+            <Monitor img={IMG.webDark} alt="Dashboard web de Zaire Industrial en modo oscuro, con el resumen de la suite" />
             <div>
               <div className="s-lbl">// ZAIRE INDUSTRIAL · SUITE INDUSTRIAL</div>
               <h2 className="s-h2" style={{ marginTop: 12, marginBottom: 24 }}>Un backend,<br />módulos que <em>contratás de a uno</em></h2>
@@ -167,7 +168,6 @@ export default function SistemasPage() {
                 hoy con un proveedor industrial de oil & gas.
               </p>
             </div>
-            <Monitor img={IMG.webDark} alt="Dashboard web de Zaire Industrial en modo oscuro, con el resumen de la suite" />
           </div>
         </section>
       </Reveal>
@@ -200,7 +200,9 @@ export default function SistemasPage() {
           <h2 className="s-h2" style={{ marginTop: 12, marginBottom: 40 }}>Cinco módulos,<br />un <em>backend</em></h2>
 
           <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-            {products.map(prod => (
+            {['Zaire Stock', 'Zaire Trace', 'Zaire Assets', 'Zaire Field', 'Zaire CRM']
+              .map(n => products.find(p => p.name === n)!)
+              .map(prod => (
               <div key={prod.name} style={{ background: '#fff', border: '1px solid #ebe9e2', borderTop: '2px solid var(--org)', borderRadius: 2, padding: '32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {prod.img && <Phone img={prod.img} alt={`Pantalla de ${prod.name} en el celular`} max={230} />}
                 <div>
@@ -222,6 +224,26 @@ export default function SistemasPage() {
                 </div>
               </div>
             ))}
+
+            {/* Card de roadmap (sexta celda, junto a CRM) */}
+            <div style={{ background: '#fbfbf9', border: '1px dashed #d8d5cc', borderTop: '2px solid #ccc', borderRadius: 2, padding: '32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.12em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>Roadmap · todavía no disponibles</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: 26, fontWeight: 800, textTransform: 'uppercase', color: '#111', lineHeight: 1 }}>Hacia dónde va</div>
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 300, color: '#888', lineHeight: 1.7 }}>
+                La arquitectura ya está preparada para recibirlos: mismo backend, mismos datos
+                maestros, sin migración para el cliente.
+              </p>
+              <div style={{ marginTop: 4 }}>
+                {roadmap.map(m => (
+                  <div key={m.name} style={{ display: 'flex', gap: 10, marginBottom: 10, fontSize: 13.5, color: '#666', lineHeight: 1.5 }}>
+                    <span style={{ color: '#bbb', flexShrink: 0 }}>○</span>
+                    <span><strong style={{ color: '#111', fontWeight: 600 }}>{m.name}</strong> — {m.body}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </Reveal>
@@ -290,31 +312,6 @@ export default function SistemasPage() {
         </section>
       </Reveal>
 
-      {/* ── ROADMAP · corto, dos columnas ── */}
-      <Reveal>
-        <section className="section s-wh">
-          <div className="split2" style={{ alignItems: 'start', marginBottom: 0, gap: 48 }}>
-            <div>
-              <div className="s-lbl">// ROADMAP DE LA SUITE</div>
-              <h2 className="s-h2" style={{ marginTop: 12, marginBottom: 20 }}>Hacia dónde va</h2>
-              <p style={{ fontSize: 15, fontWeight: 300, color: '#555', lineHeight: 1.75 }}>
-                Los módulos de al lado todavía no están disponibles. Los listamos porque la
-                arquitectura ya está preparada para recibirlos: mismo backend, mismos datos maestros,
-                sin migración para el cliente.
-              </p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {roadmap.map(m => (
-                <div key={m.name} style={{ border: '1px solid #e5e3dd', borderRadius: 2, padding: '20px', background: '#fff' }}>
-                  <div style={{ fontFamily: 'var(--fd)', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: '#111', marginBottom: 8, lineHeight: 1.1 }}>{m.name}</div>
-                  <div style={{ fontSize: 13, color: '#888', lineHeight: 1.55 }}>{m.body}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </Reveal>
-
       {/* ── NIMO · secundario, con screenshot ── */}
       <Reveal>
         <section className="section">
@@ -338,6 +335,8 @@ export default function SistemasPage() {
           </div>
         </section>
       </Reveal>
+
+      <Stripe />
 
       {/* ── CTA · dos columnas (texto | formulario de demo) ── */}
       <Reveal>

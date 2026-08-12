@@ -174,23 +174,6 @@ export default function ServiciosPage() {
         </section>
       </Reveal>
 
-      {/* CTA */}
-      <Reveal>
-        <section className="cta-sec">
-          <div>
-            <div className="s-lbl">// SIGUIENTE PASO</div>
-            <div className="cta-h">DISEÑEMOS<br />TU <em>SISTEMA</em></div>
-          </div>
-          <div className="cta-right">
-            <p>Identificamos en 30 minutos qué servicio tiene mayor impacto en tu operación actual.</p>
-            <p style={{ fontSize: 14, color: '#aaa' }}>Automatizaciones, agentes y aplicaciones a medida para operar mejor.</p>
-            <div className="cta-btns">
-              <button className="btn btn-primary" onClick={() => setShowContact(true)}>Solicitar diagnóstico →</button>
-            </div>
-          </div>
-        </section>
-      </Reveal>
-
       <Footer />
       {showContact && <ContactModal onClose={() => setShowContact(false)} />}
     </>

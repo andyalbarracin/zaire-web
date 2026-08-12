@@ -168,6 +168,31 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
 
       <Stripe />
 
+      {/* ── PROBLEMAS REALES (automatización · Studio) ─────── */}
+      <Reveal>
+        <section className="section" id="problems">
+          <div className="split2">
+            <h2 className="s-h2">
+              TUS OPERACIONES<br />MERECEN <em>MÁS</em>
+            </h2>
+            <p>
+              La mayoría de las empresas gestionan su operación con herramientas desconectadas.
+              ZAIRE las unifica en un sistema inteligente que trabaja solo.
+            </p>
+          </div>
+
+          <div className="prob-grid">
+            {problems.map(p => (
+              <div key={p.n} className="prob-card">
+                <div className="prob-num">{p.n}</div>
+                <div className="prob-title">{p.title}</div>
+                <div className="prob-body">{p.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
       {/* ── SOFTWARE PROPIO · PRODUCTOS ──────────────────── */}
       <Reveal>
         <section className="section" id="software">
@@ -237,31 +262,6 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
                   ))}
                 </div>
               </Link>
-            ))}
-          </div>
-        </section>
-      </Reveal>
-
-      {/* ── PROBLEMAS REALES (automatización · Studio) ─────── */}
-      <Reveal>
-        <section className="section" id="problems">
-          <div className="split2">
-            <h2 className="s-h2">
-              TUS OPERACIONES<br />MERECEN <em>MÁS</em>
-            </h2>
-            <p>
-              La mayoría de las empresas gestionan su operación con herramientas desconectadas.
-              ZAIRE las unifica en un sistema inteligente que trabaja solo.
-            </p>
-          </div>
-
-          <div className="prob-grid">
-            {problems.map(p => (
-              <div key={p.n} className="prob-card">
-                <div className="prob-num">{p.n}</div>
-                <div className="prob-title">{p.title}</div>
-                <div className="prob-body">{p.body}</div>
-              </div>
             ))}
           </div>
         </section>
