@@ -15,13 +15,13 @@ import Reveal from '@/components/reveal';
 
 const casos = [
   {
-    sector: 'INDUSTRIA',
-    title: 'Trazabilidad y Trabajo de Campo',
-    challenge: 'Un proveedor industrial de sellos mecánicos y bombas para oil & gas gestionaba sus órdenes de trabajo en un Access de hace quince años, con técnicos visitando plantas en cuatro provincias y relevamientos que llegaban por WhatsApp.',
-    solution: 'Zaire Trace para la trazabilidad de órdenes con numeración correlativa por sucursal y auditoría ISO 9001. Zaire Field para las visitas: geocercas que confirman el arribo, reporte técnico con fotos y control de viáticos por región.',
-    results: ['Arribo a planta verificado por dato, no por palabra', 'El reporte de campo alimenta la orden sin recarga manual', 'Trazabilidad lista para auditoría todos los días, no la semana previa'],
-    chips: ['Next.js', 'Supabase', 'PostgreSQL', 'GPS'],
-    hl: false,
+    sector: 'INDUSTRIA · OIL & GAS',
+    title: 'De un Access de 15 años a Zaire Industrial',
+    challenge: 'Un proveedor de sellos mecánicos y bombas para operadoras de oil & gas de primera línea, certificado ISO 9001, manejaba sus órdenes de trabajo en un Access de quince años: monousuario, sin auditoría, con técnicos visitando plantas en varias provincias y relevamientos que llegaban por WhatsApp.',
+    solution: 'Zaire Trace para la trazabilidad de órdenes con numeración correlativa por sucursal y auditoría ISO 9001. Zaire Field para las visitas: geocercas que confirman el arribo, reporte técnico con fotos y control de viáticos por región. Un mismo backend, el dato cargado una vez.',
+    results: ['Órdenes numeradas, trazables y auditables — registro imborrable', 'Arribo a planta verificado por dato, no por palabra', 'El reporte de campo alimenta la orden sin recarga manual', 'Lista para la auditoría ISO todos los días, no la semana previa'],
+    chips: ['Zaire Trace', 'Zaire Field', 'ISO 9001', 'Multi-sucursal'],
+    hl: true,
   },
   {
     sector: 'VENTAS B2B',
@@ -39,7 +39,7 @@ const casos = [
     solution: 'Sistema de generación de contenido a escala con knowledge base de marca propia. Los agentes crean, el equipo revisa y aprueba. Publicación automatizada multi-plataforma.',
     results: ['3× más contenido con el mismo equipo', 'Brand voice consistente en todos los canales', 'Ciclo editorial de días → horas'],
     chips: ['OpenAI', 'Supabase', 'RAG', 'n8n'],
-    hl: true,
+    hl: false,
   },
   {
     sector: 'OPERACIONES INTERNAS',
