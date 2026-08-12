@@ -193,9 +193,9 @@ Construimos software para empresas que mantienen, reparan y operan activos. Y si
         </section>
       </Reveal>
 
-      {/* ── SOFTWARE PROPIO · PRODUCTOS ──────────────────── */}
+      {/* ── SOFTWARE PROPIO · PRODUCTOS (mismo fondo que Problems: sin doble padding) ── */}
       <Reveal>
-        <section className="section" id="software">
+        <section className="section" id="software" style={{ paddingTop: 0 }}>
           <div className="s-lbl">// SOFTWARE PROPIO</div>
           <h2 className="s-h2" style={{ marginBottom: 8 }}>
             EL SOFTWARE QUE<br /><em>CONSTRUIMOS</em>

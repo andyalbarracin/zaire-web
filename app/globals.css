@@ -312,7 +312,7 @@ nav.zn.scrolled .zn-burger {
 
 /* ── SECTIONS ─────────────────────────────────────────────── */
 .section {
-  padding: 96px var(--pad);
+  padding: 72px var(--pad);
 }
 
 /* Variantes de fondo de sección */
@@ -1184,7 +1184,7 @@ nav.zn.scrolled .zn-burger {
 /* ── CTA SECTION ──────────────────────────────────────────── */
 .cta-sec {
   background: var(--crm);
-  padding: 96px var(--pad);
+  padding: 72px var(--pad);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 48px;

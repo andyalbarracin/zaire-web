@@ -13,6 +13,7 @@ interface DemoFormProps {
   subject?: string;   // se envía como `challenge` al lead
   source?: string;    // origen del lead
   submitLabel?: string;
+  dark?: boolean;     // ajusta colores para fondo oscuro
 }
 
 interface FormState { name: string; email: string; company: string; message: string; }
@@ -21,6 +22,7 @@ export default function DemoForm({
   subject = 'Demo de software (Zaire)',
   source = 'sistemas_cta',
   submitLabel = 'Pedir una demo →',
+  dark = false,
 }: DemoFormProps) {
   const [form, setForm] = useState<FormState>({ name: '', email: '', company: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
@@ -47,7 +49,7 @@ export default function DemoForm({
     return (
       <div style={{ padding: '32px 0', textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--fd)', fontSize: 48, fontWeight: 900, color: '#FF6A00', lineHeight: 1, marginBottom: 12 }}>✓</div>
-        <h3 style={{ fontFamily: 'var(--fd)', fontSize: 26, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12, color: '#111' }}>Recibido</h3>
+        <h3 style={{ fontFamily: 'var(--fd)', fontSize: 26, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12, color: dark ? '#fff' : '#111' }}>Recibido</h3>
         <p style={{ fontSize: 14, color: '#888', lineHeight: 1.7 }}>
           Te contactamos en las próximas 24 horas hábiles para coordinar la demo.
         </p>
@@ -82,7 +84,12 @@ export default function DemoForm({
         </p>
       )}
 
-      <button className="fsub" type="submit" disabled={status === 'sending'}>
+      <button
+        className="fsub"
+        type="submit"
+        disabled={status === 'sending'}
+        style={dark ? { background: 'var(--org)', color: '#111' } : undefined}
+      >
         {status === 'sending' ? 'ENVIANDO...' : submitLabel}
       </button>
       <p style={{ fontSize: 11, color: '#aaa', marginTop: 10, lineHeight: 1.6 }}>

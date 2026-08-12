@@ -248,11 +248,11 @@ export default function SistemasPage() {
         </section>
       </Reveal>
 
-      {/* ── EL DIFERENCIAL DE SUITE · círculo virtuoso ── */}
+      {/* ── EL DIFERENCIAL DE SUITE · círculo virtuoso (fondo cream, cards dark) ── */}
       <Reveal>
-        <section className="section s-dk">
+        <section className="section">
           <div className="s-lbl" style={{ color: '#FF6A00' }}>// EL DIFERENCIAL DE SUITE</div>
-          <h2 className="s-h2" style={{ color: '#fff', marginTop: 12, marginBottom: 16 }}>Los módulos <em>se hablan</em></h2>
+          <h2 className="s-h2" style={{ color: '#111', marginTop: 12, marginBottom: 16 }}>Los módulos <em>se hablan</em></h2>
           <p style={{ fontSize: 16, fontWeight: 300, color: '#888', lineHeight: 1.75, maxWidth: 720, marginBottom: 44 }}>
             El dato se carga una vez y recorre la operación. Eso no lo da una herramienta suelta.
           </p>
@@ -271,9 +271,9 @@ export default function SistemasPage() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 14, color: '#aaa', lineHeight: 1.7, marginTop: 28, maxWidth: 760 }}>
+          <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, marginTop: 28, maxWidth: 760 }}>
             <span style={{ color: '#FF6A00', fontFamily: 'var(--fm)', fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase' }}>Y desde el comercial · </span>
-            la cotización ganada en <strong style={{ color: '#fff', fontWeight: 600 }}>CRM</strong> crea la orden en <strong style={{ color: '#fff', fontWeight: 600 }}>Trace</strong>, sin volver a cargar el cliente.
+            la cotización ganada en <strong style={{ color: '#111', fontWeight: 600 }}>CRM</strong> crea la orden en <strong style={{ color: '#111', fontWeight: 600 }}>Trace</strong>, sin volver a cargar el cliente.
           </p>
         </section>
       </Reveal>
@@ -338,20 +338,20 @@ export default function SistemasPage() {
 
       <Stripe />
 
-      {/* ── CTA · dos columnas (texto | formulario de demo) ── */}
+      {/* ── CTA · dark theme, dos columnas (texto | formulario de demo) ── */}
       <Reveal>
-        <section className="cta-sec">
+        <section className="cta-sec" style={{ background: '#111' }}>
           <div>
             <div className="s-lbl">// SIGUIENTE PASO</div>
-            <div className="cta-h">PEDÍ UNA<br /><em>DEMO</em></div>
-            <p style={{ marginTop: 20 }}>
+            <div className="cta-h" style={{ color: '#fff' }}>PEDÍ UNA<br /><em>DEMO</em></div>
+            <p style={{ marginTop: 20, color: '#aaa' }}>
               Una demo de 30 minutos alcanza para saber si Zaire Industrial resuelve tu caso o si te
               conviene otra cosa.
             </p>
             <p style={{ fontSize: 14, color: '#888' }}>Sin compromisos. Sin propuestas genéricas. Con criterio.</p>
           </div>
           <div className="cta-right">
-            <DemoForm subject="Demo de software (Zaire)" source="sistemas_cta" submitLabel="Pedir una demo →" />
+            <DemoForm subject="Demo de software (Zaire)" source="sistemas_cta" submitLabel="Pedir una demo →" dark />
           </div>
         </section>
       </Reveal>
