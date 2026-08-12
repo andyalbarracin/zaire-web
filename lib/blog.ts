@@ -16,8 +16,9 @@ export interface BlogPost {
   read_time: number;
   published_at: string;
   featured: boolean;
-  cover_bg: string;   // color CSS del fondo de portada
+  cover_bg: string;   // color CSS del fondo de portada (fallback si no hay imagen)
   cover_accent: string;
+  cover_image?: string | null;   // URL de imagen de portada (opcional; si existe, se usa en vez del color)
 }
 
 /* ── Posts dummy para desarrollo y seed inicial ─────────── */

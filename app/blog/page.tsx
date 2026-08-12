@@ -14,14 +14,18 @@ import Stripe from '@/components/stripe';
 import ContactModal from '@/components/contact-modal';
 import { type BlogPost, getAllPosts } from '@/lib/blog';
 
-const CATEGORIES = ['Todos', 'Automatización', 'Agentes IA', 'Arquitectura', 'Revenue', 'Operaciones'];
-
 /* ── Componente de card de post ──────────────────────────── */
 function PostCard({ post, featured }: { post: BlogPost; featured?: boolean }) {
+  const hasImg = !!post.cover_image;
   return (
     <Link href={`/blog/${post.slug}`} className={`blog-card${featured ? ' featured' : ''}`}>
-      <div className="blog-img" style={{ background: post.cover_bg }}>
-        <div className="blog-img-bg" style={{ background: post.cover_bg }} />
+      <div
+        className="blog-img"
+        style={hasImg
+          ? { backgroundImage: `url(${post.cover_image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+          : { background: post.cover_bg }}
+      >
+        <div className="blog-img-bg" style={{ background: hasImg ? 'linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.5))' : post.cover_bg }} />
         <span
           className="blog-category"
           style={featured ? { background: post.cover_accent, color: post.cover_accent === '#111' ? '#fff' : '#111' } : {}}
@@ -51,6 +55,9 @@ export default function BlogPage() {
   useEffect(() => {
     getAllPosts().then(setPosts);
   }, []);
+
+  /* Categorías derivadas de los posts reales (industria primero, según orden por fecha) */
+  const categories = ['Todos', ...Array.from(new Set(posts.map(p => p.category)))];
 
   const filtered = activeCategory === 'Todos'
     ? posts
@@ -95,7 +102,7 @@ export default function BlogPage() {
       <section className="section">
         {/* Filtros de categoría */}
         <div className="cat-filter">
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <button
               key={cat}
               className={`cat-btn${activeCategory === cat ? ' active' : ''}`}

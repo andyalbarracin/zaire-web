@@ -16,6 +16,9 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+/* ISR: revalida cada 5 min para tomar posts nuevos/editados sin redeploy */
+export const revalidate = 300;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
@@ -137,7 +140,9 @@ export default async function BlogPostPage({ params }: Props) {
       </nav>
 
       {/* Hero del artículo */}
-      <section style={{ background: post.cover_bg, padding: '110px var(--pad) 64px' }}>
+      <section style={post.cover_image
+        ? { backgroundImage: `linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.68)), url(${post.cover_image})`, backgroundSize: 'cover', backgroundPosition: 'center', padding: '110px var(--pad) 64px' }
+        : { background: post.cover_bg, padding: '110px var(--pad) 64px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
             <Link href="/blog">
@@ -177,8 +182,10 @@ export default async function BlogPostPage({ params }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
             {related.map(p => (
               <Link key={p.id} href={`/blog/${p.slug}`} className="blog-card">
-                <div className="blog-img" style={{ background: p.cover_bg }}>
-                  <div className="blog-img-bg" />
+                <div className="blog-img" style={p.cover_image
+                  ? { backgroundImage: `url(${p.cover_image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : { background: p.cover_bg }}>
+                  <div className="blog-img-bg" style={p.cover_image ? { background: 'linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.5))' } : undefined} />
                   <span className="blog-category">{p.category.toUpperCase()}</span>
                 </div>
                 <div className="blog-body">
