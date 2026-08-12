@@ -42,6 +42,20 @@ const servicesData = [
   },
 ];
 
+/* Preview de casos (linkea a /casos) */
+const casosPreview = [
+  { sector: 'VENTAS B2B', title: 'Pipeline Inteligente', body: 'Lead scoring por agente IA, seguimiento automático y propuestas con contexto real.' },
+  { sector: 'MARKETING', title: 'Contenido Operativo', body: 'Generación a escala con brand voice propio; el equipo revisa y aprueba.' },
+  { sector: 'SOPORTE', title: 'Agente 24/7', body: 'Agente entrenado con tu conocimiento que resuelve y deriva lo complejo.' },
+];
+
+/* Preview de planes (linkea a /planes) */
+const planesPreview = [
+  { name: 'FLOW', tier: 'Automatizá tu primer flujo', hint: 'Setup desde USD 249 · Mant. desde USD 99/mes', feat: false },
+  { name: 'PERFORMANCE', tier: 'Operá sin fricción', hint: 'Setup desde USD 399 · Mant. desde USD 250/mes', feat: true },
+  { name: 'INTELLIGENCE', tier: 'Arquitectura total', hint: 'A medida', feat: false },
+];
+
 export default function ServiciosPage() {
   const [showContact, setShowContact] = useState(false);
 
@@ -53,7 +67,7 @@ export default function ServiciosPage() {
         <div className="pg-hero-inner">
           <div>
             <div className="pg-hero-label">// ZAIRE STUDIO · ARQUITECTURA OPERATIVA</div>
-            <h1 className="pg-hero-h1">LO QUE<br /><em>CONSTRUIMOS</em></h1>
+            <h1 className="pg-hero-h1">ZAIRE <em>STUDIO</em></h1>
             <p className="pg-hero-sub">
               Zaire Studio es nuestra rama de servicios: diseñamos e implementamos sistemas a medida.
               Si buscás software de producto, mirá{' '}
@@ -109,6 +123,53 @@ export default function ServiciosPage() {
           <div className="s-lbl">// SOFTWARE OPERATIVO · SISTEMAS A MEDIDA</div>
           <div style={{ marginTop: 32 }}>
             <SoftwareCard />
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ── CASOS DE USO (preview → /casos) ── */}
+      <Reveal>
+        <section className="section">
+          <div className="s-lbl">// CASOS DE USO · SISTEMAS EN OPERACIÓN</div>
+          <h2 className="s-h2" style={{ marginTop: 12, marginBottom: 40 }}>SISTEMAS EN<br /><em>OPERACIÓN</em></h2>
+          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {casosPreview.map(c => (
+              <div key={c.title} className="case-card">
+                <div className="case-sector">{c.sector}</div>
+                <div className="case-title">{c.title}</div>
+                <div className="case-body">{c.body}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 32 }}>
+            <Link href="/casos">
+              <button className="btn btn-dark">Ver todos los casos →</button>
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ── PLANES (preview → /planes) ── */}
+      <Reveal>
+        <section className="section s-dk">
+          <div className="s-lbl" style={{ color: '#FF6A00' }}>// PLANES DE ZAIRE STUDIO · ELEGÍ TU NIVEL</div>
+          <h2 className="s-h2" style={{ color: '#fff', marginTop: 12, marginBottom: 8 }}>ELEGÍ TU <em>NIVEL</em></h2>
+          <p style={{ fontSize: 14, color: '#888', marginBottom: 40, fontWeight: 300 }}>
+            Cada plan es un sistema completo, no una lista de funciones.
+          </p>
+          <div className="cases-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {planesPreview.map(p => (
+              <div key={p.name} style={{ background: p.feat ? 'var(--org)' : '#1a1a1a', borderRadius: 2, padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.12em', textTransform: 'uppercase', color: p.feat ? 'rgba(0,0,0,.5)' : '#888' }}>{p.tier}</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: 30, fontWeight: 800, textTransform: 'uppercase', color: p.feat ? '#111' : '#fff', lineHeight: 1 }}>{p.name}</div>
+                <div style={{ fontSize: 13, color: p.feat ? 'rgba(0,0,0,.7)' : '#aaa', lineHeight: 1.5 }}>{p.hint}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 32 }}>
+            <Link href="/planes">
+              <button className="btn btn-white">Ver planes en detalle →</button>
+            </Link>
           </div>
         </section>
       </Reveal>

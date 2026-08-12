@@ -20,7 +20,7 @@ interface NavProps {
 const links = [
   { href: '/',          label: 'Inicio'    },
   { href: '/sistemas',  label: 'Software'  },
-  { href: '/servicios', label: 'Servicios' },
+  { href: '/servicios', label: 'Studio'    },
   { href: '/planes',    label: 'Planes'    },
   { href: '/proceso',   label: 'Proceso'   },
   { href: '/casos',     label: 'Casos'     },
