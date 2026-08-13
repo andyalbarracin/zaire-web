@@ -13,6 +13,7 @@ import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { analizarLead } from '@/lib/sales/analyze';
 import type { LeadAnalysis } from '@/lib/sales/types';
+import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
 
 const touch = (id?: string) => { revalidatePath('/dashboard/crm'); if (id) revalidatePath(`/dashboard/crm/${id}`); };
 
@@ -89,9 +90,11 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
     lead.notes,
   ].filter(Boolean).join(' · ') || undefined;
 
+  const settings = await resolveProviderSettings();
+
   // En paralelo: research (campos + brief libre) y motor KB (playbook estructurado).
   const [research, analysis] = await Promise.all([
-    researchLead(lead),
+    researchLead(lead, settings),
     analizarLead({
       nombre: lead.company || lead.name || 'Lead',
       rubro: lead.industry || undefined,
@@ -99,7 +102,7 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
       web: lead.website || undefined,
       empleados: empleadosNum,
       notas,
-    }).catch(() => null),
+    }, settings).catch(() => null),
   ]);
 
   const fields = 'fields' in research ? research.fields : {};
@@ -146,14 +149,14 @@ export async function callScriptA(leadId: string, stageName?: string, lastNote?:
   await requireUser();
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
-  return callScript(lead, stageName, lastNote);
+  return callScript(lead, stageName, lastNote, await resolveProviderSettings());
 }
 
 export async function emailDraftA(leadId: string, stageName?: string): Promise<{ subject: string; body: string } | { error: string }> {
   await requireUser();
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
-  return emailDraft(lead, stageName);
+  return emailDraft(lead, stageName, await resolveProviderSettings());
 }
 
 export async function sendLeadEmailA(

@@ -15,7 +15,7 @@ import {
 } from './types';
 import { getKB, getIndustry } from './kb';
 import { buildClassificationContext, buildReducedContext } from './selector';
-import { createProvider, type LLMProvider } from './providers';
+import { createProvider, type LLMProvider, type ProviderSettings } from './providers';
 
 /* ─────────────────────────  Prompts  ───────────────────────── */
 
@@ -235,9 +235,9 @@ function partialAnalysis(input: LeadInput, clas: Clasificacion, motivo: string):
 
 /* ─────────────────────────  API pública  ───────────────────────── */
 
-export async function analizarLead(input: LeadInput): Promise<LeadAnalysis> {
+export async function analizarLead(input: LeadInput, settings?: ProviderSettings): Promise<LeadAnalysis> {
   const clean = LeadInputSchema.parse(input); // valida la entrada (esto sí puede lanzar: es error del que llama)
-  const provider = createProvider(); // 1 instancia por análisis → el budget/cap es por invocación
+  const provider = createProvider(settings); // 1 instancia por análisis → el budget/cap es por invocación
   const clasificacion = await clasificar(provider, clean);
   return generar(provider, clean, clasificacion);
 }

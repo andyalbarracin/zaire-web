@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { updateProfile, uploadAvatar } from '@/lib/zaire-ops/profiles';
+import { updateLlmConfig } from '@/lib/zaire-ops/llm-config';
 import { createSupabaseServer } from '@/lib/zaire-ops/supabase-server';
 
 export async function updateAccountAction(fd: FormData) {
@@ -17,6 +18,24 @@ export async function updateAccountAction(fd: FormData) {
   }
   await updateProfile(user.id, { full_name, ...(avatar_url ? { avatar_url } : {}) });
   redirect('/dashboard/cuenta?ok=1');
+}
+
+export async function updateLlmConfigAction(fd: FormData) {
+  await requireUser();
+  const str = (k: string) => { const v = String(fd.get(k) || '').trim(); return v || null; };
+  const num = (k: string, d: number) => { const n = Number(fd.get(k)); return Number.isFinite(n) && n > 0 ? Math.floor(n) : d; };
+  await updateLlmConfig({
+    primary_provider: String(fd.get('primary_provider') || 'groq'),
+    secondary_provider: str('secondary_provider'),
+    fallback_provider: String(fd.get('fallback_provider') || 'groq'),
+    model_openai: str('model_openai'),
+    model_gemini: str('model_gemini'),
+    model_groq: str('model_groq'),
+    model_openrouter: str('model_openrouter'),
+    max_primary_calls: num('max_primary_calls', 3),
+    max_secondary_calls: num('max_secondary_calls', 3),
+  });
+  redirect('/dashboard/cuenta?llm=1');
 }
 
 export async function changePasswordAction(fd: FormData) {

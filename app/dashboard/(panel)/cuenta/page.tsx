@@ -1,16 +1,23 @@
-// File: page.tsx — Mi cuenta (perfil + contraseña)
+// File: page.tsx — Mi cuenta (perfil + contraseña + proveedores de IA)
 import { getMyProfile, ROLE_LABEL } from '@/lib/zaire-ops/profiles';
+import { resolveProviderSettings, LLM_PROVIDERS } from '@/lib/zaire-ops/llm-config';
+import { providerHasKey } from '@/lib/sales/providers';
 import Avatar from '@/app/dashboard/_components/avatar';
-import { updateAccountAction, changePasswordAction } from './actions';
+import { updateAccountAction, changePasswordAction, updateLlmConfigAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 const OK = { marginBottom: 16, background: 'rgba(34,197,94,.08)', borderColor: 'rgba(34,197,94,.3)', color: '#9be8b3' };
 
-export default async function CuentaPage({ searchParams }: { searchParams: Promise<{ ok?: string; pw?: string; error?: string }> }) {
+const PROVIDER_LABEL: Record<string, string> = {
+  groq: 'Groq (gratis)', openai: 'OpenAI', gemini: 'Gemini (free tier)', openrouter: 'OpenRouter',
+};
+
+export default async function CuentaPage({ searchParams }: { searchParams: Promise<{ ok?: string; pw?: string; llm?: string; error?: string }> }) {
   const sp = await searchParams;
   const profile = await getMyProfile();
   if (!profile) return null;
+  const llm = await resolveProviderSettings();
 
   return (
     <>
@@ -20,6 +27,7 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
 
       {sp.ok && <div className="zo-card" style={OK}>Perfil actualizado.</div>}
       {sp.pw && <div className="zo-card" style={OK}>Contraseña actualizada.</div>}
+      {sp.llm && <div className="zo-card" style={OK}>Proveedores de IA actualizados.</div>}
       {sp.error && <div className="zo-error" style={{ marginBottom: 16 }}>{sp.error}</div>}
 
       <div className="zo-card">
@@ -42,6 +50,54 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
         <form action={changePasswordAction} className="zo-form">
           <div className="zo-field"><label className="zo-flabel">Nueva contraseña (mín. 8)</label><input className="zo-input" name="password" type="password" minLength={8} required placeholder="••••••••" /></div>
           <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Cambiar contraseña</button></div>
+        </form>
+      </div>
+
+      <div className="zo-card zo-section-gap">
+        <div className="zo-card-title">// PROVEEDORES DE IA</div>
+        <p style={{ fontSize: 12.5, color: '#888', lineHeight: 1.6, marginBottom: 14 }}>
+          El motor usa una cadena <strong style={{ color: '#bbb' }}>primaria → secundaria → fallback</strong>: prueba la primaria; si falla o agota su tope, pasa a la siguiente; el fallback (Groq) es la red de seguridad. Las <strong style={{ color: '#bbb' }}>API keys van en <code>.env.local</code></strong> del server; acá elegís roles, modelos y topes.
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          {LLM_PROVIDERS.map(p => (
+            <span key={p} className="zo-chip" style={{ color: providerHasKey(p) ? '#9be8b3' : '#888' }}>
+              <span className="zo-dot" style={{ background: providerHasKey(p) ? '#22c55e' : '#555' }} />
+              {PROVIDER_LABEL[p]}: {providerHasKey(p) ? 'key ok' : 'sin key'}
+            </span>
+          ))}
+        </div>
+
+        <form action={updateLlmConfigAction} className="zo-form">
+          <div className="zo-grid2">
+            <div className="zo-field">
+              <label className="zo-flabel">Primaria</label>
+              <select className="zo-select" name="primary_provider" defaultValue={llm.primary}>
+                {LLM_PROVIDERS.map(p => <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>)}
+              </select>
+            </div>
+            <div className="zo-field">
+              <label className="zo-flabel">Secundaria (opcional)</label>
+              <select className="zo-select" name="secondary_provider" defaultValue={llm.secondary || ''}>
+                <option value="">— ninguna —</option>
+                {LLM_PROVIDERS.map(p => <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>)}
+              </select>
+            </div>
+            <div className="zo-field">
+              <label className="zo-flabel">Fallback</label>
+              <select className="zo-select" name="fallback_provider" defaultValue={llm.fallback}>
+                {LLM_PROVIDERS.map(p => <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>)}
+              </select>
+            </div>
+            <div className="zo-field" />
+            <div className="zo-field"><label className="zo-flabel">Tope de llamadas a la primaria (por análisis)</label><input className="zo-input" name="max_primary_calls" type="number" min={1} defaultValue={llm.maxPrimaryCalls ?? 3} /></div>
+            <div className="zo-field"><label className="zo-flabel">Tope de llamadas a la secundaria</label><input className="zo-input" name="max_secondary_calls" type="number" min={1} defaultValue={llm.maxSecondaryCalls ?? 3} /></div>
+            <div className="zo-field"><label className="zo-flabel">Modelo OpenAI</label><input className="zo-input" name="model_openai" defaultValue={llm.models?.openai ?? ''} placeholder="gpt-4o-mini" /></div>
+            <div className="zo-field"><label className="zo-flabel">Modelo Gemini</label><input className="zo-input" name="model_gemini" defaultValue={llm.models?.gemini ?? ''} placeholder="gemini-2.0-flash" /></div>
+            <div className="zo-field"><label className="zo-flabel">Modelo Groq</label><input className="zo-input" name="model_groq" defaultValue={llm.models?.groq ?? ''} placeholder="llama-3.3-70b-versatile" /></div>
+            <div className="zo-field"><label className="zo-flabel">Modelo OpenRouter</label><input className="zo-input" name="model_openrouter" defaultValue={llm.models?.openrouter ?? ''} placeholder="openai/gpt-4o-mini" /></div>
+          </div>
+          <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar proveedores</button></div>
         </form>
       </div>
     </>

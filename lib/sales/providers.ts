@@ -56,10 +56,11 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
 export class GroqProvider implements LLMProvider {
   readonly name = 'groq';
   private endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+  constructor(private modelOverride?: string) {}
   complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error('Falta GROQ_API_KEY');
-    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = this.modelOverride || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     return openAICompatComplete({ name: 'groq', endpoint: this.endpoint, apiKey, model }, opts);
   }
 }
@@ -67,10 +68,11 @@ export class GroqProvider implements LLMProvider {
 export class OpenAIChatProvider implements LLMProvider {
   readonly name = 'openai';
   private endpoint = 'https://api.openai.com/v1/chat/completions';
+  constructor(private modelOverride?: string) {}
   complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('Falta OPENAI_API_KEY');
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const model = this.modelOverride || process.env.OPENAI_MODEL || 'gpt-4o-mini';
     return openAICompatComplete({ name: 'openai', endpoint: this.endpoint, apiKey, model }, opts);
   }
 }
@@ -79,10 +81,11 @@ export class OpenAIChatProvider implements LLMProvider {
 export class OpenRouterProvider implements LLMProvider {
   readonly name = 'openrouter';
   private endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+  constructor(private modelOverride?: string) {}
   complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('Falta OPENROUTER_API_KEY');
-    const model = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+    const model = this.modelOverride || process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
     return openAICompatComplete({ name: 'openrouter', endpoint: this.endpoint, apiKey, model }, opts);
   }
 }
@@ -91,10 +94,11 @@ export class OpenRouterProvider implements LLMProvider {
 
 export class GeminiProvider implements LLMProvider {
   readonly name = 'gemini';
+  constructor(private modelOverride?: string) {}
   async complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('Falta GEMINI_API_KEY');
-    const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const model = this.modelOverride || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -152,14 +156,35 @@ export function budgetedWithFallback(
 
 export type ProviderName = 'groq' | 'openai' | 'openrouter' | 'gemini';
 
+/** Config de la cadena. La resuelve la app (DB → env → defaults) y se la pasa a createProvider. */
+export interface ProviderSettings {
+  primary: ProviderName;
+  secondary?: ProviderName | '';
+  fallback: ProviderName;
+  maxPrimaryCalls?: number;
+  maxSecondaryCalls?: number;
+  models?: Partial<Record<ProviderName, string>>;
+}
+
 /** Instancia un provider por nombre. `null` si le falta la API key (se saltea en la cadena). */
-export function providerByName(name: ProviderName): LLMProvider | null {
+export function providerByName(name: ProviderName, model?: string): LLMProvider | null {
   switch (name) {
-    case 'openai':      return process.env.OPENAI_API_KEY ? new OpenAIChatProvider() : null;
-    case 'openrouter':  return process.env.OPENROUTER_API_KEY ? new OpenRouterProvider() : null;
-    case 'gemini':      return process.env.GEMINI_API_KEY ? new GeminiProvider() : null;
+    case 'openai':      return process.env.OPENAI_API_KEY ? new OpenAIChatProvider(model) : null;
+    case 'openrouter':  return process.env.OPENROUTER_API_KEY ? new OpenRouterProvider(model) : null;
+    case 'gemini':      return process.env.GEMINI_API_KEY ? new GeminiProvider(model) : null;
     case 'groq':
-    default:            return process.env.GROQ_API_KEY ? new GroqProvider() : null;
+    default:            return process.env.GROQ_API_KEY ? new GroqProvider(model) : null;
+  }
+}
+
+/** Indica si un proveedor tiene su API key configurada (para el panel de salud). */
+export function providerHasKey(name: ProviderName): boolean {
+  switch (name) {
+    case 'openai':      return !!process.env.OPENAI_API_KEY;
+    case 'openrouter':  return !!process.env.OPENROUTER_API_KEY;
+    case 'gemini':      return !!process.env.GEMINI_API_KEY;
+    case 'groq':
+    default:            return !!process.env.GROQ_API_KEY;
   }
 }
 
@@ -192,29 +217,37 @@ export function chainProviders(steps: ChainStep[]): LLMProvider {
   };
 }
 
+/** Lee la config de la cadena desde env (fallback cuando la app no pasa settings de DB). */
+export function settingsFromEnv(): ProviderSettings {
+  return {
+    primary: (process.env.LLM_PRIMARY || 'groq').toLowerCase() as ProviderName,
+    secondary: (process.env.LLM_SECONDARY || '').toLowerCase() as ProviderName | '',
+    fallback: (process.env.LLM_FALLBACK || 'groq').toLowerCase() as ProviderName,
+    maxPrimaryCalls: Math.max(1, Number(process.env.LLM_MAX_PRIMARY_CALLS) || 3),
+    maxSecondaryCalls: Math.max(1, Number(process.env.LLM_MAX_SECONDARY_CALLS) || 3),
+  };
+}
+
 /**
- * Provider por defecto del motor: cadena PRIMARIA → SECUNDARIA → FALLBACK, configurable por env.
- *   LLM_PRIMARY / LLM_SECONDARY / LLM_FALLBACK = groq | openai | openrouter | gemini
- *   LLM_MAX_PRIMARY_CALLS / LLM_MAX_SECONDARY_CALLS = topes duros por análisis (default 3)
- * Sin config → solo Groq. El fallback (default groq) siempre va con cap Infinity.
- * Ej. pedido: LLM_PRIMARY=openai  LLM_SECONDARY=gemini  LLM_FALLBACK=groq
+ * Provider del motor: cadena PRIMARIA → SECUNDARIA → FALLBACK.
+ * `settings` viene de la DB (config en /dashboard/cuenta); si no se pasa, se lee de env.
+ * Sin nada configurado → solo Groq. El fallback siempre va con cap Infinity (red de seguridad).
+ * Ej. pedido: primary=openai, secondary=gemini, fallback=groq.
  */
-export function createProvider(): LLMProvider {
-  const primary = (process.env.LLM_PRIMARY || 'groq').toLowerCase() as ProviderName;
-  const secondary = (process.env.LLM_SECONDARY || '').toLowerCase() as ProviderName | '';
-  const fallback = (process.env.LLM_FALLBACK || 'groq').toLowerCase() as ProviderName;
-  const capP = Math.max(1, Number(process.env.LLM_MAX_PRIMARY_CALLS) || 3);
-  const capS = Math.max(1, Number(process.env.LLM_MAX_SECONDARY_CALLS) || 3);
+export function createProvider(settings?: ProviderSettings): LLMProvider {
+  const s = settings ?? settingsFromEnv();
+  const capP = Math.max(1, s.maxPrimaryCalls ?? 3);
+  const capS = Math.max(1, s.maxSecondaryCalls ?? 3);
 
   const steps: ChainStep[] = [];
-  const add = (name: ProviderName | '', cap: number) => {
+  const add = (name: ProviderName | '' | undefined, cap: number) => {
     if (!name) return;
-    const p = providerByName(name as ProviderName);
-    if (p && !steps.some((s) => s.provider.name === p.name)) steps.push({ provider: p, maxCalls: cap });
+    const p = providerByName(name as ProviderName, s.models?.[name as ProviderName]);
+    if (p && !steps.some((st) => st.provider.name === p.name)) steps.push({ provider: p, maxCalls: cap });
   };
-  add(primary, capP);
-  add(secondary, capS);
-  add(fallback, Number.POSITIVE_INFINITY);
+  add(s.primary, capP);
+  add(s.secondary, capS);
+  add(s.fallback, Number.POSITIVE_INFINITY);
 
   // Red de seguridad: si nada quedó (o faltan keys), garantizamos Groq.
   if (steps.length === 0) {

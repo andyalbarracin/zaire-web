@@ -7,7 +7,7 @@
 
 import type { CrmLead } from './crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES } from './crm-constants';
-import { createProvider } from '@/lib/sales/providers';
+import { createProvider, type ProviderSettings } from '@/lib/sales/providers';
 
 export interface ResearchFields {
   website?: string; industry?: string; city?: string; employees?: string;
@@ -42,10 +42,10 @@ Reglas irrompibles:
 async function llmChat(
   system: string,
   user: string,
-  opts?: { json?: boolean; maxTokens?: number; temperature?: number },
+  opts?: { json?: boolean; maxTokens?: number; temperature?: number; settings?: ProviderSettings },
 ): Promise<string | null> {
   try {
-    const provider = createProvider();
+    const provider = createProvider(opts?.settings);
     const text = await provider.complete({
       system, user,
       json: !!opts?.json,
@@ -58,7 +58,7 @@ async function llmChat(
   }
 }
 
-export async function researchLead(lead: CrmLead): Promise<ResearchResult> {
+export async function researchLead(lead: CrmLead, settings?: ProviderSettings): Promise<ResearchResult> {
   const known = [
     ['Empresa', lead.company], ['Industria', lead.industry], ['Ciudad', lead.city],
     ['Sitio web', lead.website], ['Empleados', lead.employees], ['Interés declarado', lead.modules_interest],
@@ -67,7 +67,7 @@ export async function researchLead(lead: CrmLead): Promise<ResearchResult> {
 
   const user = `Prospecto (datos ya cargados):\n${known || '- (solo el nombre)'}\n\nCompletá los campos que falten con sugerencias y generá el brief. Devolvé solo el JSON.`;
 
-  const raw = await llmChat(SYSTEM, user, { json: true, maxTokens: 1200, temperature: 0.5 });
+  const raw = await llmChat(SYSTEM, user, { json: true, maxTokens: 1200, temperature: 0.5, settings });
   if (!raw) return { error: 'La IA no respondió (probá de nuevo en un momento).' };
 
   try {
@@ -93,18 +93,18 @@ function leadFacts(lead: CrmLead): string {
 }
 
 // Guión breve para una llamada telefónica, según etapa/industria/necesidades.
-export async function callScript(lead: CrmLead, stageName?: string, lastNote?: string | null): Promise<{ text: string } | { error: string }> {
+export async function callScript(lead: CrmLead, stageName?: string, lastNote?: string | null, settings?: ProviderSettings): Promise<{ text: string } | { error: string }> {
   const system = `Sos un coach de ventas de Zaire (Argentina). Zaire vende la suite industrial Zaire Industrial (Trace, Field, Assets, Stock, CRM) y Zaire Studio (automatización / IA / software a medida). Generá un GUIÓN BREVE para una llamada telefónica en español rioplatense, con criterio y sin humo. Incluí: apertura (1-2 frases para presentarte y captar), 2-3 puntos clave según su industria/necesidad, una pregunta para abrir conversación, y el objetivo (agendar una demo de 30 min). Máximo 160 palabras. NO inventes datos del prospecto.`;
   const user = `Prospecto:\n${leadFacts(lead)}\n- Etapa: ${stageName ?? '—'}\n${lastNote ? `- Última interacción: ${lastNote}\n` : ''}\nGenerá el guión.`;
-  const text = await llmChat(system, user, { maxTokens: 500 });
+  const text = await llmChat(system, user, { maxTokens: 500, settings });
   return text ? { text } : { error: 'La IA no respondió (probá de nuevo).' };
 }
 
 // Borrador de email (asunto + cuerpo, sin firma).
-export async function emailDraft(lead: CrmLead, stageName?: string): Promise<{ subject: string; body: string } | { error: string }> {
+export async function emailDraft(lead: CrmLead, stageName?: string, settings?: ProviderSettings): Promise<{ subject: string; body: string } | { error: string }> {
   const system = `Sos del equipo comercial de Zaire (Argentina). Zaire vende la suite industrial Zaire Industrial (órdenes, campo, activos, stock, comercial) y Zaire Studio (automatización / IA / software a medida). Redactá un email de contacto o seguimiento para el prospecto, en español rioplatense, profesional y directo, sin humo. Objetivo: proponer una demo de 30 minutos. NO incluyas firma ni saludo de cierre (se agregan aparte). NO inventes datos ni cifras. Devolvé JSON válido: {"subject": "...", "body": "..."}. El body en texto plano con saltos de línea, breve (máx ~140 palabras), abriendo con el nombre si lo hay.`;
   const user = `Prospecto:\n${leadFacts(lead)}\n- Etapa: ${stageName ?? '—'}\nRedactá el email. Solo el JSON.`;
-  const raw = await llmChat(system, user, { json: true, maxTokens: 600 });
+  const raw = await llmChat(system, user, { json: true, maxTokens: 600, settings });
   if (!raw) return { error: 'La IA no respondió (probá de nuevo).' };
   try {
     const p = JSON.parse(raw) as { subject?: string; body?: string };
