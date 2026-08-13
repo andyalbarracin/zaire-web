@@ -5,11 +5,13 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe,
+  ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe, MessageCircle,
 } from 'lucide-react';
 import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput } from '@/lib/zaire-ops/crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
 import { updateLeadA, deleteLeadA, moveLeadA, addEventA, uploadLeadFileA, researchLeadA } from '../actions';
+import CallModal from './call-modal';
+import EmailModal from './email-modal';
 
 type Person = { id: string; name: string };
 type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interest' | 'market_notes';
@@ -43,6 +45,8 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [researchErr, setResearchErr] = useState<string | null>(null);
   const [aiFilled, setAiFilled] = useState<Set<string>>(new Set());
   const aiStyle = (k: FieldKey): React.CSSProperties | undefined => aiFilled.has(k) ? { borderColor: '#FF6A00', boxShadow: '0 0 0 1px rgba(255,106,0,.35)' } : undefined;
+  const [callOpen, setCallOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const stage = stages.find(s => s.id === stageId);
   const mapQuery = f.address || f.city;
@@ -120,24 +124,11 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   }
 
   const isImg = (a: CrmAttachment) => a.type.startsWith('image/');
-  const tel = (n: string) => `tel:${n.replace(/\s/g, '')}`;
-  const wa = (n: string) => `https://wa.me/${n.replace(/\D/g, '')}`;
+  const wa = (n: string) => `https://wa.me/${(n || '').replace(/\D/g, '')}`;
 
   return (
     <>
-      {/* Toolbar: Volver a la izquierda; acciones + Guardar a la derecha (responsive) */}
-      <div className="zo-detail-bar">
-        <Link href="/dashboard/crm"><button className="zo-btn zo-back" type="button"><ArrowLeft size={14} /> Volver</button></Link>
-        <div className="zo-detail-bar-actions">
-          {f.phone && <a href={tel(f.phone)}><button className="zo-btn zo-btn-sm" type="button"><Phone size={13} /> Llamar</button></a>}
-          {f.phone && <a href={wa(f.phone)} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">WhatsApp</button></a>}
-          {f.email && <a href={`mailto:${f.email}`}><button className="zo-btn zo-btn-sm" type="button"><Mail size={13} /> Email</button></a>}
-          {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
-          <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
-        </div>
-      </div>
-
-      <div className="zo-pagehead">
+      <div className="zo-pagehead" style={{ marginBottom: 14 }}>
         <div>
           <div className="zo-lbl">// LEAD</div>
           <h1 className="zo-h1">{f.name || f.company || '(sin nombre)'}</h1>
@@ -146,6 +137,18 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             {f.company && <span className="zo-chip">{f.company}</span>}
             {lead.source && <span className="zo-chip">{lead.source}</span>}
           </div>
+        </div>
+      </div>
+
+      {/* Toolbar: Volver a la izquierda; Llamar/WhatsApp/Email/Guardar a la derecha (responsive) */}
+      <div className="zo-detail-bar">
+        <Link href="/dashboard/crm"><button className="zo-btn zo-back" type="button"><ArrowLeft size={14} /> Volver</button></Link>
+        <div className="zo-detail-bar-actions">
+          <button className="zo-btn zo-btn-sm" type="button" onClick={() => setCallOpen(true)}><Phone size={13} /> Llamar</button>
+          <button className="zo-btn zo-btn-sm" type="button" onClick={() => window.open(wa(f.phone), '_blank')} disabled={!f.phone} title={f.phone ? 'Abrir WhatsApp Web' : 'Sin teléfono'}><MessageCircle size={13} /> WhatsApp</button>
+          <button className="zo-btn zo-btn-sm" type="button" onClick={() => setEmailOpen(true)}><Mail size={13} /> Email</button>
+          {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
+          <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
         </div>
       </div>
 
@@ -290,6 +293,30 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
           )}
         </div>
       </div>
+      {callOpen && (
+        <CallModal
+          leadId={lead.id}
+          data={{ name: f.name, phone: f.phone, contact_person: f.contact_person, industry: f.industry, modules_interest: f.modules_interest, market_notes: f.market_notes }}
+          stageName={stage?.name}
+          lastNote={events.find(e => e.kind === 'note')?.body ?? null}
+          research={research}
+          onClose={() => setCallOpen(false)}
+        />
+      )}
+      {emailOpen && (
+        <EmailModal
+          leadId={lead.id}
+          defaultTo={f.email}
+          leadName={f.name}
+          company={f.company}
+          attachments={attachments}
+          onClose={() => setEmailOpen(false)}
+          onSent={(summary) => {
+            setEmailOpen(false);
+            setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: summary, created_at: new Date().toISOString() }, ...prev]);
+          }}
+        />
+      )}
     </>
   );
 }

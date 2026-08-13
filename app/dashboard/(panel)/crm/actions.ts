@@ -8,7 +8,9 @@ import {
   createStage, updateStage, reorderStages, deleteStage,
   type CrmLeadInput, type CrmAttachment,
 } from '@/lib/zaire-ops/crm';
-import { researchLead, type ResearchResult } from '@/lib/zaire-ops/research';
+import { researchLead, callScript, emailDraft, type ResearchResult } from '@/lib/zaire-ops/research';
+import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
+import { getMyProfile } from '@/lib/zaire-ops/profiles';
 
 const touch = (id?: string) => { revalidatePath('/dashboard/crm'); if (id) revalidatePath(`/dashboard/crm/${id}`); };
 
@@ -78,6 +80,56 @@ export async function researchLeadA(leadId: string): Promise<ResearchResult> {
     touch(leadId);
   }
   return r;
+}
+
+/* ── Llamada / Email (IA + envío) ── */
+export async function callScriptA(leadId: string, stageName?: string, lastNote?: string | null): Promise<{ text: string } | { error: string }> {
+  await requireUser();
+  const lead = await getLead(leadId);
+  if (!lead) return { error: 'Lead no encontrado.' };
+  return callScript(lead, stageName, lastNote);
+}
+
+export async function emailDraftA(leadId: string, stageName?: string): Promise<{ subject: string; body: string } | { error: string }> {
+  await requireUser();
+  const lead = await getLead(leadId);
+  if (!lead) return { error: 'Lead no encontrado.' };
+  return emailDraft(lead, stageName);
+}
+
+export async function sendLeadEmailA(
+  leadId: string,
+  data: { to: string; subject: string; body: string },
+  attachments: { name: string; url: string }[],
+): Promise<{ ok: true } | { error: string }> {
+  const u = await requireUser();
+  const to = data.to.trim();
+  if (!to || !/.+@.+\..+/.test(to)) return { error: 'Email de destino inválido.' };
+  const me = await getMyProfile();
+  const senderName = me?.full_name || me?.email || 'Zaire Technologies';
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const bodyHtml = esc(data.body).replace(/\n/g, '<br>');
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222;line-height:1.6">
+${bodyHtml}
+<br><br>—<br>
+<b>${esc(senderName)}</b><br>
+Director General · Zaire Technologies<br>
+<a href="https://zairetech.com">zairetech.com</a> · <a href="mailto:hola@zairetech.com">hola@zairetech.com</a>
+</div>`;
+
+  const ok = await sendLeadEmail({
+    to,
+    subject: data.subject.trim() || 'Zaire',
+    html,
+    replyTo: me?.email,
+    attachments: attachments.map(a => ({ filename: a.name, path: a.url })),
+  });
+  if (!ok) return { error: 'No se pudo enviar (revisá la configuración de Resend).' };
+
+  await addLeadEvent(leadId, u.id, `Email enviado a ${to} — "${data.subject.trim() || 'Zaire'}"`, 'system');
+  touch(leadId);
+  return { ok: true };
 }
 
 /* ── Etapas ── */
