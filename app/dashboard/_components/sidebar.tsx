@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, FolderKanban, AlertCircle, Clock, FileText, UserCog, UserCircle, FileSignature, Receipt, Inbox, ChevronLeft,
-  Contact,
+  Contact, Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -67,6 +67,7 @@ export default function Sidebar({ role, defaultCollapsed = false }: { role: 'own
 
         <div className="zo-nav-section">Marketing</div>
         <Item href="/dashboard/crm" label="CRM" Icon={Contact} />
+        <Item href="/dashboard/contenidos" label="Contenidos" Icon={Megaphone} />
 
         <div className="zo-nav-section">Comercial</div>
         <Item href="/dashboard/leads" label="Leads" Icon={Inbox} />

@@ -325,3 +325,10 @@ a.zo-kan-phone:hover { color: var(--org); }
 .zo-stage-acts button { background: none; border: 1px solid #2a2a2a; color: #999; cursor: pointer; padding: 5px; border-radius: 6px; display: inline-flex; }
 .zo-stage-acts button:hover:not(:disabled) { color: #fff; border-color: #3a3a3a; }
 .zo-stage-acts button:disabled { opacity: .3; cursor: not-allowed; }
+
+/* Media (content deck) */
+.zo-media-thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid #2a2a2a; background: #111; display: flex; align-items: center; justify-content: center; }
+.zo-media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.zo-media-file { font-size: 10px; color: #aaa; padding: 6px; text-align: center; word-break: break-word; line-height: 1.3; }
+.zo-media-x { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,.65); border: none; color: #fff; border-radius: 5px; padding: 2px; cursor: pointer; display: inline-flex; }
+.zo-media-x:hover { background: #E71D0A; }
