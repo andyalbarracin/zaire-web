@@ -195,13 +195,16 @@
 .zo-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
   display: flex; align-items: center; justify-content: center; padding: 20px; }
 .zo-modal { background: #141414; border: 1px solid #262626; border-radius: 14px; max-width: 460px; width: 100%;
-  padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  max-height: 90vh; overflow-y: auto; }        /* no se pasa de la pantalla: scrollea el contenido */
 .zo-modal h3 { font-size: 17px; font-weight: 800; margin: 0 0 6px; }
 .zo-modal-sub { font-size: 13px; color: #999; margin: 0 0 16px; line-height: 1.6; }
 .zo-modal-box { background: #101010; border: 1px solid #222; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
 .zo-modal-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
 .zo-modal-row span:first-child { color: #888; }
-.zo-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+/* Acciones fijas al fondo del modal: el botón de confirmar siempre visible al scrollear. */
+.zo-modal-actions { display: flex; gap: 10px; justify-content: flex-end;
+  position: sticky; bottom: -24px; background: #141414; padding: 12px 0; margin-bottom: -24px; z-index: 2; }
 
 @media (max-width: 880px) {
   .zo-grid3 { grid-template-columns: 1fr; }
@@ -268,6 +271,12 @@
   .zo-kpis, .zo-kpis.c2, .zo-kpis.c3, .zo-kpis.c4 { grid-template-columns: 1fr; }
   .zo-dl { grid-template-columns: 1fr; gap: 2px 0; }
   .zo-dl dd { margin-bottom: 8px; }
+  /* Modales en pantalla chica: usar casi todo el alto y menos padding. */
+  .zo-overlay { padding: 8px; }
+  .zo-modal { padding: 18px; max-height: 94vh; border-radius: 12px; }
+  .zo-modal-actions { bottom: -18px; margin-bottom: -18px; }
+  .zo-modal-actions .zo-btn { flex: 1; justify-content: center; }  /* botones full-width, fáciles de tocar */
+  .zo-map-row { grid-template-columns: 90px 1fr; }
 }
 
 /* ── Impresión (reporte PDF vía navegador) ────────────────────────────────── */
