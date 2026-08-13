@@ -1,13 +1,15 @@
 // File: page.tsx — Content deck (gestor de contenidos): tabla + kanban por estado.
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { listContentStages, listContentItems } from '@/lib/zaire-ops/content';
+import { listProfiles } from '@/lib/zaire-ops/profiles';
 import ContentBoard from './board';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ContenidosPage() {
   await requireUser();
-  const [stages, items] = await Promise.all([listContentStages(), listContentItems()]);
+  const [stages, items, profiles] = await Promise.all([listContentStages(), listContentItems(), listProfiles()]);
+  const people = profiles.map(p => ({ id: p.id, name: p.full_name || p.email || 'Usuario' }));
 
   return (
     <>
@@ -19,7 +21,7 @@ export default async function ContenidosPage() {
         </div>
       </div>
 
-      <ContentBoard initialStages={stages} initialItems={items} />
+      <ContentBoard initialStages={stages} initialItems={items} people={people} />
     </>
   );
 }

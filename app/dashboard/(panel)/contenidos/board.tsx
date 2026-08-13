@@ -11,7 +11,10 @@ import ItemModal from './item-modal';
 import ContentStageManager from './stage-manager';
 import ContentImportModal from './import-modal';
 
-export default function ContentBoard({ initialStages, initialItems }: { initialStages: ContentStage[]; initialItems: ContentItem[] }) {
+type Person = { id: string; name: string };
+
+export default function ContentBoard({ initialStages, initialItems, people }: { initialStages: ContentStage[]; initialItems: ContentItem[]; people: Person[] }) {
+  const nameById = useMemo(() => new Map(people.map(p => [p.id, p.name])), [people]);
   const router = useRouter();
   const [stages, setStages] = useState(initialStages);
   const [items, setItems] = useState(initialItems);
@@ -107,18 +110,21 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
         <div className="zo-table-wrap"><div className="zo-empty">No hay estados. Corré la migración <span className="zo-mono">0012_content.sql</span> en Supabase y recargá.</div></div>
       ) : view === 'table' ? (
         <div className="zo-table-wrap"><table className="zo-table">
-          <thead><tr><th>Título</th><th>Estado</th><th>Media</th><th>Actualizado</th><th></th></tr></thead>
+          <thead><tr><th>Título</th><th>Plataforma</th><th>Estado</th><th>Fecha</th><th>Responsable</th><th>Revisado</th><th>Media</th><th></th></tr></thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={5}><div className="zo-empty">Todavía no hay contenidos.</div></td></tr>
+              <tr><td colSpan={8}><div className="zo-empty">Todavía no hay contenidos.</div></td></tr>
             ) : filtered.map(it => {
               const st = it.status_id ? stageById.get(it.status_id) : null;
               return (
                 <tr key={it.id} className="zo-rowclick" style={{ cursor: 'pointer' }} onClick={() => setItemModal({ item: it })}>
-                  <td className="zo-rowlink">{it.title || '(sin título)'}</td>
+                  <td className="zo-rowlink">{it.title || '(sin título)'}{it.subtitle ? <div style={{ fontSize: 11, color: '#888', fontWeight: 400 }}>{it.subtitle}</div> : null}</td>
+                  <td>{it.platform ? <span className="zo-chip">{it.platform}</span> : '—'}</td>
                   <td>{st ? <span className="zo-chip"><span className="zo-dot" style={{ background: st.color }} />{st.name}</span> : '—'}</td>
+                  <td className="zo-mono">{it.content_date ? fmt(it.content_date) : '—'}</td>
+                  <td style={{ fontSize: 12 }}>{it.owner_id ? (nameById.get(it.owner_id) ?? '—') : '—'}</td>
+                  <td>{it.reviewed_at ? <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ {it.reviewed_by ? (nameById.get(it.reviewed_by) ?? 'Sí') : 'Sí'}</span> : '—'}</td>
                   <td>{it.media.length ? <span className="zo-chip">{it.media.length} 📎</span> : '—'}</td>
-                  <td className="zo-mono">{fmt(it.updated_at)}</td>
                   <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                     <button className="zo-btn zo-btn-ghost zo-btn-sm" onClick={() => setItemModal({ item: it })} title="Editar"><Pencil size={13} /></button>
                     <button className="zo-btn zo-btn-ghost zo-btn-sm" onClick={() => removeItem(it)} title="Eliminar"><Trash2 size={13} /></button>
@@ -150,6 +156,13 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
                           <button onClick={() => removeItem(it)} title="Eliminar"><Trash2 size={13} /></button>
                         </div>
                       </div>
+                      {(it.platform || it.content_date) && (
+                        <div className="zo-kan-card-line" style={{ gap: 8 }}>
+                          {it.platform && <span style={{ color: '#aaa' }}>{it.platform}</span>}
+                          {it.content_date && <span className="zo-mono" style={{ fontSize: 11 }}>{fmt(it.content_date)}</span>}
+                          {it.reviewed_at && <span style={{ color: '#22c55e' }}>✓</span>}
+                        </div>
+                      )}
                       {it.body && <div className="zo-kan-card-line" style={{ color: '#888' }}>{it.body.slice(0, 80)}{it.body.length > 80 ? '…' : ''}</div>}
                       {it.media.length > 0 && <div className="zo-kan-card-line"><Paperclip size={12} /> {it.media.length} archivo(s)</div>}
                     </div>
@@ -161,7 +174,7 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
         </div>
       )}
 
-      {itemModal && <ItemModal item={itemModal.item} stages={stages} defaultStageId={firstStageId} onClose={() => setItemModal(null)} onSaved={() => { setItemModal(null); refresh(); }} />}
+      {itemModal && <ItemModal item={itemModal.item} stages={stages} people={people} defaultStageId={firstStageId} onClose={() => setItemModal(null)} onSaved={() => { setItemModal(null); refresh(); }} />}
       {stageMgr && <ContentStageManager stages={stages} onClose={() => setStageMgr(false)} onChanged={refresh} />}
       {importOpen && <ContentImportModal stages={stages} defaultStageId={firstStageId} onClose={() => setImportOpen(false)} onImported={() => { setImportOpen(false); refresh(); }} />}
     </>

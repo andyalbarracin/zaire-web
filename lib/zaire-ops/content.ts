@@ -11,10 +11,14 @@ const db = () => createSupabaseAdmin();
 export interface ContentStage { id: string; name: string; position: number; color: string; created_at: string; }
 export interface ContentMedia { url: string; type: string; name: string; }
 export interface ContentItem {
-  id: string; title: string; body: string | null; status_id: string | null;
-  media: ContentMedia[]; position: number; created_at: string; updated_at: string;
+  id: string; title: string; subtitle: string | null; body: string | null;
+  url: string | null; platform: string | null; content_date: string | null;
+  status_id: string | null; media: ContentMedia[];
+  owner_id: string | null; created_by: string | null;
+  reviewed_by: string | null; reviewed_at: string | null;
+  position: number; created_at: string; updated_at: string;
 }
-export type ContentItemInput = Partial<Pick<ContentItem, 'title' | 'body' | 'status_id' | 'media'>>;
+export type ContentItemInput = Partial<Pick<ContentItem, 'title' | 'subtitle' | 'body' | 'url' | 'platform' | 'content_date' | 'status_id' | 'media' | 'owner_id'>>;
 
 /* ── Estados ── */
 export async function listContentStages(): Promise<ContentStage[]> {
@@ -51,12 +55,28 @@ export async function listContentItems(): Promise<ContentItem[]> {
     return ((data ?? []) as ContentItem[]).map(i => ({ ...i, media: Array.isArray(i.media) ? i.media : [] }));
   } catch { return []; }
 }
-export async function createContentItem(input: ContentItemInput): Promise<void> {
-  const { error } = await db().from('zo_content_items').insert({ title: input.title ?? '', body: input.body ?? null, status_id: input.status_id ?? null, media: input.media ?? [] });
+export async function createContentItem(input: ContentItemInput, createdBy: string | null): Promise<void> {
+  const { error } = await db().from('zo_content_items').insert({
+    title: input.title ?? '', subtitle: input.subtitle ?? null, body: input.body ?? null,
+    url: input.url ?? null, platform: input.platform ?? null, content_date: input.content_date || null,
+    status_id: input.status_id ?? null, media: input.media ?? [],
+    created_by: createdBy, owner_id: input.owner_id ?? createdBy,
+  });
   if (error) throw new Error(error.message);
 }
 export async function updateContentItem(id: string, input: ContentItemInput): Promise<void> {
-  const { error } = await db().from('zo_content_items').update({ ...input, updated_at: new Date().toISOString() }).eq('id', id);
+  const patch: Record<string, unknown> = { ...input, updated_at: new Date().toISOString() };
+  if ('content_date' in patch && !patch.content_date) patch.content_date = null;  // '' → null (date válida)
+  const { error } = await db().from('zo_content_items').update(patch).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function setContentReviewed(id: string, reviewerId: string | null): Promise<void> {
+  const { error } = await db().from('zo_content_items').update({
+    reviewed_by: reviewerId,
+    reviewed_at: reviewerId ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', id);
   if (error) throw new Error(error.message);
 }
 export async function deleteContentItem(id: string): Promise<void> {
@@ -68,12 +88,12 @@ export async function moveContentItem(id: string, statusId: string | null): Prom
   if (error) throw new Error(error.message);
 }
 
-// Import masivo de contenidos (CSV/XLS): solo título y texto.
-export async function bulkInsertContentItems(rows: { title?: string; body?: string }[], statusId: string | null): Promise<number> {
+// Import masivo de contenidos (CSV/XLS): título y texto.
+export async function bulkInsertContentItems(rows: { title?: string; body?: string }[], statusId: string | null, createdBy: string | null): Promise<number> {
   const payload = rows
     .map(r => ({ title: (r.title ?? '').trim(), body: (r.body ?? '').trim() || null }))
     .filter(r => r.title || r.body)
-    .map(r => ({ ...r, status_id: statusId, media: [] as ContentMedia[] }));
+    .map(r => ({ ...r, status_id: statusId, media: [] as ContentMedia[], created_by: createdBy, owner_id: createdBy }));
   if (!payload.length) return 0;
   const { error } = await db().from('zo_content_items').insert(payload);
   if (error) throw new Error(error.message);
@@ -85,9 +105,9 @@ export async function uploadContentMedia(file: File): Promise<ContentMedia | nul
   const a = createSupabaseAdmin();
   const buffer = Buffer.from(await file.arrayBuffer());
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `content/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
-  const { error } = await a.storage.from('zo-files').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+  const { error } = await a.storage.from('zo-content').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
   if (error) return null;
-  const url = a.storage.from('zo-files').getPublicUrl(path).data.publicUrl;
+  const url = a.storage.from('zo-content').getPublicUrl(path).data.publicUrl;
   return { url, type: file.type || '', name: file.name };
 }
