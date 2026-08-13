@@ -1,0 +1,447 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "updated_at": "2026-08-06",
+    "descripcion": "Base de conocimiento de ventas de Zaire Industrial. La consume el motor de calificacion de leads. El codigo filtra por industria/modulo e inyecta a Groq SOLO lo relevante. Ampliar agregando entradas, sin tocar la logica.",
+    "marca": {
+      "producto": "Zaire Industrial",
+      "agencia": "Zaire Technologies",
+      "dominio": "zairetech.com",
+      "propuesta": "Suite industrial modular. Un backend, cada cliente en su propia base, el dato se carga una vez y viaja solo.",
+      "tono": "Criterio antes que promesas. Honesto, directo, sin humo. Voseo rioplatense."
+    }
+  },
+
+  "modules": [
+    {
+      "id": "trace",
+      "nombre": "Zaire Trace",
+      "estado": "disponible",
+      "pitch": "Cada orden de trabajo con su numero, su estado, su historial y su PDF. Listo para una auditoria ISO 9001 en dos clics.",
+      "capacidades": [
+        "Ordenes de trabajo (OT) y de servicio (OTS)",
+        "Numeracion correlativa atomica por sucursal (OT-2026-BB0001)",
+        "Items con datos tecnicos: medida, marca, modelo, materiales, serie, TAG",
+        "Estados con transiciones validadas e historial completo",
+        "Semaforos remitido / entregado / facturado por item",
+        "PDFs de orden y planilla de reparacion con logo",
+        "Log de auditoria + verificacion de secuencia (sin huecos)",
+        "Reportes operativos y financieros con export XLS/CSV",
+        "Precio dual USD/ARS"
+      ],
+      "diferencial": "Trazabilidad y auditoria de fabrica (ISO 9001): nada se borra, todo queda registrado. Es el corazon al que se conectan los demas modulos.",
+      "icp": "Empresas que manejan ordenes de trabajo/servicio: talleres de reparacion, proveedores industriales, metalurgicas, service de equipos.",
+      "senales_fit": [
+        "Numeran ordenes a mano o en Excel/Access",
+        "Tienen auditorias ISO 9001",
+        "Preguntan seguido 'en que estado esta esta orden'",
+        "Arman presupuestos/remitos a mano"
+      ],
+      "objeciones": [
+        {
+          "tipo": "statu_quo",
+          "objecion": "Ya tengo un Access/Excel que anda.",
+          "respuesta": "Anda hasta que se corrompe, no es multiusuario, no audita y no pasa una ISO. Trace es exactamente eso resuelto, y migramos tus datos en el setup."
+        },
+        {
+          "tipo": "precio",
+          "objecion": "No tenemos presupuesto para un sistema nuevo.",
+          "respuesta": "Lo entiendo. Pero una orden perdida o mal facturada, o una no conformidad en la auditoria, cuesta mas que el sistema. Podemos arrancar solo con Trace y crecer despues."
+        },
+        {
+          "tipo": "complejidad",
+          "objecion": "Mi gente no lo va a usar, es complicado.",
+          "respuesta": "Se disena para que cargar una orden lleve menos de dos minutos. Y la app movil es para el tecnico real: grande, simple, sin vueltas."
+        },
+        {
+          "tipo": "tiempo",
+          "objecion": "No tengo tiempo para migrar ahora.",
+          "respuesta": "La migracion desde Access/Excel es parte del setup, la hacemos nosotros. Vos seguis operando mientras tanto; el cambio es controlado."
+        },
+        {
+          "tipo": "datos_riesgo",
+          "objecion": "Y mis datos donde quedan?",
+          "respuesta": "En tu propia base de datos, sos dueno. No compartida con otros clientes. Con auditoria y respaldos."
+        }
+      ]
+    },
+    {
+      "id": "field",
+      "nombre": "Zaire Field",
+      "estado": "disponible",
+      "pitch": "El trabajo de campo registrado como corresponde: lo que pasa en la planta llega a la oficina sin recargar un dato.",
+      "capacidades": [
+        "Agenda y ciclo de vida de visitas con numeracion por sucursal",
+        "Arribo/salida por geocerca automatica",
+        "Mapa con traza del recorrido y timeline de eventos",
+        "Reporte tecnico con medidas, materiales, hallazgos y fotos",
+        "Viaticos y gastos con aprobacion y auditoria",
+        "Documentos con vencimiento (licencias, VTV, seguros, aptos) con alertas",
+        "Fichas de tecnicos, unidades (vehiculos) y plantas/sitios",
+        "Solicitud de OT desde el reporte (se conecta con Trace)"
+      ],
+      "diferencial": "Del campo a la administracion con trazabilidad, respetando la numeracion de ordenes. La geocerca es prueba real de la visita.",
+      "icp": "Empresas que mandan tecnicos a planta/sitio: service tecnico industrial, mantenimiento, HVAC, seguridad e higiene, telecom/energia, instaladores.",
+      "senales_fit": [
+        "Tienen tecnicos que visitan plantas o sitios",
+        "Los reportes llegan por WhatsApp o se pierden",
+        "No controlan viaticos ni vencimientos de documentacion",
+        "Necesitan probar que el tecnico estuvo en el sitio"
+      ],
+      "objeciones": [
+        {
+          "tipo": "statu_quo",
+          "objecion": "Mis tecnicos ya reportan por WhatsApp.",
+          "respuesta": "WhatsApp no queda pegado a la visita, no prueba el arribo ni controla viaticos. Con Field el reporte, las fotos y la geocerca quedan en el sistema, buscables."
+        },
+        {
+          "tipo": "precio",
+          "objecion": "Es un gasto extra por tecnico.",
+          "respuesta": "Pensalo como lo que hoy perdes en viaticos sin control, retrabajo por reportes incompletos y multas por documentacion vencida. Field lo ordena."
+        },
+        {
+          "tipo": "complejidad",
+          "objecion": "Mis tecnicos son grandes, no son de apps.",
+          "respuesta": "La app esta pensada justo para eso: botones grandes, una cosa por pantalla, legible al sol y con guantes. Y funciona offline."
+        },
+        {
+          "tipo": "tiempo",
+          "objecion": "No quiero sumarle pasos al tecnico en la visita.",
+          "respuesta": "Al contrario: carga una vez en el celular y no se retipea en la oficina. Menos doble trabajo, no mas."
+        },
+        {
+          "tipo": "datos_riesgo",
+          "objecion": "Y si el tecnico no tiene senal en el yacimiento?",
+          "respuesta": "Trabaja offline y sincroniza cuando vuelve la conexion. La geocerca y el reporte se guardan local y suben solos."
+        }
+      ]
+    },
+    {
+      "id": "assets",
+      "nombre": "Zaire Assets",
+      "estado": "disponible",
+      "pitch": "La ficha viva de cada equipo: que es, donde esta, que le paso, cuanto costo y que tan sano esta.",
+      "capacidades": [
+        "Ficha por equipo (gemelo digital)",
+        "Salud del equipo (0-100)",
+        "Costo real del equipo (TCO)",
+        "Confiabilidad (MTBF): cada cuanto falla y cuanto tarda en volver",
+        "Hoja de vida completa (cada service/falla/inspeccion con quien, cuando, cuanto)",
+        "Alertas de garantia por vencer",
+        "QR en la planta: el tecnico escanea y abre la ficha",
+        "Reportes de flota, costo y riesgo con export"
+      ],
+      "diferencial": "El trabajo hecho sobre un equipo desde una OT (Trace) o una visita (Field) cae en su hoja de vida con su costo. El historial se arma solo.",
+      "icp": "Empresas con equipos que hay que mantener: plantas industriales, mantenimiento, service tecnico, alquiler de maquinaria, flotas.",
+      "senales_fit": [
+        "No saben cuando fue el ultimo service de un equipo",
+        "No saben cuanto gastaron en un activo",
+        "Equipos que fallan sin aviso y frenan produccion",
+        "Garantias que se vencen sin usarse"
+      ],
+      "objeciones": [
+        {
+          "tipo": "statu_quo",
+          "objecion": "Llevamos los equipos en una planilla.",
+          "respuesta": "La planilla no te dice la salud, el costo real ni cuando reclamar una garantia, y nadie la actualiza. Assets se actualiza solo desde las ordenes y visitas."
+        },
+        {
+          "tipo": "precio",
+          "objecion": "No se si justifica el costo.",
+          "respuesta": "Una parada no planificada o reemplazar un equipo que todavia servia cuesta mucho mas. Assets te da el dato para decidir reparar, reemplazar o reclamar garantia."
+        },
+        {
+          "tipo": "complejidad",
+          "objecion": "Tenemos muchos equipos, cargarlos es un lio.",
+          "respuesta": "La carga inicial es parte del setup y se puede importar. Despues, el QR en planta hace que abrir y actualizar una ficha sea instantaneo."
+        },
+        {
+          "tipo": "adopcion",
+          "objecion": "Ya tenemos un sistema de mantenimiento.",
+          "respuesta": "Genial. Assets se potencia si ya usas ordenes o visitas: el historial y el costo se arman solos, sin doble carga. Y si no, es la base para sumar preventivo."
+        },
+        {
+          "tipo": "datos_riesgo",
+          "objecion": "Es confiable el dato de salud?",
+          "respuesta": "Se calcula sobre la historia real del equipo (fallas, costos, tiempos), no es una caja negra: siempre podes ver por que un equipo esta en riesgo."
+        }
+      ]
+    },
+    {
+      "id": "stock",
+      "nombre": "Zaire Stock",
+      "estado": "disponible",
+      "pitch": "Cuanto tenes, donde y cuanto vale tu inventario, y el material se descuenta solo cuando lo usas en un trabajo.",
+      "capacidades": [
+        "Existencias por producto y deposito en tiempo real",
+        "Valor del inventario a costo promedio",
+        "Multi-deposito, incluida la camioneta del tecnico",
+        "Alertas de reposicion (bajo minimo)",
+        "Series y lotes",
+        "Trazabilidad de cada movimiento",
+        "Consumo automatico desde ordenes (Trace) y visitas (Field)",
+        "Reportes de valuacion y consumo con export"
+      ],
+      "diferencial": "Desde una orden o visita, 'Consumir de stock' descuenta el material con su costo. Inventario y costo siempre cuadrados. Reservas para no comprometer material dos veces.",
+      "icp": "Empresas con repuestos/insumos que hacen trabajos o servicios: talleres, service tecnico, mantenimiento, distribucion.",
+      "senales_fit": [
+        "No saben si tienen un repuesto ni en que deposito",
+        "Faltantes que aparecen con el tecnico ya en el sitio",
+        "No saben cuanta plata hay inmovilizada en el deposito",
+        "Descuentan stock a mano o no lo descuentan"
+      ],
+      "objeciones": [
+        {
+          "tipo": "statu_quo",
+          "objecion": "El stock lo llevamos en Excel.",
+          "respuesta": "Excel no se descuenta solo con cada trabajo ni te avisa cuando caes bajo minimo, y siempre queda desactualizado. Stock se ajusta solo desde ordenes y visitas."
+        },
+        {
+          "tipo": "precio",
+          "objecion": "No es prioridad ahora.",
+          "respuesta": "Cuanta plata tenes dormida o perdida en faltantes? Stock te muestra el valor real del deposito y evita comprar de urgencia o frenar un trabajo por falta de material."
+        },
+        {
+          "tipo": "complejidad",
+          "objecion": "Cargar todos los productos es mucho.",
+          "respuesta": "La carga inicial se importa en el setup. Despues el sistema mantiene las cantidades solo, con cada consumo."
+        },
+        {
+          "tipo": "adopcion",
+          "objecion": "Solo quiero saber cuanto tengo, no algo complejo.",
+          "respuesta": "Podes usar solo existencias y alertas de reposicion. El descuento automatico desde ordenes/visitas lo sumas cuando quieras: crece con vos."
+        },
+        {
+          "tipo": "datos_riesgo",
+          "objecion": "Y el stock que llevan los tecnicos en la camioneta?",
+          "respuesta": "Ese tambien: la camioneta es un deposito mas. Lo que se usa en la visita se descuenta de ahi, con su costo."
+        }
+      ]
+    },
+    {
+      "id": "crm",
+      "nombre": "Zaire CRM",
+      "estado": "disponible",
+      "pitch": "Ves tu embudo, cotizas con el margen a la vista (sin mostrarle el costo al cliente), y cuando ganas, la orden de trabajo se genera sola.",
+      "capacidades": [
+        "Leads y conversion a cliente",
+        "Pipeline Kanban con etapas propias",
+        "Cotizaciones con margen en vivo (costo/margen internos, NO salen en el PDF)",
+        "Score de salud de cuentas (0-100)",
+        "Actividades, calendario y alertas (tareas vencidas, cierres proximos, oportunidades estancadas)",
+        "Genera la OT en Trace desde la cotizacion aceptada",
+        "Reusa los clientes de la suite (no duplica master data)"
+      ],
+      "diferencial": "No es un CRM de contactos generico: cotiza con rentabilidad y se conecta a la operacion (de la cotizacion a la orden).",
+      "icp": "Empresas B2B que cotizan y hacen seguimiento comercial: proveedores industriales, servicios, distribucion. Encaja sobre Trace/Field (misma base de clientes).",
+      "senales_fit": [
+        "Cotizan por Excel o mail",
+        "Las oportunidades viven en la cabeza del vendedor",
+        "No saben la rentabilidad de lo que ofertan",
+        "Se les escapan los seguimientos"
+      ],
+      "objeciones": [
+        {
+          "tipo": "statu_quo",
+          "objecion": "Uso un CRM gratis.",
+          "respuesta": "Te cotiza con margen, te da score de cuentas y te genera la orden de trabajo? El nuestro si, porque es parte de una suite, no un CRM de contactos suelto."
+        },
+        {
+          "tipo": "precio",
+          "objecion": "No quiero pagar otro software comercial.",
+          "respuesta": "Una oportunidad perdida por no seguirla, o cotizar a perdida sin darte cuenta, cuesta mas que el modulo. Y reusa los clientes que ya tenes en la suite."
+        },
+        {
+          "tipo": "complejidad",
+          "objecion": "Es mucho para mi equipo chico.",
+          "respuesta": "Usas lo que necesitas: leads + pipeline + cotizaciones. Crece con vos, no te obliga a nada."
+        },
+        {
+          "tipo": "adopcion",
+          "objecion": "Ya cargo todo en Excel.",
+          "respuesta": "Excel no te avisa, no te da margen en vivo ni conecta con tus ordenes. Ese es el salto."
+        },
+        {
+          "tipo": "datos_riesgo",
+          "objecion": "El cliente va a ver mi costo/margen en la cotizacion?",
+          "respuesta": "No. El margen es interno, para vos. El PDF que ve el cliente no muestra costo ni margen."
+        }
+      ]
+    },
+    {
+      "id": "prevent",
+      "nombre": "Zaire Prevent",
+      "estado": "roadmap",
+      "pitch": "Que tus equipos te avisen antes de fallar: arma los planes, los agenda solos (visita u orden) y te recomienda que reparar o reemplazar, con el motivo a la vista.",
+      "capacidades": [
+        "Planes de mantenimiento por equipo (por tiempo o por uso)",
+        "El sistema agenda solo (genera visita u orden al vencer el plan)",
+        "Recomendaciones con el por que (numeros que lo justifican)",
+        "Se apoya en la hoja de vida real del equipo (Assets)",
+        "Cumplimiento, backlog y confiabilidad (MTBF antes/despues)",
+        "Costo evitado estimado"
+      ],
+      "diferencial": "Se apoya en Assets y agenda el trabajo en Field/Trace. Preventivo con datos, no una agenda paralela.",
+      "icp": "Empresas con equipos criticos que no pueden permitirse una parada sorpresa. Se apoya en Assets.",
+      "senales_fit": [
+        "Mantenimientos que se pasan porque nadie los agendo",
+        "Preventivo de mas o de menos",
+        "Ya usan Assets"
+      ],
+      "objeciones": [
+        {
+          "tipo": "disponibilidad",
+          "objecion": "Esta disponible?",
+          "respuesta": "Prevent esta en planificacion, es parte de la vision/roadmap. Hoy la base es Assets; cuando lo actives, se apoya en la historia que ya tenes cargada."
+        }
+      ]
+    }
+  ],
+
+  "roadmap_modulos": [
+    { "id": "fiscal", "nombre": "Zaire Fiscal (ARCA)", "que": "Facturacion electronica. Los campos is_billable ya estan preparados en Trace/Field." },
+    { "id": "contracts", "nombre": "Zaire Contracts", "que": "Contratos y SLA de mantenimiento, recurrencia de visitas." },
+    { "id": "analytics", "nombre": "Zaire Analytics", "que": "BI operativo: MTBF, backlog, costo por activo, tableros." }
+  ],
+
+  "industries": [
+    {
+      "id": "bombas_sellos",
+      "nombre": "Bombas y sellos mecanicos",
+      "dolores": ["Reparacion y reacondicionamiento de equipos rotativos", "Historial de cada bomba/sello disperso", "Repuestos criticos con faltantes", "Auditoria ISO en oil & gas"],
+      "modulos_fit": ["assets", "trace", "stock", "field"],
+      "vocabulario": ["sello mecanico", "bomba centrifuga", "reacondicionamiento", "TAG", "numero de serie", "cara rotativa", "o-ring"]
+    },
+    {
+      "id": "oil_gas_servicios",
+      "nombre": "Servicios a yacimiento / oil & gas",
+      "dolores": ["Tecnicos en sitios remotos sin senal", "Probar la visita al yacimiento", "Documentacion de seguridad al dia", "Trazabilidad para el operador"],
+      "modulos_fit": ["field", "trace", "assets"],
+      "vocabulario": ["yacimiento", "planta", "parada", "HSE", "permiso de trabajo", "geocerca"]
+    },
+    {
+      "id": "service_tecnico_industrial",
+      "nombre": "Service tecnico industrial",
+      "dolores": ["Ordenes en papel", "Reportes que no llegan", "No saben el costo real de un trabajo", "Sin trazabilidad para calidad"],
+      "modulos_fit": ["trace", "field", "stock"],
+      "vocabulario": ["orden de servicio", "diagnostico", "reparacion", "remito", "presupuesto"]
+    },
+    {
+      "id": "mantenimiento_planta",
+      "nombre": "Mantenimiento de planta",
+      "dolores": ["Equipos que fallan sin aviso", "Preventivo por memoria", "No saben que equipo priorizar", "Repuestos sin control"],
+      "modulos_fit": ["assets", "stock", "trace", "prevent"],
+      "vocabulario": ["activo", "criticidad", "preventivo", "correctivo", "MTBF", "parada de planta"]
+    },
+    {
+      "id": "metalurgica_taller",
+      "nombre": "Metalurgica / taller",
+      "dolores": ["Numeracion de ordenes a mano", "Doble carga oficina/taller", "Presupuestos a mano", "Sin historial por pieza"],
+      "modulos_fit": ["trace", "stock", "crm"],
+      "vocabulario": ["orden de trabajo", "mecanizado", "material", "medida", "plano"]
+    },
+    {
+      "id": "hvac",
+      "nombre": "HVAC / refrigeracion / climatizacion",
+      "dolores": ["Mantenimiento por contrato recurrente", "Flota y visitas recurrentes", "Vencimientos de documentacion", "Historial por sitio/equipo"],
+      "modulos_fit": ["field", "assets", "stock"],
+      "vocabulario": ["contrato de mantenimiento", "equipo instalado", "visita recurrente", "gas refrigerante"]
+    },
+    {
+      "id": "instaladores",
+      "nombre": "Instaladores (solar, alarmas, aberturas, ascensores)",
+      "dolores": ["Relevamiento con medidas y fotos", "Cotizar rapido y con margen", "Postventa disperso", "Seguimiento comercial"],
+      "modulos_fit": ["field", "crm", "trace"],
+      "vocabulario": ["relevamiento", "instalacion", "postventa", "cotizacion", "medida"]
+    },
+    {
+      "id": "distribucion",
+      "nombre": "Distribucion / logistica liviana",
+      "dolores": ["Control de entregas con GPS", "Comprobante de servicio", "Gastos de la unidad", "Stock que viaja"],
+      "modulos_fit": ["field", "stock"],
+      "vocabulario": ["entrega", "reparto", "comprobante", "unidad", "ruta"]
+    }
+  ],
+
+  "segments": [
+    {
+      "id": "micro",
+      "rango_empleados": "1-5",
+      "les_importa": ["Precio bajo", "Simpleza", "Empezar ya sin proyecto largo"],
+      "modulos_arranque": ["trace"],
+      "tono_speech": "Simple, cercano, foco en 'ordenar el caos' y arrancar hoy. Nada de ROI complejo."
+    },
+    {
+      "id": "pyme",
+      "rango_empleados": "6-20",
+      "les_importa": ["Dejar de perder cosas", "Que el equipo lo use", "Crecer sin rehacer todo"],
+      "modulos_arranque": ["trace", "field"],
+      "tono_speech": "Practico, foco en adopcion y en el circulo virtuoso (menos doble carga)."
+    },
+    {
+      "id": "mid",
+      "rango_empleados": "21-100",
+      "les_importa": ["Trazabilidad y auditoria", "Costos y confiabilidad", "Integracion entre areas"],
+      "modulos_arranque": ["trace", "field", "assets", "stock"],
+      "tono_speech": "Formal, con ROI, cumplimiento ISO y datos para decidir. Hablar de la suite."
+    },
+    {
+      "id": "grande",
+      "rango_empleados": "100+",
+      "les_importa": ["Cumplimiento", "Escalabilidad", "Datos propios y seguridad", "Multi-sitio"],
+      "modulos_arranque": ["trace", "field", "assets", "stock", "crm"],
+      "tono_speech": "Ejecutivo, foco en gobierno del dato, auditoria, escalabilidad y base propia por cliente."
+    }
+  ],
+
+  "pitch_templates": {
+    "apertura_por_industria": "En {industria}, lo que mas frena es {dolor_principal}. Con {modulo_principal} de Zaire Industrial eso queda ordenado y trazable desde el dia uno.",
+    "cuerpo_por_modulo": "{modulo}: {pitch_modulo} En concreto para ustedes: {beneficio_especifico}.",
+    "cierre_por_segmento": {
+      "micro": "Se puede arrancar solo con un modulo, sin proyecto largo, y crecer despues. Te muestro como se veria tu operacion en una demo de 20 minutos?",
+      "pyme": "El valor real aparece cuando los modulos se hablan y dejas de cargar el mismo dato dos veces. Coordinamos una demo con tu caso?",
+      "mid": "Todo corre en tu propia base, con auditoria lista para ISO, y crece por modulos sin migrar. Agendamos una demo con tu equipo?",
+      "grande": "Cada cliente en su base, con gobierno del dato y trazabilidad de fabrica; se despliega por modulos y sitios. Coordinamos una reunion tecnica-comercial?"
+    }
+  },
+
+  "entry_angles": [
+    { "modulo": "trace", "angulo": "Tu operacion pasaria una auditoria ISO 9001 hoy, o la armas la semana previa?" },
+    { "modulo": "trace", "angulo": "Cuantas ordenes se te traspapelan o se facturan mal por mes?" },
+    { "modulo": "field", "angulo": "La visita se confirma con la palabra del tecnico o con un dato?" },
+    { "modulo": "field", "angulo": "Cuando un tecnico vuelve del yacimiento, el reporte ya esta en el sistema o hay que perseguirlo?" },
+    { "modulo": "assets", "angulo": "Sabes cuanto gastaste en esa bomba este ano, y si conviene repararla o reemplazarla?" },
+    { "modulo": "assets", "angulo": "Cuando fallo por ultima vez tu equipo mas critico, y por que?" },
+    { "modulo": "stock", "angulo": "Cuanta plata tenes dormida en el deposito, y cuantas veces frenaste un trabajo por un faltante?" },
+    { "modulo": "crm", "angulo": "Cotizas sabiendo si ganas plata, o te enteras despues?" },
+    { "modulo": "suite", "angulo": "Cuantas veces al dia se carga el mismo dato en tu empresa (planilla, oficina, sistema)?" }
+  ],
+
+  "qualifying_questions": [
+    { "grupo": "volumen", "modulo": "trace", "pregunta": "Cuantas ordenes de trabajo/servicio manejan por mes?", "oro": true },
+    { "grupo": "volumen", "modulo": "field", "pregunta": "Cuantos tecnicos hacen visitas y cuantas visitas por semana?", "oro": true },
+    { "grupo": "volumen", "modulo": "assets", "pregunta": "Cuantos equipos/activos tienen que mantener?", "oro": true },
+    { "grupo": "volumen", "modulo": "stock", "pregunta": "Cuantos productos/repuestos manejan y en cuantos depositos?", "oro": false },
+    { "grupo": "proceso", "modulo": "trace", "pregunta": "Como llevan hoy las ordenes: papel, Excel, Access o un sistema?", "oro": true },
+    { "grupo": "proceso", "modulo": "field", "pregunta": "Como reciben hoy los reportes de los tecnicos?", "oro": false },
+    { "grupo": "proceso", "modulo": "stock", "pregunta": "Como controlan hoy el stock y como lo descuentan cuando lo usan?", "oro": false },
+    { "grupo": "proceso", "modulo": "crm", "pregunta": "Como cotizan hoy y como siguen las oportunidades?", "oro": false },
+    { "grupo": "dolor", "modulo": "trace", "pregunta": "Tienen auditorias ISO 9001? Como se preparan?", "oro": true },
+    { "grupo": "dolor", "modulo": "assets", "pregunta": "Cada cuanto tienen una parada no planificada por un equipo?", "oro": true },
+    { "grupo": "dolor", "modulo": "field", "pregunta": "Les paso perder una visita o no poder probar que el tecnico estuvo?", "oro": false },
+    { "grupo": "dolor", "modulo": "stock", "pregunta": "Cada cuanto frenan un trabajo por falta de un repuesto?", "oro": false },
+    { "grupo": "decision", "modulo": "generico", "pregunta": "Quien decide una herramienta asi en la empresa?", "oro": true },
+    { "grupo": "decision", "modulo": "generico", "pregunta": "Tienen un presupuesto o una ventana de tiempo en mente?", "oro": true },
+    { "grupo": "decision", "modulo": "generico", "pregunta": "Que tendria que pasar para que digan 'esto lo necesitamos ya'?", "oro": true }
+  ],
+
+  "objection_families": [
+    "precio",
+    "statu_quo",
+    "complejidad",
+    "adopcion",
+    "tiempo",
+    "datos_riesgo",
+    "disponibilidad"
+  ]
+}
