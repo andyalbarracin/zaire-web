@@ -4,6 +4,7 @@
 
 import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { Plus, Upload, Download, Pencil, Trash2, Search, SlidersHorizontal, Phone, Building2, User } from 'lucide-react';
 import type { CrmStage, CrmLead } from '@/lib/zaire-ops/crm';
@@ -56,7 +57,8 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
     const lead = leads.find(l => l.id === id);
     if (!lead || lead.stage_id === stageId) return;
     setLeads(prev => prev.map(l => (l.id === id ? { ...l, stage_id: stageId } : l)));  // optimista
-    startTransition(async () => { await moveLeadA(id, stageId); });
+    const name = stages.find(s => s.id === stageId)?.name;
+    startTransition(async () => { await moveLeadA(id, stageId, name); });
   }
 
   function removeLead(l: CrmLead) {
@@ -145,9 +147,9 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
                       onDragEnd={() => { setDragId(null); setOverStage(null); }}
                     >
                       <div className="zo-kan-card-top">
-                        <button className="zo-kan-card-title" onClick={() => setLeadModal({ lead: l })} title="Editar">{l.name || l.company || '(sin nombre)'}</button>
+                        <Link href={`/dashboard/crm/${l.id}`} className="zo-kan-card-title" title="Abrir ficha">{l.name || l.company || '(sin nombre)'}</Link>
                         <div className="zo-kan-card-acts">
-                          <button onClick={() => setLeadModal({ lead: l })} title="Editar"><Pencil size={13} /></button>
+                          <Link href={`/dashboard/crm/${l.id}`} title="Abrir ficha"><Pencil size={13} /></Link>
                           <button onClick={() => removeLead(l)} title="Eliminar"><Trash2 size={13} /></button>
                         </div>
                       </div>
@@ -177,7 +179,7 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
           stages={stages}
           defaultStageId={firstStageId}
           onClose={() => setLeadModal(null)}
-          onSaved={() => { setLeadModal(null); refresh(); }}
+          onSaved={(id) => { setLeadModal(null); if (id) router.push(`/dashboard/crm/${id}`); else refresh(); }}
         />
       )}
       {stageMgr && (

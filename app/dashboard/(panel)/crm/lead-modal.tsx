@@ -12,7 +12,7 @@ export default function LeadModal({
   stages: CrmStage[];
   defaultStageId: string | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (newId?: string) => void;
 }) {
   const [form, setForm] = useState({
     name: lead?.name ?? '', phone: lead?.phone ?? '', company: lead?.company ?? '',
@@ -31,9 +31,8 @@ export default function LeadModal({
       email: form.email, notes: form.notes, stage_id: form.stage_id || null,
     };
     try {
-      if (lead) await updateLeadA(lead.id, input);
-      else await createLeadA(input);
-      onSaved();
+      if (lead) { await updateLeadA(lead.id, input); onSaved(); }
+      else { const { id } = await createLeadA(input); onSaved(id); }
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error al guardar'); setBusy(false); }
   }
 

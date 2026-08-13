@@ -19,6 +19,8 @@ export interface CrmStage {
   created_at: string;
 }
 
+export interface CrmAttachment { url: string; type: string; name: string; }
+
 export interface CrmLead {
   id: string;
   name: string | null;
@@ -30,12 +32,39 @@ export interface CrmLead {
   notes: string | null;
   stage_id: string | null;
   position: number;
+  // Ficha detallada
+  preferred_contact: string | null;
+  contact_person_2: string | null;
+  phone_2: string | null;
+  website: string | null;
+  city: string | null;
+  address: string | null;
+  budget: string | null;
+  modules_interest: string | null;
+  industry: string | null;
+  employees: string | null;
+  market_notes: string | null;
+  attachments: CrmAttachment[];
+  research: string | null;
   created_at: string;
   updated_at: string;
 }
 
 // Campos editables de un lead desde el form/import.
-export type CrmLeadInput = Partial<Pick<CrmLead, 'name' | 'phone' | 'company' | 'contact_person' | 'email' | 'source' | 'notes' | 'stage_id'>>;
+export type CrmLeadInput = Partial<Pick<CrmLead,
+  'name' | 'phone' | 'company' | 'contact_person' | 'email' | 'source' | 'notes' | 'stage_id' |
+  'preferred_contact' | 'contact_person_2' | 'phone_2' | 'website' | 'city' | 'address' | 'budget' |
+  'modules_interest' | 'industry' | 'employees' | 'market_notes' | 'attachments' | 'research'
+>>;
+
+export interface CrmLeadEvent {
+  id: string;
+  lead_id: string;
+  author_id: string | null;
+  kind: string;
+  body: string;
+  created_at: string;
+}
 
 /* ── Etapas ──────────────────────────────────────────────────────────────── */
 export async function listStages(): Promise<CrmStage[]> {
@@ -83,9 +112,43 @@ export async function listLeads(): Promise<CrmLead[]> {
   } catch { return []; }
 }
 
-export async function createLead(input: CrmLeadInput): Promise<void> {
-  const { error } = await db().from('zo_crm_leads').insert({ ...clean(input) });
+export async function getLead(id: string): Promise<CrmLead | null> {
+  try {
+    const { data } = await db().from('zo_crm_leads').select('*').eq('id', id).is('deleted_at', null).single();
+    if (!data) return null;
+    const l = data as CrmLead;
+    return { ...l, attachments: Array.isArray(l.attachments) ? l.attachments : [] };
+  } catch { return null; }
+}
+
+export async function createLead(input: CrmLeadInput): Promise<string> {
+  const { data, error } = await db().from('zo_crm_leads').insert({ ...clean(input) }).select('id').single();
   if (error) throw new Error(error.message);
+  return (data as { id: string }).id;
+}
+
+/* ── Log / chatter ───────────────────────────────────────────────────────── */
+export async function listLeadEvents(leadId: string): Promise<CrmLeadEvent[]> {
+  try {
+    const { data } = await db().from('zo_crm_lead_events').select('*').eq('lead_id', leadId).order('created_at', { ascending: false });
+    return (data ?? []) as CrmLeadEvent[];
+  } catch { return []; }
+}
+export async function addLeadEvent(leadId: string, authorId: string | null, body: string, kind = 'note'): Promise<void> {
+  const { error } = await db().from('zo_crm_lead_events').insert({ lead_id: leadId, author_id: authorId, body: body.trim(), kind });
+  if (error) throw new Error(error.message);
+}
+
+/* ── Archivos del lead (bucket zo-crm) ───────────────────────────────────── */
+export async function uploadLeadFile(file: File): Promise<CrmAttachment | null> {
+  const a = createSupabaseAdmin();
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+  const { error } = await a.storage.from('zo-crm').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
+  if (error) return null;
+  const url = a.storage.from('zo-crm').getPublicUrl(path).data.publicUrl;
+  return { url, type: file.type || '', name: file.name };
 }
 
 export async function updateLead(id: string, patch: CrmLeadInput): Promise<void> {
