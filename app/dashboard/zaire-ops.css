@@ -275,3 +275,53 @@
   .zo-noprint { display: none !important; }
   .zo-root, body { background: #fff !important; }
 }
+
+/* ============================================================================
+   CRM / Kanban (módulo Marketing)
+   ============================================================================ */
+.zo-crm-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.zo-kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
+.zo-kan-col {
+  width: 272px; flex-shrink: 0; background: #121212; border: 1px solid #222; border-radius: 12px;
+  display: flex; flex-direction: column; max-height: calc(100vh - 240px); transition: border-color .12s, background .12s;
+}
+.zo-kan-col.over { border-color: var(--org); background: rgba(255,106,0,.05); }
+.zo-kan-head {
+  display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-bottom: 1px solid #202020;
+  position: sticky; top: 0; background: #141414; border-radius: 12px 12px 0 0; z-index: 1;
+}
+.zo-kan-name { font-family: var(--fm); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #ddd; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zo-kan-count { font-family: var(--fm); font-size: 10px; color: #888; background: #1d1d1d; border: 1px solid #2a2a2a; border-radius: 20px; padding: 1px 8px; min-width: 22px; text-align: center; }
+.zo-kan-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
+.zo-kan-empty { text-align: center; color: #555; font-size: 12px; padding: 14px 0; }
+
+.zo-kan-card { background: #1a1a1a; border: 1px solid #262626; border-radius: 9px; padding: 11px 12px; cursor: grab; transition: opacity .12s, border-color .12s; }
+.zo-kan-card:hover { border-color: #333; }
+.zo-kan-card:active { cursor: grabbing; }
+.zo-kan-card.dragging { opacity: .4; }
+.zo-kan-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.zo-kan-card-title { background: none; border: none; color: #fff; font-size: 13.5px; font-weight: 600; text-align: left; cursor: pointer; padding: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zo-kan-card-title:hover { color: var(--org); }
+.zo-kan-card-acts { display: flex; gap: 2px; flex-shrink: 0; opacity: 0; transition: opacity .12s; }
+.zo-kan-card:hover .zo-kan-card-acts { opacity: 1; }
+.zo-kan-card-acts button { background: none; border: none; color: #777; cursor: pointer; padding: 2px; border-radius: 5px; }
+.zo-kan-card-acts button:hover { color: #fff; background: #2a2a2a; }
+.zo-kan-card-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; margin-top: 5px; }
+.zo-kan-card-line svg { color: #666; flex-shrink: 0; }
+a.zo-kan-phone { color: #bbb; }
+a.zo-kan-phone:hover { color: var(--org); }
+
+/* Mapeo de columnas (import) */
+.zo-map-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 12px; }
+.zo-map-field { font-family: var(--fm); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #aaa; }
+
+/* Administrador de etapas */
+.zo-stage-row { display: flex; align-items: center; gap: 10px; }
+.zo-stage-colors { display: flex; gap: 3px; flex-shrink: 0; }
+.zo-swatch { width: 15px; height: 15px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.zo-swatch.on { border-color: #fff; }
+.zo-stage-acts { display: flex; gap: 2px; flex-shrink: 0; }
+.zo-stage-acts button { background: none; border: 1px solid #2a2a2a; color: #999; cursor: pointer; padding: 5px; border-radius: 6px; display: inline-flex; }
+.zo-stage-acts button:hover:not(:disabled) { color: #fff; border-color: #3a3a3a; }
+.zo-stage-acts button:disabled { opacity: .3; cursor: not-allowed; }
