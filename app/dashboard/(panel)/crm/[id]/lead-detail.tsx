@@ -10,6 +10,7 @@ import {
 import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput } from '@/lib/zaire-ops/crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
 import { updateLeadA, deleteLeadA, moveLeadA, addEventA, uploadLeadFileA, researchLeadA } from '../actions';
+import type { LeadAnalysis } from '@/lib/sales/types';
 import CallModal from './call-modal';
 import EmailModal from './email-modal';
 
@@ -18,6 +19,64 @@ type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interes
 
 const initialsOf = (name: string) => name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+// Guión de venta (motor KB) renderizado dentro del panel de INVESTIGAR.
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <div style={{ marginBottom: 12 }}><div className="zo-flabel" style={{ marginBottom: 4 }}>{title}</div>{children}</div>;
+}
+function Playbook({ a }: { a: LeadAnalysis }) {
+  const prColor = (p: string) => (p === 'alta' ? '#FF6A00' : p === 'media' ? '#eab308' : '#888');
+  return (
+    <div className="zo-research" style={{ maxHeight: 460, fontSize: 12.5, lineHeight: 1.55 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        <span className="zo-chip">{a.industria_detectada}</span>
+        <span className="zo-chip">{a.tamano_estimado}</span>
+        <span className="zo-chip">confianza: {a.confianza}</span>
+      </div>
+      <p style={{ marginBottom: 12, color: '#ccc' }}>{a.lectura_rapida}</p>
+
+      <Section title="Módulos que encajan">
+        {a.modulos_recomendados.map((m, i) => (
+          <div key={i} style={{ marginBottom: 6 }}>
+            <strong style={{ color: '#ddd' }}>{m.nombre}</strong>{' '}
+            <span style={{ color: prColor(m.prioridad), fontSize: 11 }}>({m.prioridad})</span>
+            <div style={{ color: '#999' }}>{m.por_que}</div>
+          </div>
+        ))}
+      </Section>
+
+      <Section title="Ángulo de entrada"><p style={{ color: '#ccc' }}>{a.angulo_entrada}</p></Section>
+
+      <Section title="Speech">
+        <p style={{ marginBottom: 4 }}><strong style={{ color: '#bbb' }}>Apertura.</strong> {a.speech.apertura}</p>
+        <p style={{ marginBottom: 4 }}><strong style={{ color: '#bbb' }}>Cuerpo.</strong> {a.speech.cuerpo}</p>
+        <p><strong style={{ color: '#bbb' }}>Cierre.</strong> {a.speech.cierre}</p>
+      </Section>
+
+      <Section title="Preguntas para calificar">
+        <ul style={{ margin: 0, paddingLeft: 16 }}>
+          {a.preguntas_calificacion.map((q, i) => (
+            <li key={i} style={{ marginBottom: 4 }}>{q.pregunta}{q.oro && <span style={{ color: '#FF6A00' }}> ⭐</span>}</li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section title="Objeciones probables">
+        {a.objeciones_probables.map((o, i) => (
+          <div key={i} style={{ marginBottom: 8 }}>
+            <div style={{ color: '#ddd' }}>“{o.objecion}”</div>
+            <div style={{ color: '#999' }}>→ {o.respuesta}</div>
+          </div>
+        ))}
+      </Section>
+
+      {a.datos_faltantes.length > 0 && (
+        <Section title="Datos faltantes"><div style={{ color: '#999' }}>{a.datos_faltantes.join(' · ')}</div></Section>
+      )}
+      <Section title="Próximo paso"><p style={{ color: '#ccc' }}>{a.proximo_paso}</p></Section>
+    </div>
+  );
+}
 
 export default function LeadDetail({ lead, stages, events: initialEvents, people }: { lead: CrmLead; stages: CrmStage[]; events: CrmLeadEvent[]; people: Person[] }) {
   const router = useRouter();
@@ -37,6 +96,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [attachments, setAttachments] = useState<CrmAttachment[]>(lead.attachments ?? []);
   const [events, setEvents] = useState<CrmLeadEvent[]>(initialEvents);
   const [research, setResearch] = useState(lead.research ?? '');
+  const [analysis, setAnalysis] = useState<LeadAnalysis | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -104,6 +164,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     setResearching(false);
     if ('error' in r) { setResearchErr(r.error); return; }
     setResearch(r.brief);
+    setAnalysis(r.analysis ?? null);
     // Completa SOLO los campos vacíos con las sugerencias de la IA (para revisar y guardar).
     const filled = new Set<string>();
     setF(prev => {
@@ -114,7 +175,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
       return next;
     });
     setAiFilled(filled);
-    setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: 'Se generó un brief con IA (Investigar).', created_at: new Date().toISOString() }, ...prev]);
+    setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: 'Investigación con IA (research + motor KB).', created_at: new Date().toISOString() }, ...prev]);
   }
 
   async function remove() {
@@ -242,12 +303,12 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
           <div className="zo-card">
             <div className="zo-card-title">// INVESTIGAR (IA)</div>
             <p style={{ fontSize: 12.5, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>
-              Genera un brief para la llamada y <strong style={{ color: '#bbb' }}>completa los campos vacíos</strong> (sitio web, industria, etc.) con sugerencias para que revises. La IA es limitada: son sugerencias, no datos verificados. Revisá y guardá.
+              Un click hace todo: <strong style={{ color: '#bbb' }}>completa los campos vacíos</strong> (web, industria, empleados…) y arma el <strong style={{ color: '#bbb' }}>guión de venta con la KB de Zaire</strong> — módulos, speech, preguntas y objeciones. Usa OpenAI/Gemini y cae a Groq. No inventa: lo que falta lo marca.
             </p>
-            <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research ? 'Volver a investigar' : 'Investigar')}</button>
+            <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research || analysis ? 'Volver a investigar' : 'Investigar')}</button>
             {aiFilled.size > 0 && <div className="zo-ai-note">La IA completó {aiFilled.size} campo(s) vacío(s), marcados en naranja. Revisalos y tocá <strong>Guardar cambios</strong>.</div>}
             {researchErr && <div className="zo-form-error" style={{ marginTop: 12 }}>{researchErr}</div>}
-            {research && <div className="zo-research">{research}</div>}
+            {analysis ? <Playbook a={analysis} /> : research && <div className="zo-research">{research}</div>}
           </div>
 
           {(f.website || f.city) && (
