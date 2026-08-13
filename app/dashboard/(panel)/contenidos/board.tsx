@@ -3,11 +3,13 @@
 
 import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, LayoutGrid, List, SlidersHorizontal, Search, Pencil, Trash2, Paperclip } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Plus, LayoutGrid, List, SlidersHorizontal, Search, Pencil, Trash2, Paperclip, Upload, Download } from 'lucide-react';
 import type { ContentStage, ContentItem } from '@/lib/zaire-ops/content';
 import { moveItemA, deleteItemA } from './actions';
 import ItemModal from './item-modal';
 import ContentStageManager from './stage-manager';
+import ContentImportModal from './import-modal';
 
 export default function ContentBoard({ initialStages, initialItems }: { initialStages: ContentStage[]; initialItems: ContentItem[] }) {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
   const [overStage, setOverStage] = useState<string | null>(null);
   const [itemModal, setItemModal] = useState<{ item: ContentItem | null } | null>(null);
   const [stageMgr, setStageMgr] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   useEffect(() => { setStages(initialStages); }, [initialStages]);
@@ -60,11 +63,32 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
   const refresh = () => startTransition(() => router.refresh());
   const fmt = (iso: string) => new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
+  function exportRows() {
+    const stageName = new Map(stages.map(s => [s.id, s.name]));
+    return filtered.map(i => ({ Título: i.title, Texto: i.body ?? '', Estado: stageName.get(i.status_id ?? '') ?? '', Media: i.media.length, Actualizado: i.updated_at.slice(0, 10) }));
+  }
+  function exportXLS() {
+    const ws = XLSX.utils.json_to_sheet(exportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Contenidos');
+    XLSX.writeFile(wb, `Zaire_Contenidos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+  function exportCSV() {
+    const ws = XLSX.utils.json_to_sheet(exportRows());
+    const blob = new Blob(['﻿' + XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Zaire_Contenidos_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  }
+
   return (
     <>
       <div className="zo-crm-toolbar">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="zo-btn zo-btn-primary zo-btn-sm" onClick={() => setItemModal({ item: null })}><Plus size={14} /> Nuevo contenido</button>
+          <button className="zo-btn zo-btn-sm" onClick={() => setImportOpen(true)}><Upload size={14} /> Importar</button>
+          <div style={{ display: 'inline-flex' }}>
+            <button className="zo-btn zo-btn-sm" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} onClick={exportXLS}><Download size={14} /> XLS</button>
+            <button className="zo-btn zo-btn-sm" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={exportCSV}><Download size={14} /> CSV</button>
+          </div>
           <button className="zo-btn zo-btn-sm" onClick={() => setStageMgr(true)}><SlidersHorizontal size={14} /> Estados</button>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -139,6 +163,7 @@ export default function ContentBoard({ initialStages, initialItems }: { initialS
 
       {itemModal && <ItemModal item={itemModal.item} stages={stages} defaultStageId={firstStageId} onClose={() => setItemModal(null)} onSaved={() => { setItemModal(null); refresh(); }} />}
       {stageMgr && <ContentStageManager stages={stages} onClose={() => setStageMgr(false)} onChanged={refresh} />}
+      {importOpen && <ContentImportModal stages={stages} defaultStageId={firstStageId} onClose={() => setImportOpen(false)} onImported={() => { setImportOpen(false); refresh(); }} />}
     </>
   );
 }

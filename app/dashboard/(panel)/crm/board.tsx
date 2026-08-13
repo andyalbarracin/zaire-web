@@ -101,7 +101,7 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
           <button className="zo-btn zo-btn-sm" onClick={() => setImportOpen(true)}><Upload size={14} /> Importar</button>
           <div style={{ display: 'inline-flex' }}>
             <button className="zo-btn zo-btn-sm" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} onClick={exportXLS}><Download size={14} /> XLS</button>
-            <button className="zo-btn zo-btn-sm" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={exportCSV}>CSV</button>
+            <button className="zo-btn zo-btn-sm" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={exportCSV}><Download size={14} /> CSV</button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

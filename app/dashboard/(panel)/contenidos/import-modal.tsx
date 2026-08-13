@@ -1,27 +1,22 @@
 'use client';
-// import-modal.tsx — importar leads desde CSV / XLS / XLSX con mapeo de columnas.
+// import-modal.tsx — importar contenidos desde CSV / XLS / XLSX (título + texto).
 
 import { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
-import type { CrmStage, CrmLeadInput } from '@/lib/zaire-ops/crm';
-import { importLeadsA } from './actions';
+import type { ContentStage } from '@/lib/zaire-ops/content';
+import { importItemsA } from './actions';
 
-type Field = 'name' | 'phone' | 'company' | 'contact_person' | 'email' | 'notes';
+type Field = 'title' | 'body';
 const FIELDS: { key: Field; label: string; syn: string[] }[] = [
-  { key: 'name', label: 'Nombre', syn: ['nombre', 'name', 'lead', 'nombre y apellido', 'apellido y nombre', 'razon social', 'razón social'] },
-  { key: 'phone', label: 'Teléfono', syn: ['telefono', 'teléfono', 'phone', 'celular', 'tel', 'whatsapp', 'movil', 'móvil', 'cel'] },
-  { key: 'company', label: 'Empresa', syn: ['empresa', 'company', 'compania', 'compañia', 'compañía', 'organizacion', 'organización'] },
-  { key: 'contact_person', label: 'Contacto', syn: ['contacto', 'contact', 'persona', 'referente', 'con quien', 'con quién'] },
-  { key: 'email', label: 'Email', syn: ['email', 'correo', 'mail', 'e-mail', 'e mail'] },
-  { key: 'notes', label: 'Notas', syn: ['notas', 'notes', 'observaciones', 'observacion', 'comentarios', 'detalle'] },
+  { key: 'title', label: 'Título', syn: ['titulo', 'título', 'title', 'nombre', 'name', 'asunto'] },
+  { key: 'body', label: 'Texto', syn: ['texto', 'body', 'contenido', 'copy', 'descripcion', 'descripción', 'cuerpo', 'nota', 'notas'] },
 ];
-
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
 
-export default function ImportModal({
+export default function ContentImportModal({
   stages, defaultStageId, onClose, onImported,
 }: {
-  stages: CrmStage[];
+  stages: ContentStage[];
   defaultStageId: string | null;
   onClose: () => void;
   onImported: () => void;
@@ -31,8 +26,8 @@ export default function ImportModal({
   const [fileName, setFileName] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
-  const [mapping, setMapping] = useState<Record<Field, number>>({ name: -1, phone: -1, company: -1, contact_person: -1, email: -1, notes: -1 });
-  const [stageId, setStageId] = useState<string>(defaultStageId ?? '');
+  const [mapping, setMapping] = useState<Record<Field, number>>({ title: -1, body: -1 });
+  const [statusId, setStatusId] = useState<string>(defaultStageId ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -46,58 +41,46 @@ export default function ImportModal({
       if (!matrix.length) { setErr('El archivo no tiene filas.'); return; }
       const hdr = (matrix[0] as unknown[]).map((h, i) => String(h ?? '').trim() || `Columna ${i + 1}`);
       const body = (matrix.slice(1) as unknown[][]).map(r => hdr.map((_, i) => String(r[i] ?? '').trim()));
-      // Auto-detección de columnas por nombre de encabezado.
-      const auto: Record<Field, number> = { name: -1, phone: -1, company: -1, contact_person: -1, email: -1, notes: -1 };
-      for (const f of FIELDS) {
-        const idx = hdr.findIndex(h => f.syn.some(s => norm(h) === s || norm(h).includes(s)));
-        auto[f.key] = idx;
-      }
+      const auto: Record<Field, number> = { title: -1, body: -1 };
+      for (const f of FIELDS) auto[f.key] = hdr.findIndex(h => f.syn.some(s => norm(h) === s || norm(h).includes(s)));
       setFileName(file.name); setHeaders(hdr); setRows(body); setMapping(auto);
     } catch { setErr('No se pudo leer el archivo. Probá con CSV, XLS o XLSX.'); }
   }
 
-  function onDrop(e: React.DragEvent) {
-    e.preventDefault(); setOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) handleFile(f);
-  }
-
-  const mappedCount = Object.values(mapping).filter(i => i >= 0).length;
-
-  // Descarga una plantilla vacía (solo encabezados) para llenar a mano o con IA.
   function downloadTemplate(kind: 'csv' | 'xlsx') {
     const ws = XLSX.utils.aoa_to_sheet([FIELDS.map(f => f.label)]);
     if (kind === 'xlsx') {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
-      XLSX.writeFile(wb, 'Zaire_CRM_plantilla.xlsx');
+      XLSX.writeFile(wb, 'Zaire_Contenidos_plantilla.xlsx');
     } else {
       const csv = XLSX.utils.sheet_to_csv(ws);
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Zaire_CRM_plantilla.csv'; a.click(); URL.revokeObjectURL(a.href);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Zaire_Contenidos_plantilla.csv'; a.click(); URL.revokeObjectURL(a.href);
     }
   }
 
+  const mappedCount = Object.values(mapping).filter(i => i >= 0).length;
+
   async function doImport() {
-    if (mappedCount === 0) { setErr('Mapeá al menos una columna (por ejemplo, Nombre o Teléfono).'); return; }
+    if (mappedCount === 0) { setErr('Mapeá al menos una columna (por ejemplo, Título).'); return; }
     setBusy(true); setErr(null);
-    const payload: CrmLeadInput[] = rows.map(r => {
-      const o: CrmLeadInput = {};
-      for (const f of FIELDS) { const idx = mapping[f.key]; if (idx >= 0) (o as Record<string, string>)[f.key] = r[idx] ?? ''; }
-      return o;
-    });
+    const payload = rows.map(r => ({
+      title: mapping.title >= 0 ? r[mapping.title] : '',
+      body: mapping.body >= 0 ? r[mapping.body] : '',
+    }));
     try {
-      const { inserted } = await importLeadsA(payload, stageId || null, fileName ? `Import: ${fileName}` : 'Import');
-      alert(`${inserted} lead(s) importados.`);
+      const { inserted } = await importItemsA(payload, statusId || null);
+      alert(`${inserted} contenido(s) importados.`);
       onImported();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error al importar'); setBusy(false); }
   }
 
   return (
     <div className="zo-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="zo-modal" style={{ maxWidth: 640 }}>
-        <h3>Importar leads</h3>
-        <p className="zo-modal-sub">Subí un CSV, XLS o XLSX. Después mapeás qué columna es cada dato.</p>
+      <div className="zo-modal" style={{ maxWidth: 600 }}>
+        <h3>Importar contenidos</h3>
+        <p className="zo-modal-sub">Subí un CSV, XLS o XLSX con tus contenidos.</p>
         <div className="zo-tpl-line">
           ¿No tenés el formato? Descargá la plantilla vacía:
           <button type="button" onClick={() => downloadTemplate('csv')}>CSV</button>
@@ -105,14 +88,10 @@ export default function ImportModal({
         </div>
 
         {!fileName ? (
-          <div
-            className={`zo-drop${over ? ' over' : ''}`}
-            style={{ padding: 28 }}
+          <div className={`zo-drop${over ? ' over' : ''}`} style={{ padding: 28 }}
             onClick={() => fileRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setOver(true); }}
-            onDragLeave={() => setOver(false)}
-            onDrop={onDrop}
-          >
+            onDragOver={e => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+            onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}>
             Arrastrá el archivo o <span style={{ color: '#FF6A00' }}>hacé clic para elegir</span>
             <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>.csv · .xls · .xlsx</div>
           </div>
@@ -122,7 +101,6 @@ export default function ImportModal({
               <span>📄 {fileName} · {rows.length} fila(s)</span>
               <button type="button" onClick={() => { setFileName(null); setHeaders([]); setRows([]); }}>Cambiar</button>
             </div>
-
             <div className="zo-flabel" style={{ marginBottom: 8 }}>Mapeo de columnas</div>
             <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
               {FIELDS.map(f => (
@@ -135,26 +113,12 @@ export default function ImportModal({
                 </div>
               ))}
             </div>
-
             <div className="zo-field" style={{ marginBottom: 14 }}>
-              <label className="zo-flabel">Etapa destino</label>
-              <select className="zo-select" value={stageId} onChange={e => setStageId(e.target.value)}>
+              <label className="zo-flabel">Estado destino</label>
+              <select className="zo-select" value={statusId} onChange={e => setStatusId(e.target.value)}>
                 {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-
-            {rows.length > 0 && mappedCount > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div className="zo-flabel" style={{ marginBottom: 6 }}>Vista previa (primeras 3)</div>
-                <div className="zo-table-wrap"><table className="zo-table"><thead><tr>
-                  {FIELDS.filter(f => mapping[f.key] >= 0).map(f => <th key={f.key}>{f.label}</th>)}
-                </tr></thead><tbody>
-                  {rows.slice(0, 3).map((r, ri) => (
-                    <tr key={ri}>{FIELDS.filter(f => mapping[f.key] >= 0).map(f => <td key={f.key}>{r[mapping[f.key]] || '—'}</td>)}</tr>
-                  ))}
-                </tbody></table></div>
-              </div>
-            )}
           </>
         )}
 

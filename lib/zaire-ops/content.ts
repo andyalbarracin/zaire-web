@@ -68,6 +68,18 @@ export async function moveContentItem(id: string, statusId: string | null): Prom
   if (error) throw new Error(error.message);
 }
 
+// Import masivo de contenidos (CSV/XLS): solo título y texto.
+export async function bulkInsertContentItems(rows: { title?: string; body?: string }[], statusId: string | null): Promise<number> {
+  const payload = rows
+    .map(r => ({ title: (r.title ?? '').trim(), body: (r.body ?? '').trim() || null }))
+    .filter(r => r.title || r.body)
+    .map(r => ({ ...r, status_id: statusId, media: [] as ContentMedia[] }));
+  if (!payload.length) return 0;
+  const { error } = await db().from('zo_content_items').insert(payload);
+  if (error) throw new Error(error.message);
+  return payload.length;
+}
+
 // Sube un archivo de media al bucket zo-files y devuelve su URL pública.
 export async function uploadContentMedia(file: File): Promise<ContentMedia | null> {
   const a = createSupabaseAdmin();
