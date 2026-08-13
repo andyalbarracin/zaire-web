@@ -8,35 +8,11 @@ import {
   ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe,
 } from 'lucide-react';
 import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput } from '@/lib/zaire-ops/crm';
+import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
 import { updateLeadA, deleteLeadA, moveLeadA, addEventA, uploadLeadFileA, researchLeadA } from '../actions';
 
 type Person = { id: string; name: string };
-
-const INDUSTRIES = [
-  'Oil & Gas — Upstream (perforación / extracción)',
-  'Oil & Gas — Midstream (transporte / ductos)',
-  'Oil & Gas — Downstream (refinación)',
-  'Oil & Gas — Servicios de campo',
-  'Energía — Generación eléctrica',
-  'Energía — Renovables (solar / eólica)',
-  'Minería',
-  'Metalúrgica / Siderurgia',
-  'Petroquímica / Química',
-  'Manufactura / Industrial',
-  'Alimentos y bebidas',
-  'Agroindustria',
-  'Construcción',
-  'Automotriz / Autopartes',
-  'Papel / Celulosa',
-  'Cemento / Materiales',
-  'Farmacéutica / Laboratorios',
-  'Logística / Transporte',
-  'Mantenimiento industrial / Servicios',
-  'Agua / Saneamiento',
-  'Otra',
-];
-const PREFERRED = ['Teléfono', 'WhatsApp', 'Email', 'LinkedIn', 'Presencial', 'Otro'];
-const EMPLOYEES = ['1–5', '6–20', '21–50', '51–200', '201–500', '500+'];
+type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interest' | 'market_notes';
 
 const initialsOf = (name: string) => name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -65,6 +41,8 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [uploading, setUploading] = useState(false);
   const [researching, setResearching] = useState(false);
   const [researchErr, setResearchErr] = useState<string | null>(null);
+  const [aiFilled, setAiFilled] = useState<Set<string>>(new Set());
+  const aiStyle = (k: FieldKey): React.CSSProperties | undefined => aiFilled.has(k) ? { borderColor: '#FF6A00', boxShadow: '0 0 0 1px rgba(255,106,0,.35)' } : undefined;
 
   const stage = stages.find(s => s.id === stageId);
   const mapQuery = f.address || f.city;
@@ -120,8 +98,19 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     setResearching(true); setResearchErr(null);
     const r = await researchLeadA(lead.id);
     setResearching(false);
-    if ('text' in r) { setResearch(r.text); setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: 'Se generó un brief con IA (Investigar).', created_at: new Date().toISOString() }, ...prev]); }
-    else setResearchErr(r.error);
+    if ('error' in r) { setResearchErr(r.error); return; }
+    setResearch(r.brief);
+    // Completa SOLO los campos vacíos con las sugerencias de la IA (para revisar y guardar).
+    const filled = new Set<string>();
+    setF(prev => {
+      const next = { ...prev };
+      (Object.entries(r.fields) as [FieldKey, string][]).forEach(([k, v]) => {
+        if (v && k in next && !next[k]) { next[k] = v; filled.add(k); }
+      });
+      return next;
+    });
+    setAiFilled(filled);
+    setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: 'Se generó un brief con IA (Investigar).', created_at: new Date().toISOString() }, ...prev]);
   }
 
   async function remove() {
@@ -136,6 +125,18 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
 
   return (
     <>
+      {/* Toolbar: Volver a la izquierda; acciones + Guardar a la derecha (responsive) */}
+      <div className="zo-detail-bar">
+        <Link href="/dashboard/crm"><button className="zo-btn zo-back" type="button"><ArrowLeft size={14} /> Volver</button></Link>
+        <div className="zo-detail-bar-actions">
+          {f.phone && <a href={tel(f.phone)}><button className="zo-btn zo-btn-sm" type="button"><Phone size={13} /> Llamar</button></a>}
+          {f.phone && <a href={wa(f.phone)} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">WhatsApp</button></a>}
+          {f.email && <a href={`mailto:${f.email}`}><button className="zo-btn zo-btn-sm" type="button"><Mail size={13} /> Email</button></a>}
+          {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
+          <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
+        </div>
+      </div>
+
       <div className="zo-pagehead">
         <div>
           <div className="zo-lbl">// LEAD</div>
@@ -145,12 +146,6 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             {f.company && <span className="zo-chip">{f.company}</span>}
             {lead.source && <span className="zo-chip">{lead.source}</span>}
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {f.phone && <a href={tel(f.phone)}><button className="zo-btn zo-btn-sm" type="button"><Phone size={13} /> Llamar</button></a>}
-          {f.phone && <a href={wa(f.phone)} target="_blank" rel="noopener noreferrer"><button className="zo-btn zo-btn-sm" type="button">WhatsApp</button></a>}
-          {f.email && <a href={`mailto:${f.email}`}><button className="zo-btn zo-btn-sm" type="button"><Mail size={13} /> Email</button></a>}
-          <Link href="/dashboard/crm"><button className="zo-btn zo-back"><ArrowLeft size={14} /> Volver</button></Link>
         </div>
       </div>
 
@@ -164,7 +159,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
               <div className="zo-field"><label className="zo-flabel">Teléfono</label><input className="zo-input" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
               <div className="zo-field"><label className="zo-flabel">Medio de contacto preferido</label>
                 <select className="zo-select" value={f.preferred_contact} onChange={e => set('preferred_contact', e.target.value)}>
-                  <option value="">—</option>{PREFERRED.map(p => <option key={p} value={p}>{p}</option>)}
+                  <option value="">—</option>{CRM_PREFERRED.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div className="zo-field"><label className="zo-flabel">Email</label><input className="zo-input" type="email" value={f.email} onChange={e => set('email', e.target.value)} /></div>
@@ -179,19 +174,19 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             <div className="zo-card-title">// EMPRESA Y MERCADO</div>
             <div className="zo-grid2">
               <div className="zo-field"><label className="zo-flabel">Empresa</label><input className="zo-input" value={f.company} onChange={e => set('company', e.target.value)} /></div>
-              <div className="zo-field"><label className="zo-flabel">Sitio web</label><input className="zo-input" value={f.website} onChange={e => set('website', e.target.value)} placeholder="https://…" /></div>
+              <div className="zo-field"><label className="zo-flabel">Sitio web</label><input className="zo-input" value={f.website} onChange={e => set('website', e.target.value)} placeholder="https://…" style={aiStyle('website')} /></div>
               <div className="zo-field"><label className="zo-flabel">Industria</label>
-                <select className="zo-select" value={f.industry} onChange={e => set('industry', e.target.value)}>
-                  <option value="">—</option>{INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                <select className="zo-select" value={f.industry} onChange={e => set('industry', e.target.value)} style={aiStyle('industry')}>
+                  <option value="">—</option>{CRM_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select>
               </div>
               <div className="zo-field"><label className="zo-flabel">Cantidad de empleados</label>
-                <select className="zo-select" value={f.employees} onChange={e => set('employees', e.target.value)}>
-                  <option value="">—</option>{EMPLOYEES.map(x => <option key={x} value={x}>{x}</option>)}
+                <select className="zo-select" value={f.employees} onChange={e => set('employees', e.target.value)} style={aiStyle('employees')}>
+                  <option value="">—</option>{CRM_EMPLOYEES.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </div>
-              <div className="zo-field zo-span2"><label className="zo-flabel">Módulos / interés</label><input className="zo-input" value={f.modules_interest} onChange={e => set('modules_interest', e.target.value)} placeholder="Ej: Trace, Field, trazabilidad, mantenimiento…" /></div>
-              <div className="zo-field zo-span2"><label className="zo-flabel">Observaciones del mercado</label><textarea className="zo-textarea" value={f.market_notes} onChange={e => set('market_notes', e.target.value)} style={{ minHeight: 70 }} placeholder="Contexto del sector en el que se mueve" /></div>
+              <div className="zo-field zo-span2"><label className="zo-flabel">Módulos / interés</label><input className="zo-input" value={f.modules_interest} onChange={e => set('modules_interest', e.target.value)} placeholder="Ej: Trace, Field, trazabilidad, mantenimiento…" style={aiStyle('modules_interest')} /></div>
+              <div className="zo-field zo-span2"><label className="zo-flabel">Observaciones del mercado</label><textarea className="zo-textarea" value={f.market_notes} onChange={e => set('market_notes', e.target.value)} style={{ minHeight: 70, ...aiStyle('market_notes') }} placeholder="Contexto del sector en el que se mueve" /></div>
             </div>
           </div>
 
@@ -204,7 +199,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
                   {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-              <div className="zo-field"><label className="zo-flabel">Ciudad</label><input className="zo-input" value={f.city} onChange={e => set('city', e.target.value)} /></div>
+              <div className="zo-field"><label className="zo-flabel">Ciudad</label><input className="zo-input" value={f.city} onChange={e => set('city', e.target.value)} style={aiStyle('city')} /></div>
               <div className="zo-field"><label className="zo-flabel">Dirección completa</label><input className="zo-input" value={f.address} onChange={e => set('address', e.target.value)} placeholder="Calle, número, localidad" /></div>
               {mapHref && <div className="zo-span2"><a href={mapHref} target="_blank" rel="noopener noreferrer" className="zo-rowlink" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}><MapPin size={14} /> Ver en el mapa</a></div>}
             </div>
@@ -233,7 +228,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar ficha'}</button>
+            <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
             {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
             <button className="zo-btn zo-btn-ghost" style={{ marginLeft: 'auto', color: '#ff6b5b' }} onClick={remove}><Trash2 size={14} /> Eliminar lead</button>
           </div>
@@ -244,9 +239,10 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
           <div className="zo-card">
             <div className="zo-card-title">// INVESTIGAR (IA)</div>
             <p style={{ fontSize: 12.5, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>
-              Genera un brief para encarar la llamada según industria, tamaño y datos cargados. La IA es limitada: da criterio y speech sugerido, no datos en tiempo real.
+              Genera un brief para la llamada y <strong style={{ color: '#bbb' }}>completa los campos vacíos</strong> (sitio web, industria, etc.) con sugerencias para que revises. La IA es limitada: son sugerencias, no datos verificados. Revisá y guardá.
             </p>
             <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research ? 'Volver a investigar' : 'Investigar')}</button>
+            {aiFilled.size > 0 && <div className="zo-ai-note">La IA completó {aiFilled.size} campo(s) vacío(s), marcados en naranja. Revisalos y tocá <strong>Guardar cambios</strong>.</div>}
             {researchErr && <div className="zo-form-error" style={{ marginTop: 12 }}>{researchErr}</div>}
             {research && <div className="zo-research">{research}</div>}
           </div>

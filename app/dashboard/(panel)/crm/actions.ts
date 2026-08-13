@@ -8,7 +8,7 @@ import {
   createStage, updateStage, reorderStages, deleteStage,
   type CrmLeadInput, type CrmAttachment,
 } from '@/lib/zaire-ops/crm';
-import { researchLead } from '@/lib/zaire-ops/research';
+import { researchLead, type ResearchResult } from '@/lib/zaire-ops/research';
 
 const touch = (id?: string) => { revalidatePath('/dashboard/crm'); if (id) revalidatePath(`/dashboard/crm/${id}`); };
 
@@ -67,14 +67,13 @@ export async function uploadLeadFileA(fd: FormData): Promise<CrmAttachment | nul
   return uploadLeadFile(file);
 }
 
-export async function researchLeadA(leadId: string): Promise<{ text: string } | { error: string }> {
-  await requireUser();
+export async function researchLeadA(leadId: string): Promise<ResearchResult> {
+  const u = await requireUser();
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
   const r = await researchLead(lead);
-  if ('text' in r) {
-    await updateLead(leadId, { research: r.text });
-    const u = await requireUser();
+  if ('brief' in r) {
+    if (r.brief) await updateLead(leadId, { research: r.brief });
     await addLeadEvent(leadId, u.id, 'Se generó un brief con IA (Investigar).', 'system');
     touch(leadId);
   }
