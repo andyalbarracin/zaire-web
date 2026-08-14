@@ -124,6 +124,53 @@ export class GeminiProvider implements LLMProvider {
   }
 }
 
+/* ─────────────────────────  Gemini + Google Search (grounding, tiempo real)  ───────────────────────── */
+
+export interface GroundedResult {
+  text: string;
+  sources: { title: string; uri: string }[];
+}
+
+/**
+ * Llama a Gemini con la herramienta de búsqueda de Google (grounding): busca en la web
+ * en vivo y responde con datos reales + las fuentes. Ideal para enriquecer un lead
+ * (web/teléfono/email/dirección) sin depender de una base propia. Solo Gemini soporta esto.
+ */
+export async function geminiGroundedComplete(
+  system: string,
+  user: string,
+  opts?: { temperature?: number; maxTokens?: number },
+): Promise<GroundedResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Falta GEMINI_API_KEY');
+  const model = process.env.GEMINI_SEARCH_MODEL || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: opts?.temperature ?? 0.2, maxOutputTokens: opts?.maxTokens ?? 1200 },
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`gemini-search HTTP ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const cand = data?.candidates?.[0];
+  const text: string = (cand?.content?.parts ?? []).map((p: { text?: string }) => p.text).filter(Boolean).join('').trim();
+  const chunks: Array<{ web?: { uri?: string; title?: string } }> = cand?.groundingMetadata?.groundingChunks ?? [];
+  const sources = chunks
+    .map((c) => ({ uri: c.web?.uri ?? '', title: c.web?.title ?? '' }))
+    .filter((s) => s.uri);
+  if (!text) throw new Error('gemini-search: respuesta vacía');
+  return { text, sources };
+}
+
 /* ─────────────────────────  Budget + fallback  ───────────────────────── */
 
 /**

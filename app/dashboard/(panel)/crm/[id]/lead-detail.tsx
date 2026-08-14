@@ -15,7 +15,7 @@ import CallModal from './call-modal';
 import EmailModal from './email-modal';
 
 type Person = { id: string; name: string };
-type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interest' | 'market_notes';
+type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interest' | 'market_notes' | 'phone' | 'email' | 'address';
 
 const initialsOf = (name: string) => name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -99,6 +99,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [analysis, setAnalysis] = useState<LeadAnalysis | null>(null);
   const [aiProviders, setAiProviders] = useState<string[]>([]);
   const [aiCached, setAiCached] = useState(false);
+  const [aiSources, setAiSources] = useState<{ title: string; uri: string }[]>([]);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -169,6 +170,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     setAnalysis(r.analysis ?? null);
     setAiProviders(r.providers ?? []);
     setAiCached(!!r.cached);
+    setAiSources(r.sources ?? []);
     // Completa SOLO los campos vacíos con las sugerencias de la IA (para revisar y guardar).
     const filled = new Set<string>();
     setF(prev => {
@@ -224,13 +226,13 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             <div className="zo-card-title">// CONTACTO</div>
             <div className="zo-grid2">
               <div className="zo-field"><label className="zo-flabel">Nombre</label><input className="zo-input" value={f.name} onChange={e => set('name', e.target.value)} /></div>
-              <div className="zo-field"><label className="zo-flabel">Teléfono</label><input className="zo-input" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
+              <div className="zo-field"><label className="zo-flabel">Teléfono</label><input className="zo-input" value={f.phone} onChange={e => set('phone', e.target.value)} style={aiStyle('phone')} /></div>
               <div className="zo-field"><label className="zo-flabel">Medio de contacto preferido</label>
                 <select className="zo-select" value={f.preferred_contact} onChange={e => set('preferred_contact', e.target.value)}>
                   <option value="">—</option>{CRM_PREFERRED.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-              <div className="zo-field"><label className="zo-flabel">Email</label><input className="zo-input" type="email" value={f.email} onChange={e => set('email', e.target.value)} /></div>
+              <div className="zo-field"><label className="zo-flabel">Email</label><input className="zo-input" type="email" value={f.email} onChange={e => set('email', e.target.value)} style={aiStyle('email')} /></div>
               <div className="zo-field"><label className="zo-flabel">Contacto principal (persona)</label><input className="zo-input" value={f.contact_person} onChange={e => set('contact_person', e.target.value)} /></div>
               <div className="zo-field" />
               <div className="zo-field"><label className="zo-flabel">Segunda persona</label><input className="zo-input" value={f.contact_person_2} onChange={e => set('contact_person_2', e.target.value)} placeholder="Otro contacto en la empresa" /></div>
@@ -268,7 +270,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
                 </select>
               </div>
               <div className="zo-field"><label className="zo-flabel">Ciudad</label><input className="zo-input" value={f.city} onChange={e => set('city', e.target.value)} style={aiStyle('city')} /></div>
-              <div className="zo-field"><label className="zo-flabel">Dirección completa</label><input className="zo-input" value={f.address} onChange={e => set('address', e.target.value)} placeholder="Calle, número, localidad" /></div>
+              <div className="zo-field"><label className="zo-flabel">Dirección completa</label><input className="zo-input" value={f.address} onChange={e => set('address', e.target.value)} placeholder="Calle, número, localidad" style={aiStyle('address')} /></div>
               {mapHref && <div className="zo-span2"><a href={mapHref} target="_blank" rel="noopener noreferrer" className="zo-rowlink" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}><MapPin size={14} /> Ver en el mapa</a></div>}
             </div>
           </div>
@@ -312,6 +314,13 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research || analysis ? 'Volver a investigar' : 'Investigar')}</button>
             {aiFilled.size > 0 && <div className="zo-ai-note">La IA completó {aiFilled.size} campo(s) vacío(s), marcados en naranja. Revisalos y tocá <strong>Guardar cambios</strong>.</div>}
             {aiProviders.length > 0 && <div style={{ fontSize: 11.5, color: '#888', marginTop: 8 }}>Respondió: <strong style={{ color: '#bbb' }}>{aiProviders.join(' + ')}</strong>{aiCached && ' · desde caché'}</div>}
+            {aiSources.length > 0 && (
+              <div style={{ fontSize: 11, color: '#888', marginTop: 6, lineHeight: 1.5 }}>
+                Fuentes web: {aiSources.slice(0, 4).map((s, i) => (
+                  <span key={i}>{i > 0 && ' · '}<a href={s.uri} target="_blank" rel="noopener noreferrer" style={{ color: '#8ab4f8' }}>{s.title || 'link'}</a></span>
+                ))}
+              </div>
+            )}
             {researchErr && <div className="zo-form-error" style={{ marginTop: 12 }}>{researchErr}</div>}
             {analysis ? <Playbook a={analysis} /> : research && <div className="zo-research">{research}</div>}
           </div>

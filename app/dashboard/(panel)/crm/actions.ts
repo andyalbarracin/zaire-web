@@ -8,7 +8,7 @@ import {
   createStage, updateStage, reorderStages, deleteStage,
   type CrmLeadInput, type CrmAttachment,
 } from '@/lib/zaire-ops/crm';
-import { researchLead, callScript, emailDraft } from '@/lib/zaire-ops/research';
+import { researchLead, enrichLeadFromWeb, callScript, emailDraft } from '@/lib/zaire-ops/research';
 import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { analizarLead } from '@/lib/sales/analyze';
@@ -79,7 +79,7 @@ export async function uploadLeadFileA(fd: FormData): Promise<CrmAttachment | nul
 }
 
 export type InvestigateResult =
-  | { fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; cached?: boolean }
+  | { fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; sources?: { title: string; uri: string }[]; cached?: boolean }
   | { error: string };
 
 // Un solo click: research (completa campos vacíos) + motor KB (módulos, speech, preguntas, objeciones).
@@ -106,14 +106,14 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
     budget: lead.budget, notes: lead.notes,
     primary: settings.primary, secondary: settings.secondary, fallback: settings.fallback, models: settings.models,
   });
-  const cached = await getCached<{ fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[] }>(cacheKey);
+  const cached = await getCached<{ fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; sources?: { title: string; uri: string }[] }>(cacheKey);
   if (cached) return { ...cached, cached: true };
 
   const report = { used: [] as string[] };
 
-  // En paralelo: research (campos + brief libre) y motor KB (playbook estructurado).
-  const [research, analysis] = await Promise.all([
-    researchLead(lead, settings, report),
+  // Etapa 1 (búsqueda web real con Gemini grounded) + Etapa 2 (análisis KB), en paralelo.
+  const [enrich, analysis] = await Promise.all([
+    enrichLeadFromWeb(lead),
     analizarLead({
       nombre: lead.company || lead.name || 'Lead',
       rubro: lead.industry || undefined,
@@ -124,26 +124,33 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
     }, settings, report).catch(() => null),
   ]);
 
-  const fields = 'fields' in research ? research.fields : {};
-  // Si no hay módulos sugeridos por research, los tomamos del motor KB.
+  let fields: ResearchFields = {};
+  let sources: { title: string; uri: string }[] = [];
+  if ('fields' in enrich) {
+    fields = enrich.fields;
+    sources = enrich.sources;
+    if (!report.used.includes('gemini(web)')) report.used.push('gemini(web)');
+  } else {
+    // Fallback sin web (Gemini no configurado): research por inferencia.
+    const research = await researchLead(lead, settings, report);
+    if ('fields' in research) fields = research.fields;
+  }
+
+  // Si no vino interés/módulos, lo tomamos del motor KB.
   if (analysis && !fields.modules_interest && analysis.modulos_recomendados.length) {
     fields.modules_interest = analysis.modulos_recomendados.map((m) => m.nombre).join(', ');
   }
 
-  // El brief persistido prioriza el playbook KB; si el motor falló, cae al brief de research.
-  const brief = analysis
-    ? briefFromAnalysis(analysis)
-    : ('brief' in research ? research.brief : '');
-
+  const brief = analysis ? briefFromAnalysis(analysis) : '';
   if (!brief && Object.keys(fields).length === 0 && !analysis) {
-    return 'error' in research ? research : { error: 'La IA no devolvió un resultado útil.' };
+    return { error: 'La IA no devolvió un resultado útil.' };
   }
 
   if (brief) await updateLead(leadId, { research: brief });
   const provs = report.used.join(', ') || 'IA';
   await addLeadEvent(leadId, u.id, `Investigación con IA (respondió: ${provs}).`, 'system');
   await recordUsage(report.used);
-  const result = { fields, brief, analysis, providers: report.used };
+  const result = { fields, brief, analysis, providers: report.used, sources };
   await setCached(cacheKey, 'lead', result);
   touch(leadId);
   return result;

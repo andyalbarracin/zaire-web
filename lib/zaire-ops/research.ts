@@ -7,13 +7,16 @@
 
 import type { CrmLead } from './crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES } from './crm-constants';
-import { createProvider, type ProviderSettings, type ProviderReport } from '@/lib/sales/providers';
+import { createProvider, geminiGroundedComplete, type ProviderSettings, type ProviderReport } from '@/lib/sales/providers';
+import { extractJson } from '@/lib/sales/analyze';
 
 export interface ResearchFields {
   website?: string; industry?: string; city?: string; employees?: string;
   modules_interest?: string; market_notes?: string;
+  phone?: string; email?: string; address?: string;
 }
 export type ResearchResult = { fields: ResearchFields; brief: string } | { error: string };
+export interface EnrichResult { fields: ResearchFields; sources: { title: string; uri: string }[]; }
 
 const SYSTEM = `Sos un asistente de research comercial para el equipo de Zaire (Argentina). Zaire vende:
 - ZAIRE INDUSTRIAL: suite modular para operación industrial. Módulos: Trace (órdenes de trabajo y trazabilidad ISO 9001), Field (trabajo de campo con geocerca y viáticos), Assets (gestión de activos: hoja de vida, TCO, MTBF), Stock (repuestos a costo), CRM (comercial). Para empresas que mantienen, reparan y operan activos físicos (industria, oil & gas, servicios industriales).
@@ -117,7 +120,42 @@ function sanitizeFields(f: ResearchFields): ResearchFields {
   const out: ResearchFields = {};
   const put = (k: keyof ResearchFields, v: unknown) => { if (typeof v === 'string' && v.trim()) out[k] = v.trim(); };
   put('website', f.website); put('city', f.city); put('modules_interest', f.modules_interest); put('market_notes', f.market_notes);
+  put('phone', f.phone); put('email', f.email); put('address', f.address);
   if (typeof f.industry === 'string' && CRM_INDUSTRIES.includes(f.industry)) out.industry = f.industry;
   if (typeof f.employees === 'string' && CRM_EMPLOYEES.includes(f.employees)) out.employees = f.employees;
   return out;
+}
+
+// Enriquecimiento en TIEMPO REAL con Gemini + Google Search: busca el sitio de la empresa
+// y de ahí saca datos de contacto REALES (web/teléfono/email/dirección/ciudad). No inventa.
+export async function enrichLeadFromWeb(lead: CrmLead): Promise<EnrichResult | { error: string }> {
+  if (!process.env.GEMINI_API_KEY) return { error: 'Gemini no está configurado (falta GEMINI_API_KEY).' };
+
+  const known = [
+    ['Nombre / razón social', lead.company || lead.name], ['Ciudad', lead.city],
+    ['Sitio web', lead.website], ['Rubro', lead.industry],
+  ].filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n');
+
+  const system = `Sos un asistente de research comercial (Argentina). Usá la BÚSQUEDA de Google para encontrar datos REALES y actuales de contacto de la empresa. Regla irrompible: NO inventes. Si un dato no aparece en una fuente real (idealmente el sitio oficial de la empresa), omitilo. Devolvé EXCLUSIVAMENTE un JSON válido, sin markdown, sin \`\`\`.`;
+  const user = `Empresa a investigar:\n${known || '- (solo el nombre)'}\n
+Buscá su sitio web oficial y, de ahí o de fuentes confiables, completá lo que encuentres:
+{
+  "website": "URL oficial (https://...)",
+  "phone": "teléfono de contacto",
+  "email": "email de contacto",
+  "address": "dirección/domicilio",
+  "city": "ciudad",
+  "industry": "EXACTAMENTE una de: ${CRM_INDUSTRIES.join(' | ')}",
+  "employees": "EXACTAMENTE uno de: ${CRM_EMPLOYEES.join(' | ')}",
+  "market_notes": "1-2 frases del sector, con lo que hayas visto"
+}
+Incluí SOLO las claves que encuentres con respaldo real. Devolvé solo el JSON.`;
+
+  try {
+    const r = await geminiGroundedComplete(system, user, { temperature: 0.2, maxTokens: 1200 });
+    const parsed = JSON.parse(extractJson(r.text)) as ResearchFields;
+    return { fields: sanitizeFields(parsed), sources: r.sources };
+  } catch (e) {
+    return { error: 'No se pudo enriquecer desde la web: ' + (e as Error).message };
+  }
 }
