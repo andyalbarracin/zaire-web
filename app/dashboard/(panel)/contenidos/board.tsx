@@ -4,12 +4,13 @@
 import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
-import { Plus, LayoutGrid, List, SlidersHorizontal, Search, Pencil, Trash2, Paperclip, Upload, Download } from 'lucide-react';
+import { Plus, LayoutGrid, List, CalendarDays, SlidersHorizontal, Search, Pencil, Trash2, Paperclip, Upload, Download } from 'lucide-react';
 import type { ContentStage, ContentItem } from '@/lib/zaire-ops/content';
 import { moveItemA, deleteItemA } from './actions';
 import ItemModal from './item-modal';
 import ContentStageManager from './stage-manager';
 import ContentImportModal from './import-modal';
+import ContentCalendar from './calendar';
 
 type Person = { id: string; name: string };
 
@@ -18,11 +19,11 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
   const router = useRouter();
   const [stages, setStages] = useState(initialStages);
   const [items, setItems] = useState(initialItems);
-  const [view, setView] = useState<'table' | 'board'>('table');
+  const [view, setView] = useState<'table' | 'board' | 'calendar'>('table');
   const [search, setSearch] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
-  const [itemModal, setItemModal] = useState<{ item: ContentItem | null } | null>(null);
+  const [itemModal, setItemModal] = useState<{ item: ContentItem | null; date?: string } | null>(null);
   const [stageMgr, setStageMgr] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -97,7 +98,8 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'inline-flex' }}>
             <button className={`zo-btn zo-btn-sm${view === 'table' ? ' zo-btn-primary' : ''}`} style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} onClick={() => setView('table')}><List size={14} /> Tabla</button>
-            <button className={`zo-btn zo-btn-sm${view === 'board' ? ' zo-btn-primary' : ''}`} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={() => setView('board')}><LayoutGrid size={14} /> Kanban</button>
+            <button className={`zo-btn zo-btn-sm${view === 'board' ? ' zo-btn-primary' : ''}`} style={{ borderRadius: 0, borderLeft: 'none' }} onClick={() => setView('board')}><LayoutGrid size={14} /> Kanban</button>
+            <button className={`zo-btn zo-btn-sm${view === 'calendar' ? ' zo-btn-primary' : ''}`} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={() => setView('calendar')}><CalendarDays size={14} /> Calendario</button>
           </div>
           <div style={{ position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
@@ -134,7 +136,7 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
             })}
           </tbody>
         </table></div>
-      ) : (
+      ) : view === 'board' ? (
         <div className="zo-kanban">
           {stages.map(col => {
             const list = byStage.get(col.id) ?? [];
@@ -172,9 +174,18 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
             );
           })}
         </div>
+      ) : (
+        <ContentCalendar
+          items={filtered}
+          stages={stages}
+          firstStageId={firstStageId}
+          onOpen={(it) => setItemModal({ item: it })}
+          onNew={(date) => setItemModal({ item: null, date })}
+          onChanged={refresh}
+        />
       )}
 
-      {itemModal && <ItemModal item={itemModal.item} stages={stages} people={people} defaultStageId={firstStageId} onClose={() => setItemModal(null)} onSaved={() => { setItemModal(null); refresh(); }} />}
+      {itemModal && <ItemModal item={itemModal.item} stages={stages} people={people} defaultStageId={firstStageId} defaultDate={itemModal.date} onClose={() => setItemModal(null)} onSaved={() => { setItemModal(null); refresh(); }} />}
       {stageMgr && <ContentStageManager stages={stages} onClose={() => setStageMgr(false)} onChanged={refresh} />}
       {importOpen && <ContentImportModal stages={stages} defaultStageId={firstStageId} onClose={() => setImportOpen(false)} onImported={() => { setImportOpen(false); refresh(); }} />}
     </>

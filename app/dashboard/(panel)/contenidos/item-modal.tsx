@@ -3,27 +3,28 @@
 // url, estado, responsable, texto, media) + revisión.
 
 import { useRef, useState, useEffect } from 'react';
-import { Paperclip, X, Check, Sparkles, ImagePlus, RefreshCw } from 'lucide-react';
+import { Paperclip, X, Check, Sparkles, ImagePlus, RefreshCw, Copy } from 'lucide-react';
 import type { ContentStage, ContentItem, ContentMedia, ContentItemInput } from '@/lib/zaire-ops/content';
-import { createItemA, updateItemA, uploadMediaA, setReviewedA, generateTextA, generateImageA, contentKbListsA } from './actions';
+import { createItemA, updateItemA, uploadMediaA, setReviewedA, generateTextA, generateImageA, contentKbListsA, repurposeA } from './actions';
 
 type Person = { id: string; name: string };
 const PLATFORMS = ['Instagram', 'LinkedIn', 'Facebook', 'X', 'TikTok', 'YouTube', 'Blog', 'Newsletter', 'Otro'];
 
 export default function ItemModal({
-  item, stages, people, defaultStageId, onClose, onSaved,
+  item, stages, people, defaultStageId, defaultDate, onClose, onSaved,
 }: {
   item: ContentItem | null;
   stages: ContentStage[];
   people: Person[];
   defaultStageId: string | null;
+  defaultDate?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [f, setF] = useState({
     title: item?.title ?? '', subtitle: item?.subtitle ?? '', platform: item?.platform ?? '',
-    content_date: item?.content_date ?? '', url: item?.url ?? '',
+    content_date: item?.content_date ?? defaultDate ?? '', url: item?.url ?? '',
     status_id: item?.status_id ?? defaultStageId ?? '', owner_id: item?.owner_id ?? '',
     body: item?.body ?? '',
   });
@@ -41,6 +42,9 @@ export default function ItemModal({
   const [aiProvider, setAiProvider] = useState<string | null>(null);
   const [mejoraInput, setMejoraInput] = useState('');
   const [fieldBusy, setFieldBusy] = useState<string | null>(null);
+  const [repurposeSel, setRepurposeSel] = useState<Set<string>>(new Set());
+  const [repurposeBusy, setRepurposeBusy] = useState(false);
+  const [repurposeMsg, setRepurposeMsg] = useState<string | null>(null);
   const set = (k: keyof typeof f, v: string) => setF(p => ({ ...p, [k]: v }));
 
   useEffect(() => { contentKbListsA().then(setKb).catch(() => {}); }, []);
@@ -89,6 +93,17 @@ export default function ItemModal({
     const { provider, ...m } = r;
     setAiProvider(provider ?? null);
     setMedia(prev => [...prev, m]);
+  }
+
+  async function repurpose() {
+    if (!f.title.trim() && !f.body.trim()) { setRepurposeMsg('Necesito un título o texto para adaptar.'); return; }
+    if (repurposeSel.size === 0) { setRepurposeMsg('Elegí al menos una plataforma.'); return; }
+    setRepurposeBusy(true); setRepurposeMsg(null);
+    const r = await repurposeA({ title: f.title, body: f.body, platforms: Array.from(repurposeSel), stageId: f.status_id || null, tematicaId: tematicaId || undefined, moduloId: moduloId || undefined });
+    setRepurposeBusy(false);
+    if ('error' in r) { setRepurposeMsg(r.error); return; }
+    setRepurposeMsg(`${r.created} variante(s) creada(s)${r.providers.length ? ` · ${r.providers.join(', ')}` : ''}. Cerrá para verlas en la lista.`);
+    onSaved();
   }
 
   const RegenBtn = ({ field }: { field: 'title' | 'subtitle' }) => (
@@ -161,6 +176,20 @@ export default function ItemModal({
             {aiErr && <div className="zo-form-error" style={{ marginTop: 8 }}>{aiErr}</div>}
             {aiProvider && <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>Generado con <strong style={{ color: '#bbb' }}>{aiProvider}</strong></div>}
             <div style={{ fontSize: 11, color: '#666', marginTop: 8, lineHeight: 1.5 }}>El texto completa Título/Subtítulo si están vacíos y suma al cuerpo. La imagen se agrega a los visuales. Usa la cadena de <strong style={{ color: '#888' }}>Mi cuenta</strong>; la imagen requiere OpenAI o Gemini.</div>
+          </div>
+
+          <div style={{ border: '1px solid #262626', borderRadius: 10, padding: 12, background: '#0d0d0d' }}>
+            <div className="zo-flabel" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}><Copy size={13} /> Variantes por plataforma (repurpose)</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {PLATFORMS.filter(p => p !== 'Otro').map(p => {
+                const on = repurposeSel.has(p);
+                return <button type="button" key={p} onClick={() => setRepurposeSel(s => { const n = new Set(s); if (n.has(p)) n.delete(p); else n.add(p); return n; })}
+                  className="zo-chip" style={{ cursor: 'pointer', borderColor: on ? '#FF6A00' : undefined, color: on ? '#FF6A00' : undefined }}>{p}</button>;
+              })}
+            </div>
+            <button type="button" className="zo-btn zo-btn-sm" onClick={repurpose} disabled={repurposeBusy}><Copy size={13} /> {repurposeBusy ? 'Generando variantes…' : 'Generar variantes'}</button>
+            {repurposeMsg && <div className="zo-ai-note" style={{ marginTop: 8 }}>{repurposeMsg}</div>}
+            <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>Crea un contenido nuevo por plataforma, adaptando el texto actual (usa la temática/módulo de arriba si están elegidos).</div>
           </div>
 
           <div className="zo-field">

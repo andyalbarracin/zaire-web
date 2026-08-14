@@ -362,3 +362,18 @@ a.zo-kan-phone:hover { color: var(--org); }
 
 /* Fila de revisión (content deck) */
 .zo-review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #101010; border: 1px solid #222; border-radius: 8px; flex-wrap: wrap; }
+
+/* Calendario editorial (content deck) */
+.zo-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.zo-cal-dow { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .5px; padding: 4px 6px; }
+.zo-cal-cell { min-height: 96px; border: 1px solid #1e1e1e; border-radius: 8px; background: #0d0d0d; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.zo-cal-cell.empty { background: transparent; border-color: transparent; }
+.zo-cal-cell.today { border-color: #FF6A00; }
+.zo-cal-daynum { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #aaa; }
+.zo-cal-add { background: transparent; border: none; color: #666; cursor: pointer; padding: 0; display: inline-flex; }
+.zo-cal-add:hover { color: #FF6A00; }
+.zo-cal-items { display: flex; flex-direction: column; gap: 3px; }
+.zo-cal-item { display: flex; align-items: center; gap: 5px; background: #161616; border: 1px solid #242424; border-radius: 5px; padding: 3px 6px; cursor: pointer; text-align: left; width: 100%; }
+.zo-cal-item:hover { border-color: #3a3a3a; }
+.zo-cal-item-title { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) { .zo-cal-cell { min-height: 64px; padding: 4px; } .zo-cal-item-title { display: none; } .zo-cal-dow { padding: 2px; text-align: center; } }
