@@ -1,0 +1,539 @@
+{
+  "meta": {
+    "marca": "Zaire Technologies",
+    "producto": "Zaire Industrial",
+    "tono_general": "Criterio antes que promesas. Directo, sin humo, con lenguaje de dolores reales de la industria. Argentino (voseo). Educamos primero, ofrecemos despues.",
+    "principios": [
+      "No exagerar ni prometer lo que no hay: distinguir siempre lo disponible de lo que esta en roadmap.",
+      "Hablar de dolores reales y concretos, no de features abstractas.",
+      "Mostrar antes que contar: pantallas reales, casos, numeros.",
+      "El dato se carga una vez y viaja solo: repetir el diferencial de suite cuando aplique.",
+      "Cada pieza tiene un solo mensaje y un solo CTA.",
+      "Honestidad comercial: si un modulo no esta listo, se dice.",
+      "Los datos son del cliente: cada empresa en su propia base.",
+      "Escapar del 'AI slop' tambien en el texto: nada de frases genericas de marketing."
+    ]
+  },
+  "tono_de_marca": {
+    "voz": "Un colega tecnico que sabe del oficio industrial y habla claro. Cercano pero serio, con autoridad ganada por mostrar cosas reales, no por adjetivos.",
+    "hacer": [
+      "Usar voseo rioplatense natural.",
+      "Nombrar el termino que la gente busca (orden de trabajo, mantenimiento, gestion de activos, trazabilidad, stock).",
+      "Empezar por el dolor concreto del lector.",
+      "Dar ejemplos del sector real: sellos mecanicos, bombas, oil & gas, plantas, yacimientos.",
+      "Ser especifico con numeros y estados (OT-2026-BB0001, salud 0-100, MTBF).",
+      "Cerrar con un unico CTA claro.",
+      "Reconocer lo que todavia no esta (roadmap) cuando corresponde."
+    ],
+    "evitar": [
+      "Promesas vacias ('revoluciona tu empresa', 'solucion integral 360', 'lider del mercado').",
+      "Jerga de sistemas que el tecnico no entiende (endpoints, RLS, JWT) en piezas comerciales.",
+      "Superlativos sin prueba ('el mejor', 'el unico').",
+      "Estetica y frases de template de IA / Canva.",
+      "Presentar modulos de roadmap como disponibles.",
+      "Emojis en exceso o tono de influencer.",
+      "Muros de texto sin un mensaje unico."
+    ]
+  },
+  "modulos": [
+    {
+      "id": "trace",
+      "nombre": "Zaire Trace",
+      "para_que": "Trazabilidad de ordenes de trabajo (OT) y de servicio (OTS): cada orden con su numero, su estado, su historial y su PDF. DISPONIBLE.",
+      "dolores_que_resuelve": [
+        "Access viejo, monousuario, sin acceso web.",
+        "Numeracion de ordenes a mano, con duplicados y saltos.",
+        "Nadie sabe con certeza en que estado esta una orden.",
+        "Sin registro de quien hizo que ni cuando (riesgo en auditoria ISO).",
+        "Presupuestos y remitos armados a mano, distintos cada vez."
+      ],
+      "beneficios": [
+        "Numeracion correlativa atomica por sucursal (OT-2026-BB0001), irrepetible.",
+        "Estados con transiciones validadas e historial completo por orden.",
+        "Items con datos tecnicos: medida, marca, modelo, materiales, serie, TAG.",
+        "Semaforos remitido / entregado / facturado por item.",
+        "PDFs de orden y planilla de reparacion con tu logo.",
+        "Log de auditoria y verificacion de secuencia: listo para ISO 9001 todos los dias.",
+        "Reportes operativos y financieros con export XLS/CSV. Precio dual USD/ARS."
+      ],
+      "keywords": ["orden de trabajo", "OT", "OTS", "trazabilidad", "ISO 9001", "auditoria", "numeracion correlativa", "software de mantenimiento", "CMMS", "sellos mecanicos", "bombas", "oil and gas"],
+      "angulos_de_contenido": [
+        "Del Access de 15 anos a la trazabilidad ISO.",
+        "Por que el Excel se rompe a los 50 activos/ordenes.",
+        "Como llegar a la auditoria ISO 9001 sin prepararte la semana previa.",
+        "Que es la numeracion correlativa y por que a mano siempre falla.",
+        "El costo oculto de una orden traspapelada o mal facturada."
+      ]
+    },
+    {
+      "id": "field",
+      "nombre": "Zaire Field",
+      "para_que": "Gestion del trabajo de campo (FSM): lo que pasa en la planta llega a la oficina sin recargar un dato. DISPONIBLE.",
+      "dolores_que_resuelve": [
+        "La visita se confirma con la palabra del tecnico, no con un dato.",
+        "Reportes que llegan tarde, por WhatsApp, o no llegan.",
+        "Viaticos aprobados de memoria y sin control.",
+        "Licencias, VTV y seguros que aparecen como multa.",
+        "Doble carga: lo del campo se retipea en la oficina."
+      ],
+      "beneficios": [
+        "Arribo y salida por geocerca automatica: prueba real de la visita.",
+        "Mapa con traza del recorrido y timeline de eventos.",
+        "Reporte tecnico con medidas, materiales, hallazgos y fotos, cargado en el sitio.",
+        "Viaticos y gastos con aprobacion y auditoria.",
+        "Documentos con vencimiento y alertas antes de que venzan.",
+        "Fichas de tecnicos, unidades y plantas/sitios.",
+        "Solicitud de OT desde el reporte, respetando la numeracion de Trace.",
+        "Funciona offline y sincroniza cuando vuelve la senal."
+      ],
+      "keywords": ["field service", "FSM", "geocerca", "trabajo de campo", "visitas tecnicas", "GPS", "viaticos", "mantenimiento en sitio", "yacimiento", "tecnicos"],
+      "angulos_de_contenido": [
+        "La visita se confirma con la palabra o con un dato?",
+        "Como probar que el tecnico estuvo en el yacimiento (geocerca).",
+        "El reporte de campo que ya esta en el sistema cuando el tecnico vuelve.",
+        "Vencimientos de documentacion: la multa que se puede evitar.",
+        "Del campo a la administracion sin recargar nada."
+      ]
+    },
+    {
+      "id": "assets",
+      "nombre": "Zaire Assets",
+      "para_que": "Gestion de activos (EAM): la ficha viva de cada equipo, para saber que reparar, que reemplazar y que garantia reclamar. DISPONIBLE.",
+      "dolores_que_resuelve": [
+        "Nadie sabe cuando fue el ultimo service de un equipo ni cuanto se gasto en el.",
+        "Equipos que fallan sin aviso y frenan la produccion.",
+        "Garantias que se vencen sin que nadie las use.",
+        "No saber cual de todos los equipos atender primero (o jubilar)."
+      ],
+      "beneficios": [
+        "Ficha por equipo (gemelo digital): datos, ubicacion, historia, costo y salud.",
+        "Salud del equipo (0-100): que equipo esta en riesgo, antes de la parada.",
+        "Costo real del equipo (TCO): el dato para decidir reparar vs reemplazar.",
+        "Confiabilidad (MTBF): cada cuanto falla y cuanto tarda en volver.",
+        "Hoja de vida completa: cada service, falla e inspeccion, con quien, cuando y cuanto.",
+        "Alertas de garantia por vencer.",
+        "QR en la planta: el tecnico escanea y abre la ficha al instante.",
+        "El historial se arma solo desde ordenes (Trace) y visitas (Field)."
+      ],
+      "keywords": ["gestion de activos", "EAM", "hoja de vida", "TCO", "MTBF", "confiabilidad", "salud del equipo", "QR", "mantenimiento", "flota de equipos"],
+      "angulos_de_contenido": [
+        "Sabes cuanto gastaste en esa bomba este ano?",
+        "Reparar o reemplazar: como decidir con datos (TCO).",
+        "El gemelo digital de un equipo, explicado simple.",
+        "MTBF y salud del equipo sin ser ingeniero de confiabilidad.",
+        "La garantia que se vence sin que nadie la reclame."
+      ]
+    },
+    {
+      "id": "stock",
+      "nombre": "Zaire Stock",
+      "para_que": "Control de inventario: cuanto tenes, donde y cuanto vale, y el material se descuenta solo al usarlo en un trabajo. DISPONIBLE.",
+      "dolores_que_resuelve": [
+        "'Tenemos este repuesto? En que deposito?' se responde de memoria o con Excel.",
+        "Faltantes que aparecen con el tecnico ya en el sitio.",
+        "No saber cuanta plata hay inmovilizada en el deposito.",
+        "Descontar el stock a mano, o directamente no descontarlo."
+      ],
+      "beneficios": [
+        "Existencias por producto y deposito en tiempo real.",
+        "Valor del inventario a costo promedio.",
+        "Multi-deposito, incluida la camioneta del tecnico.",
+        "Alertas de reposicion cuando algo cae bajo minimo.",
+        "Series y lotes; trazabilidad de cada movimiento.",
+        "Consumo automatico desde ordenes (Trace) y visitas (Field), con su costo.",
+        "Reservas para no comprometer material dos veces."
+      ],
+      "keywords": ["control de stock", "inventario", "repuestos", "valuacion", "costo promedio", "multi-deposito", "reposicion", "series y lotes", "deposito"],
+      "angulos_de_contenido": [
+        "Cuanta plata tenes dormida en el deposito?",
+        "El stock que viaja en la camioneta tambien cuenta.",
+        "El faltante que aparece con el tecnico ya en el sitio.",
+        "Como el material se descuenta solo con cada orden.",
+        "Inventario cuadrado sin planillas paralelas."
+      ]
+    },
+    {
+      "id": "crm",
+      "nombre": "Zaire CRM",
+      "para_que": "Modulo comercial: leads, pipeline, cotizaciones con margen en vivo y score de cuentas; y al ganar, la orden se genera sola. DISPONIBLE.",
+      "dolores_que_resuelve": [
+        "Las oportunidades viven en la cabeza del vendedor.",
+        "Cotizan sin saber si ganan plata.",
+        "No saben que cliente atender primero.",
+        "Se escapan los seguimientos.",
+        "Cargar la venta como orden es doble trabajo."
+      ],
+      "beneficios": [
+        "Pipeline Kanban con etapas propias, siempre visible.",
+        "Cotizaciones con margen en vivo (costo/margen internos, NO salen en el PDF del cliente).",
+        "Score de salud de cuentas (0-100) para priorizar.",
+        "Alertas de tareas vencidas, cierres proximos y oportunidades estancadas.",
+        "Cotizacion aceptada genera la OT en Trace con un clic.",
+        "Reusa los clientes de la suite (no duplica master data)."
+      ],
+      "keywords": ["CRM", "pipeline", "cotizaciones", "margen", "rentabilidad", "leads", "embudo de ventas", "seguimiento comercial", "score de cuentas"],
+      "angulos_de_contenido": [
+        "Cotizas sabiendo si ganas plata, o te enteras despues?",
+        "El margen a la vista para vos, invisible para el cliente.",
+        "De la cotizacion ganada a la orden de trabajo, sin recargar.",
+        "Por que un CRM de contactos generico no te sirve en la industria.",
+        "El seguimiento que se te escapa (y lo que cuesta)."
+      ]
+    },
+    {
+      "id": "prevent",
+      "nombre": "Zaire Prevent",
+      "para_que": "ROADMAP (en planificacion, no disponible): mantenimiento preventivo que arma los planes, los agenda solo (visita u orden) y recomienda que reparar o reemplazar, con el motivo a la vista.",
+      "dolores_que_resuelve": [
+        "'A este equipo cuando le toca el proximo service?' se responde de memoria.",
+        "Mantenimientos que se pasan porque nadie los agendo.",
+        "Preventivo de mas (cambiar piezas que servian) o de menos (esperar a que rompa).",
+        "No saber que equipo atender primero ni cuando conviene reemplazar."
+      ],
+      "beneficios": [
+        "Planes de mantenimiento vivos por equipo (por tiempo o por uso).",
+        "El sistema agenda solo: al vencer un plan, genera la visita o la orden.",
+        "Recomendaciones con el por que (los numeros que lo justifican).",
+        "Se apoya en la hoja de vida real del equipo (Assets).",
+        "Cumplimiento, backlog y confiabilidad (MTBF antes/despues).",
+        "Costo evitado estimado para justificar ante gerencia."
+      ],
+      "keywords": ["mantenimiento preventivo", "planes de mantenimiento", "preventivo vs correctivo", "confiabilidad", "backlog", "criticidad"],
+      "angulos_de_contenido": [
+        "Preventivo vs correctivo: cuando conviene cada uno (educacion, sin vender Prevent como disponible).",
+        "Que tus equipos te avisen antes de fallar (vision/roadmap).",
+        "El costo de prevenir vs el costo de la parada."
+      ]
+    },
+    {
+      "id": "fiscal",
+      "nombre": "Zaire Fiscal (ARCA)",
+      "para_que": "ROADMAP (no disponible): facturacion electronica integrada. Los campos is_billable ya estan preparados en Trace/Field.",
+      "dolores_que_resuelve": [
+        "Facturar por fuera del sistema, con doble carga.",
+        "Perder el hilo entre lo entregado y lo facturado."
+      ],
+      "beneficios": [
+        "Facturacion electronica desde la misma orden/visita (roadmap).",
+        "Cierra el circuito entregado -> facturado sin recargar datos."
+      ],
+      "keywords": ["facturacion electronica", "ARCA", "AFIP", "facturacion", "administracion"],
+      "angulos_de_contenido": [
+        "El circuito de la orden a la factura, sin doble carga (vision/roadmap)."
+      ]
+    },
+    {
+      "id": "contracts",
+      "nombre": "Zaire Contracts",
+      "para_que": "ROADMAP (no disponible): contratos y SLA de mantenimiento, con recurrencia de visitas.",
+      "dolores_que_resuelve": [
+        "Contratos de mantenimiento sin control de cumplimiento.",
+        "Visitas recurrentes agendadas a mano."
+      ],
+      "beneficios": [
+        "Contratos con SLA y recurrencia de visitas (roadmap).",
+        "Control de cumplimiento por contrato."
+      ],
+      "keywords": ["contratos de mantenimiento", "SLA", "recurrencia", "servicio recurrente"],
+      "angulos_de_contenido": [
+        "Contratos de mantenimiento con cumplimiento a la vista (vision/roadmap)."
+      ]
+    },
+    {
+      "id": "analytics",
+      "nombre": "Zaire Analytics",
+      "para_que": "ROADMAP (no disponible): BI operativo con MTBF, backlog, costo por activo y tableros.",
+      "dolores_que_resuelve": [
+        "Datos operativos dispersos, sin tableros para decidir.",
+        "No poder mostrar a gerencia el rendimiento de la operacion."
+      ],
+      "beneficios": [
+        "Tableros de MTBF, backlog y costo por activo (roadmap).",
+        "Una capa de analitica sobre toda la suite."
+      ],
+      "keywords": ["BI industrial", "analytics", "tableros", "KPIs operativos", "costo por activo"],
+      "angulos_de_contenido": [
+        "Los numeros que gerencia quiere ver de mantenimiento (vision/roadmap)."
+      ]
+    }
+  ],
+  "plataformas": [
+    {
+      "id": "instagram",
+      "formato": "Carrusel (4:5), reel corto, historias (9:16).",
+      "largo_ideal": "Carrusel 5-8 slides; reel 15-30s; caption 3-6 lineas.",
+      "tono": "Mas humano y de marca ('quienes somos'): detras de escena, opinion, cultura, producto visual. Cercano.",
+      "estructura": [
+        "Carrusel: slide 1 gancho grande, slides 2-4 desarrollo/dolor, slide 5-6 producto o prueba, slide final CTA.",
+        "Reel: gancho en el primer segundo, mostrar la pantalla/accion, cierre con CTA hablado.",
+        "Historia: una idea + un sticker interactivo + link."
+      ],
+      "hashtags_estrategia": "5-8 del sector, mezcla amplios y de nicho: #mantenimientoindustrial #gestiondeactivos #CMMS #industria #VacaMuerta #oilandgas #pyme #software.",
+      "cta_tipico": "Desliza para ver la demo / Escribinos por DM / Link en bio: zairetech.com.",
+      "buenas_practicas": [
+        "Usar pantallas reales del producto (mockups) como prueba.",
+        "Un solo mensaje por pieza.",
+        "Sticker interactivo en historias para conversacion.",
+        "Guardar lo mejor en Destacados: La Suite, Modulos, Casos, Detras de escena."
+      ]
+    },
+    {
+      "id": "linkedin",
+      "formato": "Post de texto con gancho, carrusel documento (PDF), articulo, video corto.",
+      "largo_ideal": "Post 120-200 palabras con saltos de linea; carrusel 6-10 slides; articulo 800-1200 palabras.",
+      "tono": "Mas de negocio ('que hacemos'): posicionamiento, casos, ROI, founder-led. Profesional pero directo.",
+      "estructura": [
+        "Linea 1: gancho fuerte (dolor o dato) que se lea antes del 'ver mas'.",
+        "Cuerpo: 2-4 parrafos cortos, un aprendizaje o un caso concreto.",
+        "Cierre: una conclusion + CTA suave (comentar o demo)."
+      ],
+      "hashtags_estrategia": "3-5 profesionales y de sector: #industria #mantenimiento #gestiondeactivos #software #IndustriaArgentina.",
+      "cta_tipico": "Te muestro como se ve en tu operacion? / Comenta X / Demo en zairetech.com.",
+      "buenas_practicas": [
+        "Founder-led: hablar en primera persona, construir en publico.",
+        "20 min/dia comentando en posts del ICP y del sector.",
+        "Un caso real vale mas que diez features.",
+        "Evitar links en el cuerpo (bajan alcance): ponerlos en el primer comentario."
+      ]
+    },
+    {
+      "id": "facebook",
+      "formato": "Post con imagen o enlace, video corto, publicaciones en grupos de industria.",
+      "largo_ideal": "Post 80-150 palabras; video 30-60s.",
+      "tono": "Cercano y practico, orientado a PyMEs y dueños; util para grupos locales/regionales (Vaca Muerta, Neuquen).",
+      "estructura": [
+        "Gancho util o pregunta.",
+        "Beneficio concreto + mini ejemplo.",
+        "CTA a la web o al mensaje directo."
+      ],
+      "hashtags_estrategia": "Pocos (2-4), mas geograficos/sectoriales: #Neuquen #VacaMuerta #PyMEindustrial.",
+      "cta_tipico": "Envianos un mensaje / Mas info en zairetech.com.",
+      "buenas_practicas": [
+        "Aprovechar grupos de industria y proveedores regionales.",
+        "Tono menos corporativo que LinkedIn.",
+        "Reutilizar piezas de Instagram."
+      ]
+    },
+    {
+      "id": "x",
+      "formato": "Post corto, hilo, imagen o clip.",
+      "largo_ideal": "Post < 280 caracteres; hilo 4-8 posts.",
+      "tono": "Build-in-public, agil, opiniones tecnicas y de producto; mas informal.",
+      "estructura": [
+        "Hook en el primer post del hilo.",
+        "Un punto por post, concreto.",
+        "Cierre con aprendizaje + CTA suave."
+      ],
+      "hashtags_estrategia": "1-2 maximo (en X los hashtags pesan poco): #buildinpublic o del sector.",
+      "cta_tipico": "Lo mostramos en zairetech.com / Responde si te pasa.",
+      "buenas_practicas": [
+        "Ideal para construir en publico y aprendizajes de founder.",
+        "Hilos que cuentan un problema real y como se resolvio.",
+        "Menos folleto, mas proceso."
+      ]
+    },
+    {
+      "id": "tiktok",
+      "formato": "Video vertical corto (9:16), estilo directo, screen-recording con voz.",
+      "largo_ideal": "15-40s.",
+      "tono": "Educativo-entretenido, desmitificar lo industrial; humano y sin corbata. 'Repurpose' de reels.",
+      "estructura": [
+        "Gancho brutal en 1-2s (dolor o pregunta).",
+        "Mostrar la accion en pantalla (la app haciendo algo).",
+        "Remate con el beneficio + CTA hablado."
+      ],
+      "hashtags_estrategia": "3-5 mezcla amplios y nicho: #industria #mantenimiento #software #pyme #fyp.",
+      "cta_tipico": "Mas en el link / Seguinos para mas.",
+      "buenas_practicas": [
+        "Reutilizar el reel de Instagram.",
+        "Subtitulos siempre.",
+        "Primer segundo decisivo."
+      ]
+    },
+    {
+      "id": "youtube",
+      "formato": "Video largo (demo, tutorial, caso), y Shorts como repurpose.",
+      "largo_ideal": "Demo/tutorial 4-10 min; Short < 60s.",
+      "tono": "Autoridad y 'lo que sabemos': demos completas, tutoriales, el caso SAS. Educativo y solido.",
+      "estructura": [
+        "Intro: el problema que resuelve el video (0-15s).",
+        "Desarrollo: demo o explicacion paso a paso.",
+        "Cierre: resumen + CTA (demo / web).",
+        "Optimizar titulo y descripcion para SEO."
+      ],
+      "hashtags_estrategia": "Pocos en la descripcion; foco en titulo + keywords + capitulos.",
+      "cta_tipico": "Pedi tu demo en zairetech.com / Suscribite para mas.",
+      "buenas_practicas": [
+        "Titulos con la busqueda real (ej. 'Software de ordenes de trabajo para la industria').",
+        "Capitulos y descripcion rica en keywords (alimenta SEO y LLMs).",
+        "Reusar clips como Shorts/reels."
+      ]
+    },
+    {
+      "id": "blog",
+      "formato": "Articulo SEO + AEO (optimizado para Google y para que lo citen los LLMs).",
+      "largo_ideal": "900-1400 palabras.",
+      "tono": "Educativo, con autoridad, con criterio. Primero educa, despues ofrece.",
+      "estructura": [
+        "Parrafo de respuesta directa arriba (definicion/resumen en 2-3 frases) para que los LLMs lo citen.",
+        "Subtitulos H2/H3 que respondan preguntas reales.",
+        "Ejemplos del sector (sellos, bombas, oil & gas).",
+        "Seccion de Preguntas Frecuentes (FAQ) para featured snippets y AEO.",
+        "Enlaces internos a las paginas de modulo + CTA suave al final."
+      ],
+      "hashtags_estrategia": "No aplica; en su lugar keywords, meta description 150-160 caracteres y tags.",
+      "cta_tipico": "Ver demo / Solicitar diagnostico en zairetech.com.",
+      "buenas_practicas": [
+        "Un keyword principal al frente del titulo y del H1.",
+        "Respuesta directa + FAQ = lo que hace que te citen los LLMs.",
+        "Cadencia real (no publicar todo el mismo dia)."
+      ]
+    },
+    {
+      "id": "newsletter",
+      "formato": "Email a leads y clientes, texto plano o semi-plano.",
+      "largo_ideal": "200-400 palabras, un solo tema.",
+      "tono": "Cercano, util, de valor primero; como escribirle a un colega. Sin sonar a spam.",
+      "estructura": [
+        "Asunto corto y concreto (dolor o beneficio).",
+        "Apertura personal (1-2 lineas).",
+        "Un solo tema util (un tip, un caso, una feature).",
+        "Un CTA unico (responder, agendar demo)."
+      ],
+      "hashtags_estrategia": "No aplica.",
+      "cta_tipico": "Responde este mail / Agenda 20 minutos.",
+      "buenas_practicas": [
+        "Un solo tema y un solo CTA por envio.",
+        "Aportar valor antes de pedir la reunion.",
+        "Segmentar por industria/modulo cuando se pueda."
+      ]
+    }
+  ],
+  "tematicas": [
+    {
+      "id": "del-excel-al-sistema",
+      "titulo": "Del Excel/Access al sistema",
+      "descripcion": "El momento en que las planillas dejan de alcanzar y hay que dar el salto.",
+      "modulos_relacionados": ["trace", "stock", "assets"],
+      "angulo": "Educacion desde el dolor: mostrar el limite del Excel y el puente al sistema, sin humillar al que usa Excel."
+    },
+    {
+      "id": "trazabilidad-e-iso",
+      "titulo": "Trazabilidad y auditoria ISO 9001",
+      "descripcion": "Como tener la operacion lista para auditoria todos los dias, no la semana previa.",
+      "modulos_relacionados": ["trace", "assets", "field"],
+      "angulo": "Cumplimiento como tranquilidad: nada se pierde, nada se duplica, todo queda registrado."
+    },
+    {
+      "id": "campo-bajo-control",
+      "titulo": "El campo bajo control",
+      "descripcion": "Geocerca, reportes, viaticos y documentacion del trabajo en sitio.",
+      "modulos_relacionados": ["field", "trace"],
+      "angulo": "Del campo a la oficina sin recargar; la prueba de la visita como valor."
+    },
+    {
+      "id": "decidir-con-datos",
+      "titulo": "Decidir con datos (activos)",
+      "descripcion": "Reparar, reemplazar o reclamar garantia con TCO, MTBF y salud del equipo.",
+      "modulos_relacionados": ["assets", "prevent", "stock"],
+      "angulo": "Dejar de apagar incendios y empezar a decidir con numeros."
+    },
+    {
+      "id": "plata-en-el-deposito",
+      "titulo": "La plata dormida en el deposito",
+      "descripcion": "Cuanto vale el inventario, faltantes y consumo automatico.",
+      "modulos_relacionados": ["stock", "trace", "field"],
+      "angulo": "El deposito como capital: verlo, valuarlo y no frenar trabajos por faltantes."
+    },
+    {
+      "id": "vender-con-rentabilidad",
+      "titulo": "Vender sabiendo si ganas plata",
+      "descripcion": "Pipeline, cotizaciones con margen en vivo y seguimiento comercial.",
+      "modulos_relacionados": ["crm", "trace"],
+      "angulo": "Comercial con criterio: el margen a la vista para vos, invisible para el cliente."
+    },
+    {
+      "id": "efecto-suite",
+      "titulo": "El efecto suite (interoperabilidad)",
+      "descripcion": "Los modulos se hablan: el dato se carga una vez y viaja solo.",
+      "modulos_relacionados": ["trace", "field", "assets", "stock", "crm"],
+      "angulo": "El circulo virtuoso: por que una suite integrada le gana a las herramientas sueltas."
+    },
+    {
+      "id": "build-in-public",
+      "titulo": "Construyendo Zaire (build in public)",
+      "descripcion": "El detras de escena: la app movil, la suite, las decisiones de producto.",
+      "modulos_relacionados": ["field", "assets"],
+      "angulo": "Un founder argentino construyendo el OS industrial, mostrando el proceso real."
+    },
+    {
+      "id": "industria-argentina-vaca-muerta",
+      "titulo": "Industria argentina y Vaca Muerta",
+      "descripcion": "Digitalizacion de proveedores de servicios industriales y el contexto local.",
+      "modulos_relacionados": ["field", "trace", "assets"],
+      "angulo": "Relevancia local: software industrial argentino para la industria argentina."
+    },
+    {
+      "id": "movil-para-el-tecnico",
+      "titulo": "La suite en el celular",
+      "descripcion": "App nativa modular para el tecnico: offline, geocerca, escaneo de QR.",
+      "modulos_relacionados": ["field", "assets", "stock", "trace"],
+      "angulo": "Hecha para el campo: grande, simple, legible al sol y con guantes, funciona sin senal."
+    },
+    {
+      "id": "nimo-inmobiliario",
+      "titulo": "NIMO (CRM inmobiliario)",
+      "descripcion": "El otro producto de Zaire: CRM inmobiliario con frontend publico autoadministrable.",
+      "modulos_relacionados": [],
+      "angulo": "Mostrar amplitud de la agencia: no solo industria; tambien producto para inmobiliarias."
+    },
+    {
+      "id": "studio-servicios",
+      "titulo": "Zaire Studio (software a medida y automatizacion)",
+      "descripcion": "La rama de servicios: sistemas a medida y automatizacion/IA para empresas.",
+      "modulos_relacionados": [],
+      "angulo": "Cuando el producto no alcanza, construimos a medida; con criterio, no software por software."
+    }
+  ],
+  "ganchos": [
+    "El Excel de mantenimiento aguanta hasta los 50 activos. Despues empieza el caos.",
+    "Tu operacion pasaria una auditoria ISO 9001 hoy, o la armas la semana previa?",
+    "Cuantas veces al dia se carga el mismo dato en tu empresa?",
+    "La visita se confirma con la palabra del tecnico, o con un dato?",
+    "Sabes cuanto gastaste en esa bomba este ano?",
+    "Cuanta plata tenes dormida en el deposito?",
+    "Cotizas sabiendo si ganas plata, o te enteras despues?",
+    "'En que estado esta esta orden?' y nadie sabe con certeza.",
+    "Un Access de 15 anos aguanta, hasta que un dia no.",
+    "El reporte del tecnico ya esta en el sistema, o hay que perseguirlo por WhatsApp?",
+    "Reparar o reemplazar ese equipo? La respuesta esta en los numeros.",
+    "Software industrial argentino, para la industria argentina."
+  ],
+  "cta_biblioteca": [
+    "Te mostramos como se ve tu operacion trazada: demo de 20 minutos.",
+    "Pedi tu demo en zairetech.com.",
+    "Escribinos por DM y te contamos si Zaire Industrial encaja en tu operacion.",
+    "Dejanos tu consulta en zairetech.com.",
+    "Comenta 'DEMO' y te escribimos.",
+    "Segui el proceso: estamos construyendo en publico.",
+    "Agenda 20 minutos y lo vemos con tu caso.",
+    "Mas info y pantallas reales en zairetech.com."
+  ],
+  "glosario": [
+    { "termino": "Zaire Industrial", "definicion": "La suite industrial modular de Zaire: Trace, Field, Assets, Stock y CRM disponibles; Prevent, Fiscal, Contracts y Analytics en roadmap." },
+    { "termino": "Zaire Technologies", "definicion": "La agencia / software factory argentina detras de los productos. Marca madre. Color naranja." },
+    { "termino": "Zaire Studio", "definicion": "La rama de servicios de Zaire: software a medida y automatizacion/IA. Planes FLOW / PERFORMANCE / INTELLIGENCE." },
+    { "termino": "NIMO", "definicion": "Producto propio de Zaire: CRM inmobiliario con frontend publico autoadministrable." },
+    { "termino": "OT / OTS", "definicion": "Orden de Trabajo (venta/provision) y Orden de Trabajo de Servicio (reparacion/reacondicionamiento) en Zaire Trace." },
+    { "termino": "Geocerca", "definicion": "Area virtual alrededor de un sitio; cuando el tecnico entra, el sistema marca el arribo automaticamente. Base de Zaire Field." },
+    { "termino": "TCO", "definicion": "Costo total de propiedad de un equipo: cuanta plata se lleva gastada en el. Metrica de Zaire Assets." },
+    { "termino": "MTBF", "definicion": "Tiempo medio entre fallas: cada cuanto falla un equipo y cuanto tarda en volver. Metrica de confiabilidad en Assets." },
+    { "termino": "Salud del equipo", "definicion": "Indice 0-100 que resume el riesgo de un activo, calculado sobre su historia real (no una caja negra)." },
+    { "termino": "Hoja de vida", "definicion": "Historial completo de un equipo: cada service, falla e inspeccion con quien, cuando y cuanto. Se arma solo desde ordenes y visitas." },
+    { "termino": "Margen en vivo", "definicion": "Rentabilidad de una cotizacion visible para el vendedor (costo/margen internos), que NO aparece en el PDF que ve el cliente. Feature de Zaire CRM." },
+    { "termino": "Efecto suite / circulo virtuoso", "definicion": "Los modulos se conectan: la visita solicita la orden, la orden consume stock, el trabajo cae en la hoja de vida del equipo, la cotizacion genera la orden. El dato se carga una vez y viaja solo." },
+    { "termino": "Roadmap", "definicion": "Modulos aun no disponibles, presentados como vision honesta y no como algo listo: Prevent, Fiscal, Contracts, Analytics." },
+    { "termino": "AEO / GEO", "definicion": "Optimizacion para que los LLMs (ChatGPT, Perplexity, Claude) extraigan y citen tu contenido: respuesta directa + FAQ + estructura clara." },
+    { "termino": "ICP", "definicion": "Perfil de cliente ideal: PyMEs y mid-market industriales que mantienen, reparan u operan activos; oil & gas, service tecnico, mantenimiento, metalurgicas." }
+  ]
+}

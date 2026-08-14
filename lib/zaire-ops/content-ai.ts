@@ -6,6 +6,7 @@
 import { createProvider, type ProviderSettings } from '@/lib/sales/providers';
 import { createImageProvider } from '@/lib/sales/image-providers';
 import { extractJson } from '@/lib/sales/analyze';
+import { buildContentContext, getContentKB } from '@/lib/sales/content-kb';
 import { uploadContentMediaBuffer, type ContentMedia } from './content';
 
 export interface GeneratedText { title: string; subtitle: string; body: string; }
@@ -14,17 +15,31 @@ export async function generateContentText(
   input: { prompt: string; platform?: string; title?: string },
   settings?: ProviderSettings,
 ): Promise<GeneratedText | { error: string }> {
-  const system = `Sos redactor de marketing de Zaire Technologies (Argentina, voseo rioplatense). Escribís contenido para redes o blog: claro, con criterio, sin humo ni clichés. Devolvés EXCLUSIVAMENTE un JSON válido con esta forma: {"title": "...", "subtitle": "...", "body": "..."}. Sin markdown, sin \`\`\`.`;
+  // Contexto reducido desde la KB de contenido (tono, plataforma, módulos, temáticas, ganchos).
+  let ctx: unknown = null;
+  try { ctx = buildContentContext({ prompt: input.prompt, platformLabel: input.platform }); } catch { ctx = null; }
+
+  const system = [
+    'Sos redactor de marketing de Zaire Technologies (Argentina, voseo rioplatense).',
+    'Trabajás apoyado en la BASE DE CONOCIMIENTO (KB) que te paso: tono, principios, la plataforma, los módulos y sus dolores/beneficios reales, temáticas, ganchos y CTAs.',
+    'NO inventes capacidades, precios ni features fuera de la KB. Distinguí siempre lo DISPONIBLE de lo ROADMAP (no vendas roadmap como disponible).',
+    'Respetá el tono de marca (qué hacer / qué evitar). Un solo mensaje y un solo CTA por pieza. Nada de "AI slop" ni clichés de marketing.',
+    'Devolvés EXCLUSIVAMENTE un JSON válido: {"title": "...", "subtitle": "...", "body": "..."}. Sin markdown, sin ```.',
+  ].join('\n');
+
   const user = [
-    `Generá un contenido para ${input.platform || 'redes sociales'}.`,
+    ctx ? `CONTEXTO (KB de contenido — usá SOLO esto para los datos duros):\n${JSON.stringify(ctx)}` : '',
+    '',
+    `PEDIDO: generá un contenido para ${input.platform || 'redes sociales'}.`,
     input.title ? `Título tentativo: ${input.title}` : '',
     `Idea / tema: ${input.prompt}`,
-    'Adaptá tono y largo a la plataforma. El "body" en texto plano con saltos de línea (podés incluir hashtags al final si aplica). Solo el JSON.',
+    '',
+    'INSTRUCCIÓN: adaptá tono, largo y estructura a la plataforma del CONTEXTO. Empezá por el dolor real. El "body" en texto plano con saltos de línea; si la plataforma usa hashtags, sumalos al final según su estrategia. Cerrá con un único CTA. Solo el JSON.',
   ].filter(Boolean).join('\n');
 
   try {
     const provider = createProvider(settings);
-    const raw = await provider.complete({ system, user, json: true, temperature: 0.7, maxTokens: 1000 });
+    const raw = await provider.complete({ system, user, json: true, temperature: 0.7, maxTokens: 1100 });
     const obj = JSON.parse(extractJson(raw)) as Partial<GeneratedText>;
     const out: GeneratedText = {
       title: (obj.title ?? '').trim(),
@@ -38,13 +53,22 @@ export async function generateContentText(
   }
 }
 
+// Estilo visual de marca para dar consistencia a las imágenes generadas.
+const BRAND_IMAGE_STYLE =
+  'Estilo visual profesional e industrial, limpio y moderno; acento naranja (#FF6A00) de Zaire; ' +
+  'realista y creíble para el sector industrial (mantenimiento, oil & gas, plantas, talleres); ' +
+  'sin texto superpuesto salvo que se pida explícitamente.';
+
 export async function generateContentImage(
   prompt: string,
   settings?: ProviderSettings,
 ): Promise<ContentMedia | { error: string }> {
   try {
+    let brand = '';
+    try { brand = getContentKB().meta.tono_general; } catch { brand = ''; }
+    const fullPrompt = `${prompt}\n\n${BRAND_IMAGE_STYLE}${brand ? ` Tono de marca: ${brand}` : ''}`;
     const provider = createImageProvider(settings);
-    const img = await provider.generate(prompt);
+    const img = await provider.generate(fullPrompt);
     const buffer = Buffer.from(img.base64, 'base64');
     const ext = img.mimeType.includes('jpeg') ? 'jpg' : img.mimeType.includes('webp') ? 'webp' : 'png';
     const media = await uploadContentMediaBuffer(buffer, img.mimeType, `ia-${Date.now()}.${ext}`);
