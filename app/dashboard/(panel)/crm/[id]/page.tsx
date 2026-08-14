@@ -6,6 +6,9 @@ import { listProfiles } from '@/lib/zaire-ops/profiles';
 import LeadDetail from './lead-detail';
 
 export const dynamic = 'force-dynamic';
+// La "Investigación con IA" (búsqueda web + extracción + análisis) puede tardar: más margen
+// que el default para evitar 504 (aplica en Vercel Pro; en Hobby el tope sigue siendo ~10s).
+export const maxDuration = 60;
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();

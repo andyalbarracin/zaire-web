@@ -31,7 +31,7 @@ export async function fetchPageText(url: string, maxChars = 12000): Promise<stri
   if (!/^https?:\/\//i.test(url)) return null;
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const timer = setTimeout(() => ctrl.abort(), 5000);
     const res = await fetch(url, {
       signal: ctrl.signal,
       redirect: 'follow',
