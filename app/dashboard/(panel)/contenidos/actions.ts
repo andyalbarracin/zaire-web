@@ -7,8 +7,23 @@ import {
   createContentStage, updateContentStage, reorderContentStages, deleteContentStage,
   type ContentItemInput, type ContentMedia,
 } from '@/lib/zaire-ops/content';
+import { generateContentText, generateContentImage, type GeneratedText } from '@/lib/zaire-ops/content-ai';
+import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
 
 const touch = () => revalidatePath('/dashboard/contenidos');
+
+/* ── Generación con IA (texto + imagen) ── */
+export async function generateTextA(input: { prompt: string; platform?: string; title?: string }): Promise<GeneratedText | { error: string }> {
+  await requireUser();
+  if (!input.prompt?.trim()) return { error: 'Escribí una idea o tema para generar.' };
+  return generateContentText(input, await resolveProviderSettings());
+}
+
+export async function generateImageA(prompt: string): Promise<ContentMedia | { error: string }> {
+  await requireUser();
+  if (!prompt?.trim()) return { error: 'Escribí un prompt para la imagen.' };
+  return generateContentImage(prompt, await resolveProviderSettings());
+}
 
 export async function createItemA(input: ContentItemInput) { const u = await requireUser(); await createContentItem(input, u.id); touch(); }
 export async function updateItemA(id: string, input: ContentItemInput) { await requireUser(); await updateContentItem(id, input); touch(); }

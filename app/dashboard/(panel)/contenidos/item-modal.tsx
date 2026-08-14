@@ -3,9 +3,9 @@
 // url, estado, responsable, texto, media) + revisión.
 
 import { useRef, useState } from 'react';
-import { Paperclip, X, Check } from 'lucide-react';
+import { Paperclip, X, Check, Sparkles, ImagePlus } from 'lucide-react';
 import type { ContentStage, ContentItem, ContentMedia, ContentItemInput } from '@/lib/zaire-ops/content';
-import { createItemA, updateItemA, uploadMediaA, setReviewedA } from './actions';
+import { createItemA, updateItemA, uploadMediaA, setReviewedA, generateTextA, generateImageA } from './actions';
 
 type Person = { id: string; name: string };
 const PLATFORMS = ['Instagram', 'LinkedIn', 'Facebook', 'X', 'TikTok', 'YouTube', 'Blog', 'Newsletter', 'Otro'];
@@ -31,7 +31,29 @@ export default function ItemModal({
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [genTextBusy, setGenTextBusy] = useState(false);
+  const [genImgBusy, setGenImgBusy] = useState(false);
+  const [aiErr, setAiErr] = useState<string | null>(null);
   const set = (k: keyof typeof f, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  async function genText() {
+    if (!aiPrompt.trim()) { setAiErr('Escribí una idea o tema.'); return; }
+    setGenTextBusy(true); setAiErr(null);
+    const r = await generateTextA({ prompt: aiPrompt, platform: f.platform || undefined, title: f.title || undefined });
+    setGenTextBusy(false);
+    if ('error' in r) { setAiErr(r.error); return; }
+    setF(p => ({ ...p, title: p.title || r.title, subtitle: p.subtitle || r.subtitle, body: p.body ? `${p.body}\n\n${r.body}` : r.body }));
+  }
+
+  async function genImage() {
+    if (!aiPrompt.trim()) { setAiErr('Escribí un prompt para la imagen.'); return; }
+    setGenImgBusy(true); setAiErr(null);
+    const r = await generateImageA(aiPrompt);
+    setGenImgBusy(false);
+    if ('error' in r) { setAiErr(r.error); return; }
+    setMedia(prev => [...prev, r]);
+  }
 
   const reviewerName = item?.reviewed_by ? (people.find(p => p.id === item.reviewed_by)?.name ?? 'Sí') : null;
 
@@ -75,6 +97,17 @@ export default function ItemModal({
       <div className="zo-modal" style={{ maxWidth: 660 }}>
         <h3>{item ? 'Editar contenido' : 'Nuevo contenido'}</h3>
         <form onSubmit={submit} className="zo-form zo-form-wide" style={{ gap: 14 }}>
+          <div style={{ border: '1px solid #262626', borderRadius: 10, padding: 12, background: '#0d0d0d' }}>
+            <div className="zo-flabel" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={13} /> Generar con IA</div>
+            <textarea className="zo-textarea" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Idea o tema (ej: post sobre trazabilidad ISO 9001 para talleres metalúrgicos)" style={{ minHeight: 54 }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="zo-btn zo-btn-sm" onClick={genText} disabled={genTextBusy || genImgBusy}><Sparkles size={13} /> {genTextBusy ? 'Generando…' : 'Generar texto'}</button>
+              <button type="button" className="zo-btn zo-btn-sm" onClick={genImage} disabled={genImgBusy || genTextBusy}><ImagePlus size={13} /> {genImgBusy ? 'Generando imagen…' : 'Generar imagen'}</button>
+            </div>
+            {aiErr && <div className="zo-form-error" style={{ marginTop: 8 }}>{aiErr}</div>}
+            <div style={{ fontSize: 11, color: '#666', marginTop: 8, lineHeight: 1.5 }}>El texto completa Título/Subtítulo si están vacíos y suma al cuerpo. La imagen se agrega a los visuales. Usa la cadena de <strong style={{ color: '#888' }}>Mi cuenta</strong>; la imagen requiere OpenAI o Gemini.</div>
+          </div>
+
           <div className="zo-field"><label className="zo-flabel">Título</label><input className="zo-input" value={f.title} onChange={e => set('title', e.target.value)} placeholder="Título del contenido" autoFocus /></div>
           <div className="zo-field"><label className="zo-flabel">Subtítulo (opcional)</label><input className="zo-input" value={f.subtitle} onChange={e => set('subtitle', e.target.value)} /></div>
 

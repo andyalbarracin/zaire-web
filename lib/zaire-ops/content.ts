@@ -100,7 +100,7 @@ export async function bulkInsertContentItems(rows: { title?: string; body?: stri
   return payload.length;
 }
 
-// Sube un archivo de media al bucket zo-files y devuelve su URL pública.
+// Sube un archivo de media al bucket zo-content y devuelve su URL pública.
 export async function uploadContentMedia(file: File): Promise<ContentMedia | null> {
   const a = createSupabaseAdmin();
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -110,4 +110,15 @@ export async function uploadContentMedia(file: File): Promise<ContentMedia | nul
   if (error) return null;
   const url = a.storage.from('zo-content').getPublicUrl(path).data.publicUrl;
   return { url, type: file.type || '', name: file.name };
+}
+
+// Sube bytes crudos (p.ej. una imagen generada por IA) al bucket zo-content.
+export async function uploadContentMediaBuffer(buffer: Buffer, contentType: string, name: string): Promise<ContentMedia | null> {
+  const a = createSupabaseAdmin();
+  const safe = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+  const { error } = await a.storage.from('zo-content').upload(path, buffer, { contentType });
+  if (error) return null;
+  const url = a.storage.from('zo-content').getPublicUrl(path).data.publicUrl;
+  return { url, type: contentType, name };
 }
