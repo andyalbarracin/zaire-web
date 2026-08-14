@@ -174,14 +174,14 @@ async function generar(provider: LLMProvider, input: LeadInput, clas: Clasificac
     'INSTRUCCIÓN: Armá el análisis para calificar y encarar al lead.',
     '- 5 a 7 preguntas_calificacion (varias "oro"), tomadas del CONTEXTO.',
     '- 4 a 5 objeciones_probables, tomadas de las objeciones de los módulos del CONTEXTO.',
-    '- angulo_entrada: elegí uno de "angulos" y adaptalo.',
-    '- speech: usá pitch_templates (apertura_por_industria, cuerpo_por_modulo, cierre) y el tono del segmento.',
+    '- angulo_entrada: partí de uno de "angulos" y adaptalo con criterio.',
+    '- speech: redactá un guión natural, humano y de alto nivel, en el tono del segmento. Usá pitch_templates, el vocabulario y los dolores de la industria SOLO como guía; NO copies las plantillas al pie ni dejes placeholders tipo {industria}. Escribí la persuasión y las transiciones con libertad, pero TODO dato duro (capacidades, diferenciales, módulos, estados) sale de la KB: no inventes capacidades ni precios.',
     '- Si un módulo está en estado "roadmap", aclaralo; no lo vendas como disponible.',
     '- Lo que no esté en el CONTEXTO va a datos_faltantes. Solo el JSON.',
   ].join('\n');
 
   // Intento 1
-  let r = await callAndValidate(provider, LeadAnalysisSchema, SYSTEM, baseUser, { temperature: 0.3, maxTokens: 1800 });
+  let r = await callAndValidate(provider, LeadAnalysisSchema, SYSTEM, baseUser, { temperature: 0.35, maxTokens: 1800 });
   if (r.ok) return r.data;
 
   // Reintento único: le devolvemos el error para que corrija.
