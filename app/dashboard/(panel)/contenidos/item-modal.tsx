@@ -61,7 +61,7 @@ export default function ItemModal({
   async function regenField(field: 'title' | 'subtitle') {
     if (!seed()) { setAiErr('Necesito una idea, título o texto para regenerar.'); return; }
     setFieldBusy(field); setAiErr(null);
-    const r = await generateTextA({ prompt: seed(), title: f.title || undefined, ...aiExtras() });
+    const r = await generateTextA({ prompt: seed(), title: f.title || undefined, noCache: true, ...aiExtras() });
     setFieldBusy(null);
     if ('error' in r) { setAiErr(r.error); return; }
     setAiProvider(r.provider ?? null);
@@ -72,7 +72,7 @@ export default function ItemModal({
     if (!f.body.trim()) { setAiErr('No hay texto para mejorar.'); return; }
     if (!mejoraInput.trim()) { setAiErr('Escribí qué querés mejorar o cambiar.'); return; }
     setFieldBusy('body'); setAiErr(null);
-    const r = await generateTextA({ prompt: seed() || f.title || 'contenido', mejora: mejoraInput, contextoActual: { title: f.title, body: f.body }, ...aiExtras() });
+    const r = await generateTextA({ prompt: seed() || f.title || 'contenido', mejora: mejoraInput, contextoActual: { title: f.title, body: f.body }, noCache: true, ...aiExtras() });
     setFieldBusy(null);
     if ('error' in r) { setAiErr(r.error); return; }
     setAiProvider(r.provider ?? null);

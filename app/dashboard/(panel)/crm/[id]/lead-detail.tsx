@@ -98,6 +98,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [research, setResearch] = useState(lead.research ?? '');
   const [analysis, setAnalysis] = useState<LeadAnalysis | null>(null);
   const [aiProviders, setAiProviders] = useState<string[]>([]);
+  const [aiCached, setAiCached] = useState(false);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -167,6 +168,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     setResearch(r.brief);
     setAnalysis(r.analysis ?? null);
     setAiProviders(r.providers ?? []);
+    setAiCached(!!r.cached);
     // Completa SOLO los campos vacíos con las sugerencias de la IA (para revisar y guardar).
     const filled = new Set<string>();
     setF(prev => {
@@ -309,7 +311,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             </p>
             <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research || analysis ? 'Volver a investigar' : 'Investigar')}</button>
             {aiFilled.size > 0 && <div className="zo-ai-note">La IA completó {aiFilled.size} campo(s) vacío(s), marcados en naranja. Revisalos y tocá <strong>Guardar cambios</strong>.</div>}
-            {aiProviders.length > 0 && <div style={{ fontSize: 11.5, color: '#888', marginTop: 8 }}>Respondió: <strong style={{ color: '#bbb' }}>{aiProviders.join(' + ')}</strong></div>}
+            {aiProviders.length > 0 && <div style={{ fontSize: 11.5, color: '#888', marginTop: 8 }}>Respondió: <strong style={{ color: '#bbb' }}>{aiProviders.join(' + ')}</strong>{aiCached && ' · desde caché'}</div>}
             {researchErr && <div className="zo-form-error" style={{ marginTop: 12 }}>{researchErr}</div>}
             {analysis ? <Playbook a={analysis} /> : research && <div className="zo-research">{research}</div>}
           </div>

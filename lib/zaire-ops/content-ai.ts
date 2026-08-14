@@ -8,6 +8,8 @@ import { createImageProvider } from '@/lib/sales/image-providers';
 import { extractJson } from '@/lib/sales/analyze';
 import { buildContentContext, getContentKB } from '@/lib/sales/content-kb';
 import { uploadContentMediaBuffer, type ContentMedia } from './content';
+import { getCached, setCached, hashInput } from './ai-cache';
+import { recordUsage } from './ai-usage';
 
 export interface GeneratedText { title: string; subtitle: string; body: string; provider?: string; }
 
@@ -19,6 +21,7 @@ export interface GenerateTextInput {
   moduloId?: string;
   mejora?: string;                                   // instrucción para reescribir/mejorar
   contextoActual?: { title?: string; subtitle?: string; body?: string };
+  noCache?: boolean;                                 // saltear caché (regenerar / mejorar → siempre fresco)
 }
 
 export async function generateContentText(
@@ -51,6 +54,16 @@ export async function generateContentText(
     'INSTRUCCIÓN: adaptá tono, largo y estructura a la plataforma del CONTEXTO. Empezá por el dolor real. El "body" en texto plano con saltos de línea; si la plataforma usa hashtags, sumalos al final según su estrategia. Cerrá con un único CTA. Solo el JSON.',
   ].filter(Boolean).join('\n');
 
+  const cacheKey = hashInput('content_text', {
+    prompt: input.prompt, platform: input.platform ?? '', title: input.title ?? '',
+    tematicaId: input.tematicaId ?? '', moduloId: input.moduloId ?? '',
+    mejora: input.mejora ?? '', body: input.contextoActual?.body ?? '',
+  });
+  if (!input.noCache) {
+    const hit = await getCached<GeneratedText>(cacheKey);
+    if (hit) return { ...hit, provider: 'caché' };
+  }
+
   try {
     const report: ProviderReport = { used: [] };
     const provider = createProvider(settings, report);
@@ -63,9 +76,48 @@ export async function generateContentText(
       provider: report.used.join('+') || undefined,
     };
     if (!out.title && !out.body) return { error: 'La IA no devolvió contenido útil.' };
+    await setCached(cacheKey, 'content_text', { title: out.title, subtitle: out.subtitle, body: out.body });
+    await recordUsage(report.used);
     return out;
   } catch (e) {
     return { error: 'No se pudo generar el texto: ' + (e as Error).message };
+  }
+}
+
+export interface ContentIdea { title: string; body: string; }
+
+/** Genera un lote de ideas de contenido (para el calendario editorial). */
+export async function generateContentIdeas(
+  input: { tematicaId?: string; platform?: string; count?: number },
+  settings?: ProviderSettings,
+): Promise<{ ideas: ContentIdea[]; provider?: string } | { error: string }> {
+  const count = Math.min(Math.max(input.count ?? 5, 1), 10);
+  let ctx: unknown = null;
+  try { ctx = buildContentContext({ prompt: '', platformLabel: input.platform, tematicaId: input.tematicaId }); } catch { ctx = null; }
+
+  const system = [
+    'Sos estratega de contenido de Zaire Technologies (Argentina, voseo).',
+    'Trabajás apoyado en la KB que te paso. NO inventes features fuera de la KB; distinguí disponible de roadmap.',
+    'Devolvés EXCLUSIVAMENTE un JSON válido: {"ideas":[{"title":"...","body":"..."}]}. Sin markdown, sin ```.',
+  ].join('\n');
+  const user = [
+    ctx ? `CONTEXTO (KB):\n${JSON.stringify(ctx)}` : '',
+    '',
+    `PEDIDO: proponé ${count} ideas de contenido${input.platform ? ` para ${input.platform}` : ''}, variadas y accionables.`,
+    'Cada idea: "title" (el gancho/tema) y "body" (2-4 líneas con el enfoque y el CTA). Solo el JSON.',
+  ].filter(Boolean).join('\n');
+
+  try {
+    const report: ProviderReport = { used: [] };
+    const provider = createProvider(settings, report);
+    const raw = await provider.complete({ system, user, json: true, temperature: 0.8, maxTokens: 1400 });
+    const obj = JSON.parse(extractJson(raw)) as { ideas?: ContentIdea[] };
+    const ideas = (obj.ideas ?? []).map((i) => ({ title: (i.title ?? '').trim(), body: (i.body ?? '').trim() })).filter((i) => i.title);
+    if (!ideas.length) return { error: 'La IA no devolvió ideas útiles.' };
+    await recordUsage(report.used);
+    return { ideas, provider: report.used.join('+') || undefined };
+  } catch (e) {
+    return { error: 'No se pudieron generar ideas: ' + (e as Error).message };
   }
 }
 
@@ -88,7 +140,9 @@ export async function generateContentImage(
     const buffer = Buffer.from(img.base64, 'base64');
     const ext = img.mimeType.includes('jpeg') ? 'jpg' : img.mimeType.includes('webp') ? 'webp' : 'png';
     const media = await uploadContentMediaBuffer(buffer, img.mimeType, `ia-${Date.now()}.${ext}`);
-    return media ? { ...media, provider: provider.name } : { error: 'La imagen se generó pero no se pudo guardar en Storage.' };
+    if (!media) return { error: 'La imagen se generó pero no se pudo guardar en Storage.' };
+    await recordUsage([provider.name]);
+    return { ...media, provider: provider.name };
   } catch (e) {
     return { error: 'No se pudo generar la imagen: ' + (e as Error).message };
   }

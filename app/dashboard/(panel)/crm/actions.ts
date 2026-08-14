@@ -13,7 +13,10 @@ import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { analizarLead } from '@/lib/sales/analyze';
 import type { LeadAnalysis } from '@/lib/sales/types';
+import type { ResearchFields } from '@/lib/zaire-ops/research';
 import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
+import { getCached, setCached, hashInput } from '@/lib/zaire-ops/ai-cache';
+import { recordUsage } from '@/lib/zaire-ops/ai-usage';
 
 const touch = (id?: string) => { revalidatePath('/dashboard/crm'); if (id) revalidatePath(`/dashboard/crm/${id}`); };
 
@@ -73,7 +76,7 @@ export async function uploadLeadFileA(fd: FormData): Promise<CrmAttachment | nul
 }
 
 export type InvestigateResult =
-  | { fields: import('@/lib/zaire-ops/research').ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[] }
+  | { fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; cached?: boolean }
   | { error: string };
 
 // Un solo click: research (completa campos vacíos) + motor KB (módulos, speech, preguntas, objeciones).
@@ -91,6 +94,17 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   ].filter(Boolean).join(' · ') || undefined;
 
   const settings = await resolveProviderSettings();
+
+  // Caché: mismas condiciones (datos del lead + roles/modelos) → no gastamos tokens de nuevo.
+  const cacheKey = hashInput('lead', {
+    company: lead.company, name: lead.name, industry: lead.industry, market_notes: lead.market_notes,
+    website: lead.website, employees: lead.employees, modules_interest: lead.modules_interest,
+    budget: lead.budget, notes: lead.notes,
+    primary: settings.primary, secondary: settings.secondary, fallback: settings.fallback, models: settings.models,
+  });
+  const cached = await getCached<{ fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[] }>(cacheKey);
+  if (cached) return { ...cached, cached: true };
+
   const report = { used: [] as string[] };
 
   // En paralelo: research (campos + brief libre) y motor KB (playbook estructurado).
@@ -124,8 +138,11 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   if (brief) await updateLead(leadId, { research: brief });
   const provs = report.used.join(', ') || 'IA';
   await addLeadEvent(leadId, u.id, `Investigación con IA (respondió: ${provs}).`, 'system');
+  await recordUsage(report.used);
+  const result = { fields, brief, analysis, providers: report.used };
+  await setCached(cacheKey, 'lead', result);
   touch(leadId);
-  return { fields, brief, analysis, providers: report.used };
+  return result;
 }
 
 // Arma el brief de texto (persistido en lead.research) a partir del análisis KB.

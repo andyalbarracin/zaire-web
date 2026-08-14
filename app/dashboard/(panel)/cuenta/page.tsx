@@ -1,6 +1,7 @@
 // File: page.tsx — Mi cuenta (perfil + contraseña + proveedores de IA)
 import { getMyProfile, ROLE_LABEL } from '@/lib/zaire-ops/profiles';
 import { resolveProviderSettings, LLM_PROVIDERS } from '@/lib/zaire-ops/llm-config';
+import { getUsageSummary, totalsByProvider } from '@/lib/zaire-ops/ai-usage';
 import { providerHasKey } from '@/lib/sales/providers';
 import Avatar from '@/app/dashboard/_components/avatar';
 import { updateAccountAction, changePasswordAction, updateLlmConfigAction } from './actions';
@@ -18,6 +19,8 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
   const profile = await getMyProfile();
   if (!profile) return null;
   const llm = await resolveProviderSettings();
+  const usage = await getUsageSummary(14);
+  const totals = totalsByProvider(usage);
 
   return (
     <>
@@ -99,6 +102,31 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
           </div>
           <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar proveedores</button></div>
         </form>
+      </div>
+
+      <div className="zo-card zo-section-gap">
+        <div className="zo-card-title">// USO DE IA · ÚLTIMOS 14 DÍAS</div>
+        {usage.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: '#888', lineHeight: 1.6 }}>
+            Todavía no hay uso registrado. Si acabás de correr la migración <code>0015_ai_cache_usage.sql</code>, se va a ir poblando con cada generación. No es un saldo, es un conteo propio de llamadas por proveedor.
+          </p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              {totals.map(t => (
+                <span key={t.provider} className="zo-chip">{PROVIDER_LABEL[t.provider] ?? t.provider}: <strong style={{ marginLeft: 4, color: '#ddd' }}>{t.calls}</strong></span>
+              ))}
+            </div>
+            <div className="zo-table-wrap"><table className="zo-table">
+              <thead><tr><th>Día</th><th>Proveedor</th><th>Llamadas</th></tr></thead>
+              <tbody>
+                {usage.map((r, i) => (
+                  <tr key={i}><td className="zo-mono">{r.day}</td><td>{PROVIDER_LABEL[r.provider] ?? r.provider}</td><td>{r.calls}</td></tr>
+                ))}
+              </tbody>
+            </table></div>
+          </>
+        )}
       </div>
     </>
   );
