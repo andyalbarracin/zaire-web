@@ -5,9 +5,19 @@
 //   Independiente del panel `leads` del sitio. Resiliente: si las tablas todavía
 //   no existen (migración 0011 sin correr), las lecturas devuelven vacío.
 
+import { z } from 'zod';
 import { createSupabaseAdmin } from './supabase-admin';
+import { validateUpload } from './upload-guard';
 
 const db = () => createSupabaseAdmin();
+
+// Whitelist de campos válidos de un lead (evita mass-assignment de columnas ajenas) + shape de adjuntos.
+const AttachmentSchema = z.object({ url: z.string(), type: z.string(), name: z.string() });
+const LEAD_KEYS = [
+  'name', 'phone', 'company', 'contact_person', 'email', 'source', 'notes', 'stage_id',
+  'preferred_contact', 'contact_person_2', 'phone_2', 'website', 'city', 'address', 'budget',
+  'modules_interest', 'industry', 'employees', 'market_notes', 'research', 'attachments',
+] as const;
 
 export interface CrmStage {
   id: string;
@@ -141,14 +151,16 @@ export async function addLeadEvent(leadId: string, authorId: string | null, body
 
 /* ── Archivos del lead (bucket zo-crm) ───────────────────────────────────── */
 export async function uploadLeadFile(file: File): Promise<CrmAttachment | null> {
+  const check = validateUpload(file);
+  if (!check.ok) return null;
   const a = createSupabaseAdmin();
   const buffer = Buffer.from(await file.arrayBuffer());
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
-  const { error } = await a.storage.from('zo-crm').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
+  const { error } = await a.storage.from('zo-crm').upload(path, buffer, { contentType: check.contentType });
   if (error) return null;
   const url = a.storage.from('zo-crm').getPublicUrl(path).data.publicUrl;
-  return { url, type: file.type || '', name: file.name };
+  return { url, type: check.contentType, name: file.name };
 }
 
 export async function updateLead(id: string, patch: CrmLeadInput): Promise<void> {
@@ -178,13 +190,19 @@ export async function bulkInsertLeads(rows: CrmLeadInput[], stageId: string | nu
   return payload.length;
 }
 
-// Normaliza strings vacíos a null y recorta.
+// Whitelist + normaliza: solo claves conocidas, strings vacíos → null, adjuntos validados con zod.
 function clean(input: CrmLeadInput): CrmLeadInput {
   const out: CrmLeadInput = {};
-  for (const [k, v] of Object.entries(input) as [keyof CrmLeadInput, unknown][]) {
+  for (const k of LEAD_KEYS) {
+    const v = (input as Record<string, unknown>)[k];
     if (v === undefined) continue;
+    if (k === 'attachments') {
+      const p = z.array(AttachmentSchema).safeParse(v);
+      if (p.success) out.attachments = p.data;
+      continue;
+    }
     if (typeof v === 'string') { const t = v.trim(); (out as Record<string, unknown>)[k] = t === '' ? null : t; }
-    else (out as Record<string, unknown>)[k] = v;
+    // tipos no-string en campos string se ignoran (defensa)
   }
   return out;
 }

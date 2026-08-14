@@ -5,6 +5,7 @@
 //   Resiliente: si las tablas no existen aún, las lecturas devuelven vacío.
 
 import { createSupabaseAdmin } from './supabase-admin';
+import { validateUpload } from './upload-guard';
 
 const db = () => createSupabaseAdmin();
 
@@ -102,14 +103,16 @@ export async function bulkInsertContentItems(rows: { title?: string; body?: stri
 
 // Sube un archivo de media al bucket zo-content y devuelve su URL pública.
 export async function uploadContentMedia(file: File): Promise<ContentMedia | null> {
+  const check = validateUpload(file);
+  if (!check.ok) return null;
   const a = createSupabaseAdmin();
   const buffer = Buffer.from(await file.arrayBuffer());
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
-  const { error } = await a.storage.from('zo-content').upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
+  const { error } = await a.storage.from('zo-content').upload(path, buffer, { contentType: check.contentType });
   if (error) return null;
   const url = a.storage.from('zo-content').getPublicUrl(path).data.publicUrl;
-  return { url, type: file.type || '', name: file.name };
+  return { url, type: check.contentType, name: file.name };
 }
 
 // Sube bytes crudos (p.ej. una imagen generada por IA) al bucket zo-content.
