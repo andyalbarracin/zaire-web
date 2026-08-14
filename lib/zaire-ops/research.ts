@@ -9,6 +9,7 @@ import type { CrmLead } from './crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES } from './crm-constants';
 import { createProvider, geminiGroundedComplete, type ProviderSettings, type ProviderReport } from '@/lib/sales/providers';
 import { extractJson } from '@/lib/sales/analyze';
+import { serperSearch, fetchPageText } from './web-search';
 
 export interface ResearchFields {
   website?: string; industry?: string; city?: string; employees?: string;
@@ -158,4 +159,56 @@ Incluí SOLO las claves que encuentres con respaldo real. Devolvé solo el JSON.
   } catch (e) {
     return { error: 'No se pudo enriquecer desde la web: ' + (e as Error).message };
   }
+}
+
+// Enriquecimiento vía Serper (búsqueda Google) + fetch del sitio + extracción con el LLM
+// configurado (GPT). Model-agnostic: el modelo solo EXTRAE del material real que le pasamos.
+async function enrichViaSerper(lead: CrmLead, settings?: ProviderSettings, report?: ProviderReport): Promise<EnrichResult | { error: string }> {
+  const name = lead.company || lead.name;
+  if (!name) return { error: 'Falta el nombre de la empresa para buscar.' };
+
+  const loc = lead.city ? ` ${lead.city}` : ' Argentina';
+  const search = await serperSearch(`${name}${loc} sitio oficial contacto teléfono email`);
+  if (!search || (!search.organic.length && !search.knowledgeGraph)) {
+    return { error: 'La búsqueda web no devolvió resultados (revisá SERPER_API_KEY o el nombre).' };
+  }
+
+  const kg = search.knowledgeGraph as { website?: string } | undefined;
+  const siteUrl = kg?.website || search.organic[0]?.link;
+  const pageText = siteUrl ? await fetchPageText(siteUrl) : null;
+  const sources = search.organic.slice(0, 5).map((o) => ({ title: o.title, uri: o.link }));
+
+  const material = [
+    kg ? `Ficha de Google: ${JSON.stringify(kg).slice(0, 1500)}` : '',
+    'Resultados de búsqueda:',
+    ...search.organic.slice(0, 6).map((o) => `- ${o.title} | ${o.link}\n  ${o.snippet}`),
+    pageText ? `\nContenido del sitio (${siteUrl}):\n${pageText}` : '',
+  ].filter(Boolean).join('\n');
+
+  const system = `Extraés datos de contacto REALES a partir del material web que te paso (resultados de Google + contenido del sitio). Regla irrompible: NO inventes. Si un dato no aparece en el material, omitilo. Devolvé EXCLUSIVAMENTE un JSON válido, sin markdown, sin \`\`\`.`;
+  const user = `Empresa: ${name}\n\nMATERIAL WEB:\n${material}\n\nCompletá SOLO las claves que aparezcan en el material:\n{\n "website": "URL oficial",\n "phone": "teléfono",\n "email": "email",\n "address": "dirección",\n "city": "ciudad",\n "industry": "EXACTAMENTE una de: ${CRM_INDUSTRIES.join(' | ')}",\n "employees": "EXACTAMENTE uno de: ${CRM_EMPLOYEES.join(' | ')}",\n "market_notes": "1-2 frases del sector"\n}\nSolo el JSON.`;
+
+  try {
+    const provider = createProvider(settings, report);
+    const raw = await provider.complete({ system, user, json: true, temperature: 0.1, maxTokens: 900 });
+    const parsed = JSON.parse(extractJson(raw)) as ResearchFields;
+    if (report && !report.used.includes('serper')) report.used.push('serper');
+    return { fields: sanitizeFields(parsed), sources };
+  } catch (e) {
+    return { error: 'No se pudo extraer datos de la web: ' + (e as Error).message };
+  }
+}
+
+/**
+ * Orquestador de enriquecimiento web. Prioridad: Serper (gratis, extrae con GPT) →
+ * Gemini grounded (requiere billing) → error (el caller cae a inferencia sin web).
+ */
+export async function enrichLead(lead: CrmLead, settings?: ProviderSettings, report?: ProviderReport): Promise<EnrichResult | { error: string }> {
+  if (process.env.SERPER_API_KEY) return enrichViaSerper(lead, settings, report);
+  if (process.env.GEMINI_API_KEY) {
+    const r = await enrichLeadFromWeb(lead);
+    if ('fields' in r && report && !report.used.includes('gemini(web)')) report.used.push('gemini(web)');
+    return r;
+  }
+  return { error: 'No hay buscador web configurado (falta SERPER_API_KEY, o GEMINI_API_KEY con billing).' };
 }

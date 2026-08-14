@@ -8,7 +8,7 @@ import {
   createStage, updateStage, reorderStages, deleteStage,
   type CrmLeadInput, type CrmAttachment,
 } from '@/lib/zaire-ops/crm';
-import { researchLead, enrichLeadFromWeb, callScript, emailDraft } from '@/lib/zaire-ops/research';
+import { researchLead, enrichLead, callScript, emailDraft } from '@/lib/zaire-ops/research';
 import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
 import { analizarLead } from '@/lib/sales/analyze';
@@ -111,9 +111,9 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
 
   const report = { used: [] as string[] };
 
-  // Etapa 1 (búsqueda web real con Gemini grounded) + Etapa 2 (análisis KB), en paralelo.
+  // Etapa 1 (búsqueda web real: Serper+GPT o Gemini grounded) + Etapa 2 (análisis KB), en paralelo.
   const [enrich, analysis] = await Promise.all([
-    enrichLeadFromWeb(lead),
+    enrichLead(lead, settings, report),
     analizarLead({
       nombre: lead.company || lead.name || 'Lead',
       rubro: lead.industry || undefined,
@@ -130,7 +130,7 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   if ('fields' in enrich) {
     fields = enrich.fields;
     sources = enrich.sources;
-    if (!report.used.includes('gemini(web)')) report.used.push('gemini(web)');
+    // enrichLead ya etiqueta el proveedor usado ('serper' / 'gemini(web)') en report.used.
   } else {
     // La búsqueda web falló (sin key, sin billing de grounding, cuota, etc.): lo dejamos visible
     // y caemos a la investigación por inferencia (sin internet).
