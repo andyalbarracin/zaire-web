@@ -17,6 +17,9 @@ import type { ResearchFields } from '@/lib/zaire-ops/research';
 import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
 import { getCached, setCached, hashInput } from '@/lib/zaire-ops/ai-cache';
 import { recordUsage } from '@/lib/zaire-ops/ai-usage';
+import { checkAiRateLimit } from '@/lib/zaire-ops/rate-limit';
+
+const RATE_MSG = 'Alcanzaste el límite de generaciones por hora. Probá en un rato.';
 
 const touch = (id?: string) => { revalidatePath('/dashboard/crm'); if (id) revalidatePath(`/dashboard/crm/${id}`); };
 
@@ -83,6 +86,7 @@ export type InvestigateResult =
 // Ambos por la cadena openai→gemini→groq; el motor SIEMPRE se apoya en la KB.
 export async function researchLeadA(leadId: string): Promise<InvestigateResult> {
   const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
 
@@ -165,14 +169,16 @@ function briefFromAnalysis(a: LeadAnalysis): string {
 
 /* ── Llamada / Email (IA + envío) ── */
 export async function callScriptA(leadId: string, stageName?: string, lastNote?: string | null): Promise<{ text: string } | { error: string }> {
-  await requireUser();
+  const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
   return callScript(lead, stageName, lastNote, await resolveProviderSettings());
 }
 
 export async function emailDraftA(leadId: string, stageName?: string): Promise<{ subject: string; body: string } | { error: string }> {
-  await requireUser();
+  const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const lead = await getLead(leadId);
   if (!lead) return { error: 'Lead no encontrado.' };
   return emailDraft(lead, stageName, await resolveProviderSettings());

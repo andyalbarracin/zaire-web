@@ -10,19 +10,23 @@ import {
 import { generateContentText, generateContentImage, generateContentIdeas, type GeneratedText, type GenerateTextInput } from '@/lib/zaire-ops/content-ai';
 import { contentKbLists } from '@/lib/sales/content-kb';
 import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
+import { checkAiRateLimit } from '@/lib/zaire-ops/rate-limit';
 
 const touch = () => revalidatePath('/dashboard/contenidos');
+const RATE_MSG = 'Alcanzaste el límite de generaciones por hora. Probá en un rato.';
 
 /* ── Generación con IA (texto + imagen) ── */
 export async function generateTextA(input: GenerateTextInput): Promise<GeneratedText | { error: string }> {
-  await requireUser();
+  const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const seed = input.prompt?.trim() || input.contextoActual?.body?.trim() || input.title?.trim();
   if (!seed) return { error: 'Escribí una idea o tema para generar.' };
   return generateContentText({ ...input, prompt: seed }, await resolveProviderSettings());
 }
 
 export async function generateImageA(prompt: string): Promise<(ContentMedia & { provider?: string }) | { error: string }> {
-  await requireUser();
+  const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   if (!prompt?.trim()) return { error: 'Escribí un prompt para la imagen.' };
   return generateContentImage(prompt, await resolveProviderSettings());
 }
@@ -38,6 +42,7 @@ export async function repurposeA(input: {
   title: string; body: string; platforms: string[]; stageId: string | null; tematicaId?: string; moduloId?: string;
 }): Promise<{ created: number; providers: string[] } | { error: string }> {
   const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const platforms = input.platforms.filter(Boolean);
   if (!platforms.length) return { error: 'Elegí al menos una plataforma.' };
   if (!input.title.trim() && !input.body.trim()) return { error: 'Necesito un título o texto para adaptar.' };
@@ -67,6 +72,7 @@ export async function generateIdeasA(input: {
   tematicaId?: string; platform?: string; count?: number; stageId: string | null;
 }): Promise<{ created: number } | { error: string }> {
   const u = await requireUser();
+  if (!(await checkAiRateLimit(u.id))) return { error: RATE_MSG };
   const r = await generateContentIdeas({ tematicaId: input.tematicaId, platform: input.platform, count: input.count ?? 5 }, await resolveProviderSettings());
   if ('error' in r) return { error: r.error };
   for (const idea of r.ideas) await createContentItem({ title: idea.title, body: idea.body, status_id: input.stageId }, u.id);

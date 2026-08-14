@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/zaire-ops/auth';
-import { updateProfile, uploadAvatar } from '@/lib/zaire-ops/profiles';
+import { updateProfile, uploadAvatar, requireRole } from '@/lib/zaire-ops/profiles';
 import { updateLlmConfig } from '@/lib/zaire-ops/llm-config';
 import { createSupabaseServer } from '@/lib/zaire-ops/supabase-server';
 
@@ -21,7 +21,7 @@ export async function updateAccountAction(fd: FormData) {
 }
 
 export async function updateLlmConfigAction(fd: FormData) {
-  await requireUser();
+  await requireRole(['owner', 'admin']); // config sensible (afecta gasto de tokens): solo owner/admin
   const str = (k: string) => { const v = String(fd.get(k) || '').trim(); return v || null; };
   const num = (k: string, d: number) => { const n = Number(fd.get(k)); return Number.isFinite(n) && n > 0 ? Math.floor(n) : d; };
   await updateLlmConfig({
