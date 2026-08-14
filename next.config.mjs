@@ -10,15 +10,13 @@ const BASE_SECURITY_HEADERS = [
   { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
 ];
 
-// Cabeceras endurecidas para áreas privadas (dashboard + portal): anti-clickjacking,
-// bloqueo de <base>/<object>/embeds y de envío de formularios a otro origen, y
-// permisos de dispositivo apagados. CSP sin restringir script/style (no rompe el app;
-// una CSP con nonce para scripts queda como follow-up).
+// Cabeceras endurecidas para áreas privadas (dashboard + portal): anti-clickjacking y
+// permisos de dispositivo apagados. La CSP completa (con nonce para script-src) la aplica
+// el middleware por request; acá no la duplicamos.
 const PRIVATE_SECURITY_HEADERS = [
   ...BASE_SECURITY_HEADERS,
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-  { key: 'Content-Security-Policy', value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" },
 ];
 
 /** @type {import('next').NextConfig} */
