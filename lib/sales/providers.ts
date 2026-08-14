@@ -98,7 +98,7 @@ export class GeminiProvider implements LLMProvider {
   async complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('Falta GEMINI_API_KEY');
-    const model = this.modelOverride || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const model = this.modelOverride || process.env.GEMINI_MODEL || 'gemini-flash-latest';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -143,7 +143,8 @@ export async function geminiGroundedComplete(
 ): Promise<GroundedResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('Falta GEMINI_API_KEY');
-  const model = process.env.GEMINI_SEARCH_MODEL || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  // No heredamos GEMINI_MODEL acá (puede estar pineado a un modelo viejo/muerto). Alias vigente.
+  const model = process.env.GEMINI_SEARCH_MODEL || 'gemini-flash-latest';
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const res = await fetch(endpoint, {

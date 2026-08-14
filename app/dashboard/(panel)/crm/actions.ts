@@ -79,7 +79,7 @@ export async function uploadLeadFileA(fd: FormData): Promise<CrmAttachment | nul
 }
 
 export type InvestigateResult =
-  | { fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; sources?: { title: string; uri: string }[]; cached?: boolean }
+  | { fields: ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[]; sources?: { title: string; uri: string }[]; enrichError?: string; cached?: boolean }
   | { error: string };
 
 // Un solo click: research (completa campos vacíos) + motor KB (módulos, speech, preguntas, objeciones).
@@ -126,12 +126,15 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
 
   let fields: ResearchFields = {};
   let sources: { title: string; uri: string }[] = [];
+  let enrichError: string | undefined;
   if ('fields' in enrich) {
     fields = enrich.fields;
     sources = enrich.sources;
     if (!report.used.includes('gemini(web)')) report.used.push('gemini(web)');
   } else {
-    // Fallback sin web (Gemini no configurado): research por inferencia.
+    // La búsqueda web falló (sin key, sin billing de grounding, cuota, etc.): lo dejamos visible
+    // y caemos a la investigación por inferencia (sin internet).
+    enrichError = enrich.error;
     const research = await researchLead(lead, settings, report);
     if ('fields' in research) fields = research.fields;
   }
@@ -150,8 +153,9 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   const provs = report.used.join(', ') || 'IA';
   await addLeadEvent(leadId, u.id, `Investigación con IA (respondió: ${provs}).`, 'system');
   await recordUsage(report.used);
-  const result = { fields, brief, analysis, providers: report.used, sources };
-  await setCached(cacheKey, 'lead', result);
+  const result = { fields, brief, analysis, providers: report.used, sources, enrichError };
+  // No cacheamos si la búsqueda web falló, para que reintente cuando se resuelva (billing, etc.).
+  if (!enrichError) await setCached(cacheKey, 'lead', result);
   touch(leadId);
   return result;
 }

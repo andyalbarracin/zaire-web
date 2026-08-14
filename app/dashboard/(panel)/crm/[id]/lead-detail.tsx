@@ -100,6 +100,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [aiProviders, setAiProviders] = useState<string[]>([]);
   const [aiCached, setAiCached] = useState(false);
   const [aiSources, setAiSources] = useState<{ title: string; uri: string }[]>([]);
+  const [aiEnrichError, setAiEnrichError] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -171,6 +172,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     setAiProviders(r.providers ?? []);
     setAiCached(!!r.cached);
     setAiSources(r.sources ?? []);
+    setAiEnrichError(r.enrichError ?? null);
     // Completa SOLO los campos vacíos con las sugerencias de la IA (para revisar y guardar).
     const filled = new Set<string>();
     setF(prev => {
@@ -314,6 +316,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             <button className="zo-btn zo-btn-sm" onClick={investigate} disabled={researching}><Sparkles size={14} /> {researching ? 'Investigando…' : (research || analysis ? 'Volver a investigar' : 'Investigar')}</button>
             {aiFilled.size > 0 && <div className="zo-ai-note">La IA completó {aiFilled.size} campo(s) vacío(s), marcados en naranja. Revisalos y tocá <strong>Guardar cambios</strong>.</div>}
             {aiProviders.length > 0 && <div style={{ fontSize: 11.5, color: '#888', marginTop: 8 }}>Respondió: <strong style={{ color: '#bbb' }}>{aiProviders.join(' + ')}</strong>{aiCached && ' · desde caché'}</div>}
+            {aiEnrichError && <div style={{ fontSize: 11, color: '#e0a54a', marginTop: 6, lineHeight: 1.5 }}>⚠ Búsqueda web no disponible: {aiEnrichError}</div>}
             {aiSources.length > 0 && (
               <div style={{ fontSize: 11, color: '#888', marginTop: 6, lineHeight: 1.5 }}>
                 Fuentes web: {aiSources.slice(0, 4).map((s, i) => (
