@@ -73,7 +73,7 @@ export async function uploadLeadFileA(fd: FormData): Promise<CrmAttachment | nul
 }
 
 export type InvestigateResult =
-  | { fields: import('@/lib/zaire-ops/research').ResearchFields; brief: string; analysis: LeadAnalysis | null }
+  | { fields: import('@/lib/zaire-ops/research').ResearchFields; brief: string; analysis: LeadAnalysis | null; providers: string[] }
   | { error: string };
 
 // Un solo click: research (completa campos vacíos) + motor KB (módulos, speech, preguntas, objeciones).
@@ -91,10 +91,11 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   ].filter(Boolean).join(' · ') || undefined;
 
   const settings = await resolveProviderSettings();
+  const report = { used: [] as string[] };
 
   // En paralelo: research (campos + brief libre) y motor KB (playbook estructurado).
   const [research, analysis] = await Promise.all([
-    researchLead(lead, settings),
+    researchLead(lead, settings, report),
     analizarLead({
       nombre: lead.company || lead.name || 'Lead',
       rubro: lead.industry || undefined,
@@ -102,7 +103,7 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
       web: lead.website || undefined,
       empleados: empleadosNum,
       notas,
-    }, settings).catch(() => null),
+    }, settings, report).catch(() => null),
   ]);
 
   const fields = 'fields' in research ? research.fields : {};
@@ -121,9 +122,10 @@ export async function researchLeadA(leadId: string): Promise<InvestigateResult> 
   }
 
   if (brief) await updateLead(leadId, { research: brief });
-  await addLeadEvent(leadId, u.id, 'Investigación con IA (research + motor KB).', 'system');
+  const provs = report.used.join(', ') || 'IA';
+  await addLeadEvent(leadId, u.id, `Investigación con IA (respondió: ${provs}).`, 'system');
   touch(leadId);
-  return { fields, brief, analysis };
+  return { fields, brief, analysis, providers: report.used };
 }
 
 // Arma el brief de texto (persistido en lead.research) a partir del análisis KB.

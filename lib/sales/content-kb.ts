@@ -57,6 +57,15 @@ export function getContentKB(): ContentKB {
   return _kb;
 }
 
+/** Listas compactas para poblar los selects del editor (temática / módulo). */
+export function contentKbLists(): { tematicas: { id: string; titulo: string }[]; modulos: { id: string; nombre: string }[] } {
+  const kb = getContentKB();
+  return {
+    tematicas: kb.tematicas.map((t) => ({ id: t.id, titulo: t.titulo })),
+    modulos: kb.modulos.map((m) => ({ id: m.id, nombre: m.nombre })),
+  };
+}
+
 /** Plataforma por etiqueta de la UI ('Instagram' → id 'instagram'). */
 export function getPlatform(label?: string | null): Platform | undefined {
   if (!label) return undefined;
@@ -96,21 +105,35 @@ export function pickTematicasForPrompt(prompt: string, max = 2): Tematica[] {
  * Contexto reducido para el generador: tono de marca + plataforma + módulos/temáticas
  * relevantes + ganchos + CTAs. Si no matchea nada, manda un catálogo compacto para elegir.
  */
-export function buildContentContext(input: { prompt: string; platformLabel?: string | null }) {
+export function buildContentContext(input: {
+  prompt: string; platformLabel?: string | null; tematicaId?: string | null; moduloId?: string | null;
+}) {
   const kb = getContentKB();
   const plataforma = getPlatform(input.platformLabel) ?? null;
 
-  let modulos = pickModulesForPrompt(input.prompt, 3);
+  // Temática/módulo forzados desde el editor (tienen prioridad sobre lo inferido del prompt).
+  const forcedTematica = input.tematicaId ? kb.tematicas.find((t) => t.id === input.tematicaId) : undefined;
+  const forcedModulos = new Set<string>();
+  if (input.moduloId) forcedModulos.add(input.moduloId);
+  forcedTematica?.modulos_relacionados.forEach((id) => forcedModulos.add(id));
+
+  const byId = (id: string) => kb.modulos.find((m) => m.id === id);
+  let modulos = [
+    ...Array.from(forcedModulos).map(byId).filter((m): m is ContentModule => Boolean(m)),
+    ...pickModulesForPrompt(input.prompt, 3),
+  ];
+  // Dedup por id, cap 3.
+  modulos = modulos.filter((m, i) => modulos.findIndex((x) => x.id === m.id) === i).slice(0, 3);
   const modulosCompacto = modulos.length
     ? null
     : kb.modulos.map((m) => ({ id: m.id, nombre: m.nombre, para_que: m.para_que }));
 
-  let tematicas = pickTematicasForPrompt(input.prompt, 2);
+  let tematicas = [
+    ...(forcedTematica ? [forcedTematica] : []),
+    ...pickTematicasForPrompt(input.prompt, 2),
+  ];
+  tematicas = tematicas.filter((t, i) => tematicas.findIndex((x) => x.id === t.id) === i).slice(0, 2);
   const tematicasCompacto = tematicas.length ? null : kb.tematicas.map((t) => ({ id: t.id, titulo: t.titulo, angulo: t.angulo }));
-
-  // Recorte defensivo por si algún array es enorme.
-  modulos = modulos.slice(0, 3);
-  tematicas = tematicas.slice(0, 2);
 
   return {
     marca: { marca: kb.meta.marca, producto: kb.meta.producto, tono_general: kb.meta.tono_general },

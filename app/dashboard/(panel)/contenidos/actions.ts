@@ -7,22 +7,30 @@ import {
   createContentStage, updateContentStage, reorderContentStages, deleteContentStage,
   type ContentItemInput, type ContentMedia,
 } from '@/lib/zaire-ops/content';
-import { generateContentText, generateContentImage, type GeneratedText } from '@/lib/zaire-ops/content-ai';
+import { generateContentText, generateContentImage, type GeneratedText, type GenerateTextInput } from '@/lib/zaire-ops/content-ai';
+import { contentKbLists } from '@/lib/sales/content-kb';
 import { resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
 
 const touch = () => revalidatePath('/dashboard/contenidos');
 
 /* ── Generación con IA (texto + imagen) ── */
-export async function generateTextA(input: { prompt: string; platform?: string; title?: string }): Promise<GeneratedText | { error: string }> {
+export async function generateTextA(input: GenerateTextInput): Promise<GeneratedText | { error: string }> {
   await requireUser();
-  if (!input.prompt?.trim()) return { error: 'Escribí una idea o tema para generar.' };
-  return generateContentText(input, await resolveProviderSettings());
+  const seed = input.prompt?.trim() || input.contextoActual?.body?.trim() || input.title?.trim();
+  if (!seed) return { error: 'Escribí una idea o tema para generar.' };
+  return generateContentText({ ...input, prompt: seed }, await resolveProviderSettings());
 }
 
-export async function generateImageA(prompt: string): Promise<ContentMedia | { error: string }> {
+export async function generateImageA(prompt: string): Promise<(ContentMedia & { provider?: string }) | { error: string }> {
   await requireUser();
   if (!prompt?.trim()) return { error: 'Escribí un prompt para la imagen.' };
   return generateContentImage(prompt, await resolveProviderSettings());
+}
+
+// Listas para los selects del editor (temática / módulo).
+export async function contentKbListsA(): Promise<{ tematicas: { id: string; titulo: string }[]; modulos: { id: string; nombre: string }[] }> {
+  await requireUser();
+  try { return contentKbLists(); } catch { return { tematicas: [], modulos: [] }; }
 }
 
 export async function createItemA(input: ContentItemInput) { const u = await requireUser(); await createContentItem(input, u.id); touch(); }

@@ -2,10 +2,10 @@
 // item-modal.tsx — alta/edición de un contenido (título, subtítulo, plataforma, fecha,
 // url, estado, responsable, texto, media) + revisión.
 
-import { useRef, useState } from 'react';
-import { Paperclip, X, Check, Sparkles, ImagePlus } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Paperclip, X, Check, Sparkles, ImagePlus, RefreshCw } from 'lucide-react';
 import type { ContentStage, ContentItem, ContentMedia, ContentItemInput } from '@/lib/zaire-ops/content';
-import { createItemA, updateItemA, uploadMediaA, setReviewedA, generateTextA, generateImageA } from './actions';
+import { createItemA, updateItemA, uploadMediaA, setReviewedA, generateTextA, generateImageA, contentKbListsA } from './actions';
 
 type Person = { id: string; name: string };
 const PLATFORMS = ['Instagram', 'LinkedIn', 'Facebook', 'X', 'TikTok', 'YouTube', 'Blog', 'Newsletter', 'Otro'];
@@ -35,15 +35,49 @@ export default function ItemModal({
   const [genTextBusy, setGenTextBusy] = useState(false);
   const [genImgBusy, setGenImgBusy] = useState(false);
   const [aiErr, setAiErr] = useState<string | null>(null);
+  const [tematicaId, setTematicaId] = useState('');
+  const [moduloId, setModuloId] = useState('');
+  const [kb, setKb] = useState<{ tematicas: { id: string; titulo: string }[]; modulos: { id: string; nombre: string }[] }>({ tematicas: [], modulos: [] });
+  const [aiProvider, setAiProvider] = useState<string | null>(null);
+  const [mejoraInput, setMejoraInput] = useState('');
+  const [fieldBusy, setFieldBusy] = useState<string | null>(null);
   const set = (k: keyof typeof f, v: string) => setF(p => ({ ...p, [k]: v }));
 
+  useEffect(() => { contentKbListsA().then(setKb).catch(() => {}); }, []);
+
+  const seed = () => aiPrompt.trim() || f.body.trim() || f.title.trim();
+  const aiExtras = () => ({ platform: f.platform || undefined, tematicaId: tematicaId || undefined, moduloId: moduloId || undefined });
+
   async function genText() {
-    if (!aiPrompt.trim()) { setAiErr('Escribí una idea o tema.'); return; }
+    if (!seed()) { setAiErr('Escribí una idea o tema.'); return; }
     setGenTextBusy(true); setAiErr(null);
-    const r = await generateTextA({ prompt: aiPrompt, platform: f.platform || undefined, title: f.title || undefined });
+    const r = await generateTextA({ prompt: aiPrompt, title: f.title || undefined, ...aiExtras() });
     setGenTextBusy(false);
     if ('error' in r) { setAiErr(r.error); return; }
+    setAiProvider(r.provider ?? null);
     setF(p => ({ ...p, title: p.title || r.title, subtitle: p.subtitle || r.subtitle, body: p.body ? `${p.body}\n\n${r.body}` : r.body }));
+  }
+
+  async function regenField(field: 'title' | 'subtitle') {
+    if (!seed()) { setAiErr('Necesito una idea, título o texto para regenerar.'); return; }
+    setFieldBusy(field); setAiErr(null);
+    const r = await generateTextA({ prompt: seed(), title: f.title || undefined, ...aiExtras() });
+    setFieldBusy(null);
+    if ('error' in r) { setAiErr(r.error); return; }
+    setAiProvider(r.provider ?? null);
+    setF(p => ({ ...p, [field]: field === 'title' ? r.title : r.subtitle }));
+  }
+
+  async function improveBody() {
+    if (!f.body.trim()) { setAiErr('No hay texto para mejorar.'); return; }
+    if (!mejoraInput.trim()) { setAiErr('Escribí qué querés mejorar o cambiar.'); return; }
+    setFieldBusy('body'); setAiErr(null);
+    const r = await generateTextA({ prompt: seed() || f.title || 'contenido', mejora: mejoraInput, contextoActual: { title: f.title, body: f.body }, ...aiExtras() });
+    setFieldBusy(null);
+    if ('error' in r) { setAiErr(r.error); return; }
+    setAiProvider(r.provider ?? null);
+    setF(p => ({ ...p, body: r.body || p.body }));
+    setMejoraInput('');
   }
 
   async function genImage() {
@@ -52,8 +86,18 @@ export default function ItemModal({
     const r = await generateImageA(aiPrompt);
     setGenImgBusy(false);
     if ('error' in r) { setAiErr(r.error); return; }
-    setMedia(prev => [...prev, r]);
+    const { provider, ...m } = r;
+    setAiProvider(provider ?? null);
+    setMedia(prev => [...prev, m]);
   }
+
+  const RegenBtn = ({ field }: { field: 'title' | 'subtitle' }) => (
+    <button type="button" onClick={() => regenField(field)} disabled={fieldBusy === field || genTextBusy}
+      title={`Regenerar ${field === 'title' ? 'título' : 'subtítulo'} con IA`}
+      style={{ background: 'transparent', border: 'none', color: fieldBusy === field ? '#FF6A00' : '#888', cursor: 'pointer', padding: 0, display: 'inline-flex', opacity: fieldBusy === field ? 0.6 : 1 }}>
+      <RefreshCw size={12} />
+    </button>
+  );
 
   const reviewerName = item?.reviewed_by ? (people.find(p => p.id === item.reviewed_by)?.name ?? 'Sí') : null;
 
@@ -101,15 +145,32 @@ export default function ItemModal({
             <div className="zo-flabel" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={13} /> Generar con IA</div>
             <textarea className="zo-textarea" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Idea o tema (ej: post sobre trazabilidad ISO 9001 para talleres metalúrgicos)" style={{ minHeight: 54 }} />
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <select className="zo-select" value={tematicaId} onChange={e => setTematicaId(e.target.value)} style={{ flex: 1, minWidth: 150 }}>
+                <option value="">Temática (auto)</option>
+                {kb.tematicas.map(t => <option key={t.id} value={t.id}>{t.titulo}</option>)}
+              </select>
+              <select className="zo-select" value={moduloId} onChange={e => setModuloId(e.target.value)} style={{ flex: 1, minWidth: 150 }}>
+                <option value="">Módulo (auto)</option>
+                {kb.modulos.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               <button type="button" className="zo-btn zo-btn-sm" onClick={genText} disabled={genTextBusy || genImgBusy}><Sparkles size={13} /> {genTextBusy ? 'Generando…' : 'Generar texto'}</button>
               <button type="button" className="zo-btn zo-btn-sm" onClick={genImage} disabled={genImgBusy || genTextBusy}><ImagePlus size={13} /> {genImgBusy ? 'Generando imagen…' : 'Generar imagen'}</button>
             </div>
             {aiErr && <div className="zo-form-error" style={{ marginTop: 8 }}>{aiErr}</div>}
+            {aiProvider && <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>Generado con <strong style={{ color: '#bbb' }}>{aiProvider}</strong></div>}
             <div style={{ fontSize: 11, color: '#666', marginTop: 8, lineHeight: 1.5 }}>El texto completa Título/Subtítulo si están vacíos y suma al cuerpo. La imagen se agrega a los visuales. Usa la cadena de <strong style={{ color: '#888' }}>Mi cuenta</strong>; la imagen requiere OpenAI o Gemini.</div>
           </div>
 
-          <div className="zo-field"><label className="zo-flabel">Título</label><input className="zo-input" value={f.title} onChange={e => set('title', e.target.value)} placeholder="Título del contenido" autoFocus /></div>
-          <div className="zo-field"><label className="zo-flabel">Subtítulo (opcional)</label><input className="zo-input" value={f.subtitle} onChange={e => set('subtitle', e.target.value)} /></div>
+          <div className="zo-field">
+            <label className="zo-flabel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>Título <RegenBtn field="title" /></label>
+            <input className="zo-input" value={f.title} onChange={e => set('title', e.target.value)} placeholder="Título del contenido" autoFocus />
+          </div>
+          <div className="zo-field">
+            <label className="zo-flabel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>Subtítulo (opcional) <RegenBtn field="subtitle" /></label>
+            <input className="zo-input" value={f.subtitle} onChange={e => set('subtitle', e.target.value)} />
+          </div>
 
           <div className="zo-grid2">
             <div className="zo-field"><label className="zo-flabel">Plataforma</label>
@@ -133,7 +194,14 @@ export default function ItemModal({
           </div>
 
           <div className="zo-field"><label className="zo-flabel">URL (opcional)</label><input className="zo-input" value={f.url} onChange={e => set('url', e.target.value)} placeholder="https://…" /></div>
-          <div className="zo-field"><label className="zo-flabel">Texto</label><textarea className="zo-textarea" value={f.body} onChange={e => set('body', e.target.value)} placeholder="Cuerpo, copies, títulos…" style={{ minHeight: 130 }} /></div>
+          <div className="zo-field">
+            <label className="zo-flabel">Texto</label>
+            <textarea className="zo-textarea" value={f.body} onChange={e => set('body', e.target.value)} placeholder="Cuerpo, copies, títulos…" style={{ minHeight: 130 }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <input className="zo-input" value={mejoraInput} onChange={e => setMejoraInput(e.target.value)} placeholder="Qué mejorar/cambiar del texto (ej: más corto, tono más técnico, sumá un dato)" style={{ flex: 1, minWidth: 180 }} />
+              <button type="button" className="zo-btn zo-btn-sm" onClick={improveBody} disabled={fieldBusy === 'body' || !f.body.trim()}><RefreshCw size={13} /> {fieldBusy === 'body' ? 'Mejorando…' : 'Mejorar texto'}</button>
+            </div>
+          </div>
 
           <div className="zo-field">
             <label className="zo-flabel">Visuales / media</label>

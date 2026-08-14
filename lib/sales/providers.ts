@@ -190,13 +190,16 @@ export function providerHasKey(name: ProviderName): boolean {
 
 export interface ChainStep { provider: LLMProvider; maxCalls: number; }
 
+/** Recolecta qué proveedores respondieron efectivamente (para mostrar "quién respondió"). */
+export interface ProviderReport { used: string[]; }
+
 /**
  * Cadena de proveedores con tope por paso. Cada `complete()` prueba en orden:
  * primaria → secundaria → fallback. Si una agota su cap o lanza, pasa a la siguiente.
  * La última (fallback = Groq) va con cap Infinity: es la red de seguridad.
  * Contadores por instancia → el tope es POR análisis (una instancia por analizarLead()).
  */
-export function chainProviders(steps: ChainStep[]): LLMProvider {
+export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLMProvider {
   const usable = steps.filter((s) => s.provider);
   const used = usable.map(() => 0);
   return {
@@ -207,7 +210,9 @@ export function chainProviders(steps: ChainStep[]): LLMProvider {
         if (used[i] >= usable[i].maxCalls) continue;
         used[i] += 1;
         try {
-          return await usable[i].provider.complete(opts);
+          const text = await usable[i].provider.complete(opts);
+          if (report && !report.used.includes(usable[i].provider.name)) report.used.push(usable[i].provider.name);
+          return text;
         } catch (e) {
           lastErr = e;
         }
@@ -234,7 +239,7 @@ export function settingsFromEnv(): ProviderSettings {
  * Sin nada configurado → solo Groq. El fallback siempre va con cap Infinity (red de seguridad).
  * Ej. pedido: primary=openai, secondary=gemini, fallback=groq.
  */
-export function createProvider(settings?: ProviderSettings): LLMProvider {
+export function createProvider(settings?: ProviderSettings, report?: ProviderReport): LLMProvider {
   const s = settings ?? settingsFromEnv();
   const capP = Math.max(1, s.maxPrimaryCalls ?? 3);
   const capS = Math.max(1, s.maxSecondaryCalls ?? 3);
@@ -254,5 +259,5 @@ export function createProvider(settings?: ProviderSettings): LLMProvider {
     const groq = providerByName('groq');
     if (groq) steps.push({ provider: groq, maxCalls: Number.POSITIVE_INFINITY });
   }
-  return chainProviders(steps);
+  return chainProviders(steps, report);
 }

@@ -7,7 +7,7 @@
 
 import type { CrmLead } from './crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES } from './crm-constants';
-import { createProvider, type ProviderSettings } from '@/lib/sales/providers';
+import { createProvider, type ProviderSettings, type ProviderReport } from '@/lib/sales/providers';
 
 export interface ResearchFields {
   website?: string; industry?: string; city?: string; employees?: string;
@@ -42,10 +42,10 @@ Reglas irrompibles:
 async function llmChat(
   system: string,
   user: string,
-  opts?: { json?: boolean; maxTokens?: number; temperature?: number; settings?: ProviderSettings },
+  opts?: { json?: boolean; maxTokens?: number; temperature?: number; settings?: ProviderSettings; report?: ProviderReport },
 ): Promise<string | null> {
   try {
-    const provider = createProvider(opts?.settings);
+    const provider = createProvider(opts?.settings, opts?.report);
     const text = await provider.complete({
       system, user,
       json: !!opts?.json,
@@ -58,7 +58,7 @@ async function llmChat(
   }
 }
 
-export async function researchLead(lead: CrmLead, settings?: ProviderSettings): Promise<ResearchResult> {
+export async function researchLead(lead: CrmLead, settings?: ProviderSettings, report?: ProviderReport): Promise<ResearchResult> {
   const known = [
     ['Empresa', lead.company], ['Industria', lead.industry], ['Ciudad', lead.city],
     ['Sitio web', lead.website], ['Empleados', lead.employees], ['Interés declarado', lead.modules_interest],
@@ -67,7 +67,7 @@ export async function researchLead(lead: CrmLead, settings?: ProviderSettings): 
 
   const user = `Prospecto (datos ya cargados):\n${known || '- (solo el nombre)'}\n\nCompletá los campos que falten con sugerencias y generá el brief. Devolvé solo el JSON.`;
 
-  const raw = await llmChat(SYSTEM, user, { json: true, maxTokens: 1200, temperature: 0.5, settings });
+  const raw = await llmChat(SYSTEM, user, { json: true, maxTokens: 1200, temperature: 0.5, settings, report });
   if (!raw) return { error: 'La IA no respondió (probá de nuevo en un momento).' };
 
   try {
