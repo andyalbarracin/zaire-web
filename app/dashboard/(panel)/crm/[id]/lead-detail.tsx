@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe, MessageCircle,
+  ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe, MessageCircle, Copy, Check,
 } from 'lucide-react';
 import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput } from '@/lib/zaire-ops/crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
@@ -101,6 +101,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [aiCached, setAiCached] = useState(false);
   const [aiSources, setAiSources] = useState<{ title: string; uri: string }[]>([]);
   const [aiEnrichError, setAiEnrichError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -184,6 +185,54 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
     });
     setAiFilled(filled);
     setEvents(prev => [{ id: `tmp-${Date.now()}`, lead_id: lead.id, author_id: null, kind: 'system', body: 'Investigación con IA (research + motor KB).', created_at: new Date().toISOString() }, ...prev]);
+  }
+
+  // Prompt "para llevar" a Claude/ChatGPT: empaqueta datos del lead + análisis KB para profundizar.
+  function buildHandoff(): string {
+    const a = analysis;
+    if (!a) return '';
+    const mods = a.modulos_recomendados.map(m => `  - ${m.nombre} (${m.prioridad}): ${m.por_que}`).join('\n');
+    const preg = a.preguntas_calificacion.map(q => `  - ${q.pregunta}`).join('\n');
+    const obj = a.objeciones_probables.map(o => `  - "${o.objecion}" → ${o.respuesta}`).join('\n');
+    const datos = ([
+      ['Empresa', f.company || f.name], ['Web', f.website], ['Industria', f.industry], ['Ciudad', f.city],
+      ['Teléfono', f.phone], ['Email', f.email], ['Dirección', f.address], ['Notas de mercado', f.market_notes],
+    ] as [string, string][]).filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n');
+
+    return `Actuá como analista comercial senior B2B de software industrial (español rioplatense, con criterio, sin humo).
+
+Zaire Technologies vende "Zaire Industrial": suite modular (Trace=órdenes/trazabilidad ISO, Field=trabajo de campo/geocerca, Assets=activos/TCO/MTBF, Stock=repuestos, CRM=comercial; Prevent/Fiscal/Contracts/Analytics en roadmap) para empresas que mantienen, reparan u operan activos físicos.
+
+PROSPECTO
+${datos || '- (pocos datos)'}
+
+ANÁLISIS PREVIO (con nuestra base de conocimiento)
+- Lectura rápida: ${a.lectura_rapida}
+- Industria: ${a.industria_detectada} · Tamaño: ${a.tamano_estimado} · Confianza: ${a.confianza}
+- Módulos recomendados:
+${mods}
+- Ángulo de entrada: ${a.angulo_entrada}
+- Speech actual:
+  · Apertura: ${a.speech.apertura}
+  · Cuerpo: ${a.speech.cuerpo}
+  · Cierre: ${a.speech.cierre}
+- Preguntas de calificación:
+${preg}
+- Objeciones probables:
+${obj}
+- Datos faltantes: ${a.datos_faltantes.join(' · ') || '—'}
+
+TU TAREA
+1. Investigá más a fondo a la empresa (usá su web y nombre): qué hace exactamente, tamaño real, señales de dolor y quién sería el decisor.
+2. Refiná y mejorá el speech: más natural y específico a este caso, sin clichés de marketing.
+3. Sumá 2-3 ángulos de entrada adicionales y 2-3 objeciones más con su respuesta.
+4. Proponé hipótesis o formas concretas de conseguir los "datos faltantes".
+5. Entregá un plan de contacto: primer email (asunto + cuerpo) y un guion de llamada de 30-40 segundos.`;
+  }
+
+  async function copyHandoff() {
+    try { await navigator.clipboard.writeText(buildHandoff()); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    catch { /* clipboard bloqueado */ }
   }
 
   async function remove() {
@@ -326,6 +375,19 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
             )}
             {researchErr && <div className="zo-form-error" style={{ marginTop: 12 }}>{researchErr}</div>}
             {analysis ? <Playbook a={analysis} /> : research && <div className="zo-research">{research}</div>}
+
+            {analysis && (
+              <div style={{ marginTop: 12, borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                  <div className="zo-flabel" style={{ margin: 0 }}>Prompt para profundizar (Claude / ChatGPT)</div>
+                  <button type="button" className="zo-btn zo-btn-sm" onClick={copyHandoff}>
+                    {copied ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar</>}
+                  </button>
+                </div>
+                <textarea className="zo-textarea" readOnly value={buildHandoff()} onFocus={e => e.currentTarget.select()} style={{ minHeight: 120, fontSize: 11.5, color: '#aaa', lineHeight: 1.5 }} />
+                <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>Pegalo en ChatGPT (tu Pro) o Claude para extender la investigación y afinar el speech.</div>
+              </div>
+            )}
           </div>
 
           {(f.website || f.city) && (
