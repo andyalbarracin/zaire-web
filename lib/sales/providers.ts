@@ -26,6 +26,7 @@ interface OpenAICompatConfig {
   endpoint: string;
   apiKey: string;
   model: string;
+  extraHeaders?: Record<string, string>;
 }
 
 async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptions): Promise<string> {
@@ -35,7 +36,7 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
   const res = await fetch(cfg.endpoint, {
     method: 'POST',
     signal: ctrl.signal,
-    headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json', ...(cfg.extraHeaders ?? {}) },
     body: JSON.stringify({
       model: cfg.model,
       messages: [
@@ -93,8 +94,13 @@ export class OpenRouterProvider implements LLMProvider {
   complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('Falta OPENROUTER_API_KEY');
-    const model = this.modelOverride || process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
-    return openAICompatComplete({ name: 'openrouter', endpoint: this.endpoint, apiKey, model }, opts);
+    // Default a un modelo FREE vigente (los free buenos se saturan; ajustable por env). Sin billing.
+    const model = this.modelOverride || process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free';
+    const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
+    return openAICompatComplete(
+      { name: 'openrouter', endpoint: this.endpoint, apiKey, model, extraHeaders: { 'HTTP-Referer': site, 'X-Title': 'Zaire Ops' } },
+      opts,
+    );
   }
 }
 
