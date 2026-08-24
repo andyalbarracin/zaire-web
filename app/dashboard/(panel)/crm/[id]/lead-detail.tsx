@@ -20,6 +20,14 @@ type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interes
 const initialsOf = (name: string) => name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
+// Extrae el objeto JSON de un texto pegado (saca ``` y toma del primer { al último }).
+function stripToJson(raw: string): string {
+  let s = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a !== -1 && b !== -1 && b > a) s = s.slice(a, b + 1);
+  return s;
+}
+
 // Guión de venta (motor KB) renderizado dentro del panel de INVESTIGAR.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <div style={{ marginBottom: 12 }}><div className="zo-flabel" style={{ marginBottom: 4 }}>{title}</div>{children}</div>;
@@ -102,6 +110,9 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [aiSources, setAiSources] = useState<{ title: string; uri: string }[]>([]);
   const [aiEnrichError, setAiEnrichError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedImport, setCopiedImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -119,7 +130,7 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
 
   async function save() {
     setSaving(true); setSavedOk(false);
-    const input: CrmLeadInput = { ...f, attachments };
+    const input: CrmLeadInput = { ...f, attachments, research };
     // strings vacíos → null los normaliza la data layer
     try { await updateLeadA(lead.id, input); setSavedOk(true); setTimeout(() => setSavedOk(false), 2500); }
     finally { setSaving(false); }
@@ -233,6 +244,62 @@ TU TAREA
   async function copyHandoff() {
     try { await navigator.clipboard.writeText(buildHandoff()); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { /* clipboard bloqueado */ }
+  }
+
+  // Prompt para pedirle a un chat externo (con navegación) la investigación en JSON importable.
+  function buildImportPrompt(): string {
+    const datos = ([
+      ['Empresa', f.company || f.name], ['Web actual', f.website], ['Ciudad', f.city], ['Industria', f.industry],
+    ] as [string, string][]).filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n');
+    return `Investigá a fondo a esta empresa (usá la web) y devolvé EXCLUSIVAMENTE un JSON válido, sin markdown ni comillas triples. Datos REALES; si no encontrás algo, dejá "".
+
+EMPRESA
+${datos || '- (solo el nombre)'}
+
+CONTEXTO: Zaire Technologies vende "Zaire Industrial", suite modular (Trace=órdenes/trazabilidad, Field=trabajo de campo/geocerca, Assets=activos/TCO, Stock=repuestos, CRM=comercial) para empresas que mantienen, reparan u operan activos físicos.
+
+DEVOLVÉ ESTE JSON EXACTO (mismas claves):
+{
+  "website": "",
+  "phone": "",
+  "email": "",
+  "address": "",
+  "city": "",
+  "industry": "una EXACTA de: ${CRM_INDUSTRIES.join(' | ')}",
+  "employees": "una EXACTA de: ${CRM_EMPLOYEES.join(' | ')}",
+  "modules_interest": "módulos de Zaire que le encajan, separados por coma",
+  "market_notes": "1-2 frases del sector",
+  "research": "análisis comercial en texto plano: lectura rápida; módulos que encajan y por qué; ángulo de entrada; speech (apertura/cuerpo/cierre); 5-7 preguntas de calificación; 4-5 objeciones probables con su respuesta; próximo paso. Español rioplatense, con criterio, sin humo. NO prometer certificación ISO; entrar por cómo siguen un equipo/trabajo desde que ingresa hasta que vuelve al cliente."
+}`;
+  }
+
+  async function copyImportPrompt() {
+    try { await navigator.clipboard.writeText(buildImportPrompt()); setCopiedImport(true); setTimeout(() => setCopiedImport(false), 2000); }
+    catch { /* clipboard bloqueado */ }
+  }
+
+  // Importa el JSON pegado (respuesta externa): llena campos vacíos + brief. Revisar y Guardar.
+  function importJson() {
+    const raw = importText.trim();
+    if (!raw) { setImportMsg('Pegá primero el JSON.'); return; }
+    let obj: Record<string, unknown>;
+    try { obj = JSON.parse(stripToJson(raw)); } catch { setImportMsg('Eso no es un JSON válido. Revisá que sea la respuesta completa.'); return; }
+
+    const filled = new Set<string>();
+    setF(prev => {
+      const next = { ...prev };
+      const strFields: FieldKey[] = ['website', 'phone', 'email', 'address', 'city', 'modules_interest', 'market_notes'];
+      for (const k of strFields) {
+        const v = obj[k];
+        if (typeof v === 'string' && v.trim() && k in next && !next[k]) { (next as Record<string, string>)[k] = v.trim(); filled.add(k); }
+      }
+      if (typeof obj.industry === 'string' && CRM_INDUSTRIES.includes(obj.industry) && !next.industry) { next.industry = obj.industry; filled.add('industry'); }
+      if (typeof obj.employees === 'string' && CRM_EMPLOYEES.includes(obj.employees) && !next.employees) { next.employees = obj.employees; filled.add('employees'); }
+      return next;
+    });
+    setAiFilled(filled);
+    if (typeof obj.research === 'string' && obj.research.trim()) { setResearch(obj.research.trim()); setAnalysis(null); }
+    setImportMsg(`Importado: ${filled.size} campo(s) llenado(s)${typeof obj.research === 'string' && obj.research.trim() ? ' + brief' : ''}. Revisá lo naranja y tocá Guardar cambios.`);
   }
 
   async function remove() {
@@ -388,6 +455,23 @@ TU TAREA
                 <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>Pegalo en ChatGPT (tu Pro) o Claude para extender la investigación y afinar el speech.</div>
               </div>
             )}
+
+            <div style={{ marginTop: 12, borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                <div className="zo-flabel" style={{ margin: 0 }}>Investigar afuera → importar JSON</div>
+                <button type="button" className="zo-btn zo-btn-sm" onClick={copyImportPrompt}>
+                  {copiedImport ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar prompt</>}
+                </button>
+              </div>
+              <div style={{ fontSize: 11, color: '#666', marginBottom: 8, lineHeight: 1.5 }}>
+                Copiá el prompt, pegalo en ChatGPT/Claude (con navegación web), y pegá acá abajo el JSON que te devuelva para importarlo a la ficha.
+              </div>
+              <textarea className="zo-textarea" value={importText} onChange={e => setImportText(e.target.value)} placeholder='Pegá acá el JSON de la respuesta externa…' style={{ minHeight: 90, fontSize: 11.5 }} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                <button type="button" className="zo-btn zo-btn-primary zo-btn-sm" onClick={importJson} disabled={!importText.trim()}>Importar JSON</button>
+                {importMsg && <span style={{ fontSize: 11.5, color: '#9be8b3' }}>{importMsg}</span>}
+              </div>
+            </div>
           </div>
 
           {(f.website || f.city) && (
