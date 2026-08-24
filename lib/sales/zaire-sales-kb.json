@@ -17,7 +17,7 @@
       "id": "trace",
       "nombre": "Zaire Trace",
       "estado": "disponible",
-      "pitch": "Cada orden de trabajo con su numero, su estado, su historial y su PDF. Listo para una auditoria ISO 9001 en dos clics.",
+      "pitch": "Cada orden de trabajo con su numero, su estado, su historial y su PDF. Trazabilidad, evidencias e historial que respaldan una auditoria (el cumplimiento ISO lo lleva el sistema de gestion de la empresa; nosotros damos el respaldo documental).",
       "capacidades": [
         "Ordenes de trabajo (OT) y de servicio (OTS)",
         "Numeracion correlativa atomica por sucursal (OT-2026-BB0001)",
@@ -41,7 +41,7 @@
         {
           "tipo": "statu_quo",
           "objecion": "Ya tengo un Access/Excel que anda.",
-          "respuesta": "Anda hasta que se corrompe, no es multiusuario, no audita y no pasa una ISO. Trace es exactamente eso resuelto, y migramos tus datos en el setup."
+          "respuesta": "Puede andar bien para lo que hoy hacen. La pregunta es donde queda la info cuando ademas entra WhatsApp, mails o carpetas, y si pueden consultar el estado de un trabajo sin tener que preguntarle a alguien. Ahi es donde Trace ordena y deja historial; y migramos tus datos en el setup."
         },
         {
           "tipo": "precio",

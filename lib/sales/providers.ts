@@ -60,7 +60,7 @@ export class GroqProvider implements LLMProvider {
   complete(opts: CompleteOptions): Promise<string> {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error('Falta GROQ_API_KEY');
-    const model = this.modelOverride || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = this.modelOverride || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     return openAICompatComplete({ name: 'groq', endpoint: this.endpoint, apiKey, model }, opts);
   }
 }

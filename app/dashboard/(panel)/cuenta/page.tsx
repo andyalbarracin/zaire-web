@@ -97,7 +97,7 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
             <div className="zo-field"><label className="zo-flabel">Tope de llamadas a la secundaria</label><input className="zo-input" name="max_secondary_calls" type="number" min={1} defaultValue={llm.maxSecondaryCalls ?? 3} /></div>
             <div className="zo-field"><label className="zo-flabel">Modelo OpenAI</label><input className="zo-input" name="model_openai" defaultValue={llm.models?.openai ?? ''} placeholder="gpt-4o-mini" /></div>
             <div className="zo-field"><label className="zo-flabel">Modelo Gemini</label><input className="zo-input" name="model_gemini" defaultValue={llm.models?.gemini ?? ''} placeholder="gemini-2.0-flash" /></div>
-            <div className="zo-field"><label className="zo-flabel">Modelo Groq</label><input className="zo-input" name="model_groq" defaultValue={llm.models?.groq ?? ''} placeholder="llama-3.3-70b-versatile" /></div>
+            <div className="zo-field"><label className="zo-flabel">Modelo Groq</label><input className="zo-input" name="model_groq" defaultValue={llm.models?.groq ?? ''} placeholder="openai/gpt-oss-120b" /></div>
             <div className="zo-field"><label className="zo-flabel">Modelo OpenRouter</label><input className="zo-input" name="model_openrouter" defaultValue={llm.models?.openrouter ?? ''} placeholder="openai/gpt-4o-mini" /></div>
           </div>
           <div className="zo-form-actions"><button className="zo-btn zo-btn-primary" type="submit">Guardar proveedores</button></div>

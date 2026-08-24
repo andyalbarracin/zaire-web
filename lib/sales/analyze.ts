@@ -16,6 +16,7 @@ import {
 import { getKB, getIndustry } from './kb';
 import { buildClassificationContext, buildReducedContext } from './selector';
 import { createProvider, type LLMProvider, type ProviderSettings, type ProviderReport } from './providers';
+import { CALL_GUIDE } from './zaire-call-guide';
 
 /* ─────────────────────────  Prompts  ───────────────────────── */
 
@@ -171,11 +172,13 @@ async function generar(provider: LLMProvider, input: LeadInput, clas: Clasificac
     'ESQUEMA (devolvé exactamente esta forma):',
     ANALYSIS_ESQUEMA,
     '',
+    CALL_GUIDE,
+    '',
     'INSTRUCCIÓN: Armá el análisis para calificar y encarar al lead.',
-    '- 5 a 7 preguntas_calificacion (varias "oro"), tomadas del CONTEXTO.',
-    '- 4 a 5 objeciones_probables, tomadas de las objeciones de los módulos del CONTEXTO.',
-    '- angulo_entrada: partí de uno de "angulos" y adaptalo con criterio.',
-    '- speech: redactá un guión natural, humano y de alto nivel, en el tono del segmento. Usá pitch_templates, el vocabulario y los dolores de la industria SOLO como guía; NO copies las plantillas al pie ni dejes placeholders tipo {industria}. Escribí la persuasión y las transiciones con libertad, pero TODO dato duro (capacidades, diferenciales, módulos, estados) sale de la KB: no inventes capacidades ni precios.',
+    '- 5 a 7 preguntas_calificacion (varias "oro"), tomadas del CONTEXTO. Para reparadores/servicio de equipos, incluí la pregunta de oro de la GUÍA (cómo siguen un equipo desde que ingresa hasta que vuelve al cliente).',
+    '- 4 a 5 objeciones_probables, tomadas de las objeciones de los módulos del CONTEXTO, pero respetando las CORRECCIONES de la GUÍA: NO uses la objeción categórica sobre Access/ISO; suavizala.',
+    '- angulo_entrada: partí de uno de "angulos" y adaptalo al ENFOQUE de la GUÍA (discovery-first; entrar por el seguimiento del equipo/trabajo, no por transformación digital ni IA).',
+    '- speech: redactá un guión natural y humano SIGUIENDO la GUÍA DE CONVERSACIÓN (tono, apertura humilde "te robo 30 seg", preguntar y escuchar, no presuponer que trabajan mal, NO prometer certificación ISO). Usá pitch_templates/vocabulario SOLO como guía; NO copies plantillas ni dejes placeholders {industria}. TODO dato duro (capacidades, módulos, estados) sale de la KB: no inventes capacidades ni precios.',
     '- Si un módulo está en estado "roadmap", aclaralo; no lo vendas como disponible.',
     '- Lo que no esté en el CONTEXTO va a datos_faltantes. Solo el JSON.',
   ].join('\n');
