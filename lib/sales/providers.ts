@@ -40,6 +40,9 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
       ],
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 1600,
+      // gpt-oss son modelos de razonamiento: 'low' reduce lo que gastan pensando (más rápido,
+      // y evita que se queden sin tokens para la respuesta).
+      ...(cfg.model.includes('gpt-oss') ? { reasoning_effort: 'low' } : {}),
       ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
     }),
   });

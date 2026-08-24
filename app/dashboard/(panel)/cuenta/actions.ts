@@ -20,7 +20,7 @@ export async function testProviderA(name: string): Promise<{ ok: true; ms: numbe
   if (!p) return { ok: false, error: 'Falta la API key de ese proveedor.' };
   const t0 = Date.now();
   try {
-    await p.complete({ system: 'Respondé una sola palabra.', user: 'Decí: ok', maxTokens: 5, temperature: 0 });
+    await p.complete({ system: 'Respondé una sola palabra.', user: 'Decí: ok', maxTokens: 256, temperature: 0 });
     return { ok: true, ms: Date.now() - t0, model: model || '(default)' };
   } catch (e) {
     return { ok: false, error: (e as Error).message.slice(0, 200) };
