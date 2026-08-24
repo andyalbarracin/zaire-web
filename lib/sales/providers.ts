@@ -29,8 +29,12 @@ interface OpenAICompatConfig {
 }
 
 async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptions): Promise<string> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), Number(process.env.LLM_TIMEOUT_MS) || 18000);
+  try {
   const res = await fetch(cfg.endpoint, {
     method: 'POST',
+    signal: ctrl.signal,
     headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: cfg.model,
@@ -54,6 +58,7 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
   const text = data?.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error(`${cfg.name}: respuesta vacía`);
   return text;
+  } finally { clearTimeout(timer); }
 }
 
 export class GroqProvider implements LLMProvider {
@@ -103,27 +108,32 @@ export class GeminiProvider implements LLMProvider {
     if (!apiKey) throw new Error('Falta GEMINI_API_KEY');
     const model = this.modelOverride || process.env.GEMINI_MODEL || 'gemini-flash-latest';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: opts.system }] },
-        contents: [{ role: 'user', parts: [{ text: opts.user }] }],
-        generationConfig: {
-          temperature: opts.temperature ?? 0.3,
-          maxOutputTokens: opts.maxTokens ?? 1600,
-          ...(opts.json ? { responseMimeType: 'application/json' } : {}),
-        },
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '');
-      throw new Error(`gemini HTTP ${res.status}: ${detail.slice(0, 200)}`);
-    }
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text).join('').trim();
-    if (!text) throw new Error('gemini: respuesta vacía');
-    return text;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), Number(process.env.LLM_TIMEOUT_MS) || 18000);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: opts.system }] },
+          contents: [{ role: 'user', parts: [{ text: opts.user }] }],
+          generationConfig: {
+            temperature: opts.temperature ?? 0.3,
+            maxOutputTokens: opts.maxTokens ?? 1600,
+            ...(opts.json ? { responseMimeType: 'application/json' } : {}),
+          },
+        }),
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error(`gemini HTTP ${res.status}: ${detail.slice(0, 200)}`);
+      }
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text).join('').trim();
+      if (!text) throw new Error('gemini: respuesta vacía');
+      return text;
+    } finally { clearTimeout(timer); }
   }
 }
 
