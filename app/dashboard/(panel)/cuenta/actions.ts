@@ -3,8 +3,29 @@
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { updateProfile, uploadAvatar, requireRole } from '@/lib/zaire-ops/profiles';
-import { updateLlmConfig } from '@/lib/zaire-ops/llm-config';
+import { updateLlmConfig, resolveProviderSettings } from '@/lib/zaire-ops/llm-config';
+import { providerByName, type ProviderName } from '@/lib/sales/providers';
 import { createSupabaseServer } from '@/lib/zaire-ops/supabase-server';
+
+const TESTABLE: ProviderName[] = ['groq', 'openai', 'gemini', 'openrouter'];
+
+// Prueba real (llamada mínima) a un proveedor con el modelo configurado. Sirve para detectar
+// modelo muerto / sin crédito, que el chequeo de "key presente" no ve.
+export async function testProviderA(name: string): Promise<{ ok: true; ms: number; model: string } | { ok: false; error: string }> {
+  await requireUser();
+  if (!TESTABLE.includes(name as ProviderName)) return { ok: false, error: 'Proveedor inválido.' };
+  const settings = await resolveProviderSettings();
+  const model = settings.models?.[name as ProviderName];
+  const p = providerByName(name as ProviderName, model);
+  if (!p) return { ok: false, error: 'Falta la API key de ese proveedor.' };
+  const t0 = Date.now();
+  try {
+    await p.complete({ system: 'Respondé una sola palabra.', user: 'Decí: ok', maxTokens: 5, temperature: 0 });
+    return { ok: true, ms: Date.now() - t0, model: model || '(default)' };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message.slice(0, 200) };
+  }
+}
 
 export async function updateAccountAction(fd: FormData) {
   const user = await requireUser();

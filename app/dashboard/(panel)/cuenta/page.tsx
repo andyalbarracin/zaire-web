@@ -5,6 +5,7 @@ import { getUsageSummary, totalsByProvider } from '@/lib/zaire-ops/ai-usage';
 import { providerHasKey } from '@/lib/sales/providers';
 import Avatar from '@/app/dashboard/_components/avatar';
 import { updateAccountAction, changePasswordAction, updateLlmConfigAction } from './actions';
+import ProviderTest from './provider-test';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,14 +63,7 @@ export default async function CuentaPage({ searchParams }: { searchParams: Promi
           El motor usa una cadena <strong style={{ color: '#bbb' }}>primaria → secundaria → fallback</strong>: prueba la primaria; si falla o agota su tope, pasa a la siguiente; el fallback (Groq) es la red de seguridad. Las <strong style={{ color: '#bbb' }}>API keys van en <code>.env.local</code></strong> del server; acá elegís roles, modelos y topes.
         </p>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {LLM_PROVIDERS.map(p => (
-            <span key={p} className="zo-chip" style={{ color: providerHasKey(p) ? '#9be8b3' : '#888' }}>
-              <span className="zo-dot" style={{ background: providerHasKey(p) ? '#22c55e' : '#555' }} />
-              {PROVIDER_LABEL[p]}: {providerHasKey(p) ? 'key ok' : 'sin key'}
-            </span>
-          ))}
-        </div>
+        <ProviderTest providers={LLM_PROVIDERS.map(p => ({ name: p, hasKey: providerHasKey(p) }))} />
 
         <form action={updateLlmConfigAction} className="zo-form">
           <div className="zo-grid2">
