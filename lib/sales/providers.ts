@@ -266,6 +266,14 @@ export interface ProviderReport { used: string[]; }
  * La última (fallback = Groq) va con cap Infinity: es la red de seguridad.
  * Contadores por instancia → el tope es POR análisis (una instancia por analizarLead()).
  */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Errores transitorios (sobrecarga / rate-limit / timeout): vale la pena reintentar el mismo
+// proveedor antes de pasar al siguiente (ej. Gemini "high demand" 503, Groq TPM 429).
+function isTransient(msg: string): boolean {
+  return /HTTP (429|500|502|503)|rate.?limit|overload|unavailable|high demand|temporarily|timeout|aborted|ECONN|network/i.test(msg);
+}
+
 export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLMProvider {
   const usable = steps.filter((s) => s.provider);
   const used = usable.map(() => 0);
@@ -274,14 +282,22 @@ export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLM
     async complete(opts: CompleteOptions): Promise<string> {
       let lastErr: unknown;
       for (let i = 0; i < usable.length; i++) {
-        if (used[i] >= usable[i].maxCalls) continue;
-        used[i] += 1;
-        try {
-          const text = await usable[i].provider.complete(opts);
-          if (report && !report.used.includes(usable[i].provider.name)) report.used.push(usable[i].provider.name);
-          return text;
-        } catch (e) {
-          lastErr = e;
+        const maxAttempts = 2; // 1 reintento ante error transitorio, luego pasa al siguiente
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          if (used[i] >= usable[i].maxCalls) break;
+          used[i] += 1;
+          try {
+            const text = await usable[i].provider.complete(opts);
+            if (report && !report.used.includes(usable[i].provider.name)) report.used.push(usable[i].provider.name);
+            return text;
+          } catch (e) {
+            lastErr = e;
+            if (isTransient((e as Error)?.message || '') && attempt < maxAttempts) {
+              await sleep(500 + attempt * 500); // backoff corto: 1s
+              continue;
+            }
+            break; // error no-transitorio o sin más intentos → siguiente proveedor
+          }
         }
       }
       throw new Error(`Todos los proveedores fallaron: ${(lastErr as Error)?.message ?? 'sin proveedor disponible'}`);
@@ -321,10 +337,11 @@ export function createProvider(settings?: ProviderSettings, report?: ProviderRep
   add(s.secondary, capS);
   add(s.fallback, Number.POSITIVE_INFINITY);
 
-  // Red de seguridad: si nada quedó (o faltan keys), garantizamos Groq.
-  if (steps.length === 0) {
-    const groq = providerByName('groq');
-    if (groq) steps.push({ provider: groq, maxCalls: Number.POSITIVE_INFINITY });
+  // Red de seguridad SIEMPRE: Groq al final (confiable), aunque no esté en la config o
+  // aunque los de adelante fallen/estén saturados. Si su key existe y no está ya en la cadena.
+  const groqNet = providerByName('groq');
+  if (groqNet && !steps.some((st) => st.provider.name === 'groq')) {
+    steps.push({ provider: groqNet, maxCalls: Number.POSITIVE_INFINITY });
   }
   return chainProviders(steps, report);
 }

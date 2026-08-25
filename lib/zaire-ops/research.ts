@@ -175,7 +175,7 @@ async function enrichViaSerper(lead: CrmLead, settings?: ProviderSettings, repor
 
   const kg = search.knowledgeGraph as { website?: string } | undefined;
   const siteUrl = kg?.website || search.organic[0]?.link;
-  const pageText = siteUrl ? await fetchPageText(siteUrl) : null;
+  const pageText = siteUrl ? await fetchPageText(siteUrl, 6000) : null; // acotado: menos tokens, no revienta TPM
   const sources = search.organic.slice(0, 5).map((o) => ({ title: o.title, uri: o.link }));
 
   const material = [
