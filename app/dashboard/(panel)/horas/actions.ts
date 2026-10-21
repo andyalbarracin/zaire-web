@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createTimeEntry, deleteTimeEntry } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, b, hoursToMin, actionError } from '@/lib/zaire-ops/form';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 
 export async function createTimeEntryAction(fd: FormData) {
   await requireUser();
@@ -19,7 +20,7 @@ export async function createTimeEntryAction(fd: FormData) {
       minutes,
       work_type: sReq(fd, 'work_type') || 'desarrollo',
       description: s(fd, 'description'),
-      entry_date: sReq(fd, 'entry_date') || new Date().toISOString().slice(0, 10),
+      entry_date: sReq(fd, 'entry_date') || todayLocal(),
       billable: b(fd, 'billable'),
       included_in_plan: b(fd, 'included_in_plan'),
     });

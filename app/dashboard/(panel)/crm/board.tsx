@@ -12,6 +12,7 @@ import { moveLeadA, deleteLeadA } from './actions';
 import ImportModal from './import-modal';
 import LeadModal from './lead-modal';
 import StageManager from './stage-manager';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 
 export default function CrmBoard({ initialStages, initialLeads }: { initialStages: CrmStage[]; initialLeads: CrmLead[] }) {
   const router = useRouter();
@@ -79,7 +80,7 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
     const ws = XLSX.utils.json_to_sheet(exportRows());
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'CRM');
-    XLSX.writeFile(wb, `Zaire_CRM_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `Zaire_CRM_${todayLocal()}.xlsx`);
   }
   function exportCSV() {
     const ws = XLSX.utils.json_to_sheet(exportRows());
@@ -87,7 +88,7 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `Zaire_CRM_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `Zaire_CRM_${todayLocal()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }

@@ -3,17 +3,17 @@ import { listClients, listTimeEntries } from '@/lib/zaire-ops/queries';
 import { WORK_TYPES, humanLabel, minutesToHours } from '@/lib/zaire-ops/types';
 import { createTimeEntryAction, deleteTimeEntryAction } from './actions';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
+import { todayLocal, monthBounds, MONTHS_ES } from '@/lib/zaire-ops/dates';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HorasPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   const { err } = await searchParams;
-  const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const month = todayLocal().slice(0, 7);
+  const { from, to } = monthBounds(month);
   const [clients, entries] = await Promise.all([listClients(), listTimeEntries({ from, to })]);
   const total = entries.reduce((sum, e) => sum + (e.minutes ?? 0), 0);
-  const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  const monthName = `${MONTHS_ES[Number(month.slice(5)) - 1].toLowerCase()} de ${month.slice(0, 4)}`;
 
   return (
     <>
@@ -42,7 +42,7 @@ export default async function HorasPage({ searchParams }: { searchParams: Promis
               <div className="zo-field"><label className="zo-flabel">Tipo</label>
                 <select className="zo-select" name="work_type" defaultValue="desarrollo">{WORK_TYPES.map(w => <option key={w} value={w}>{humanLabel(w)}</option>)}</select>
               </div>
-              <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="entry_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></div>
+              <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="entry_date" type="date" defaultValue={todayLocal()} /></div>
             </div>
             <div className="zo-field"><label className="zo-flabel">Descripción</label><input className="zo-input" name="description" placeholder="Qué hiciste" /></div>
             <div className="zo-grid2">

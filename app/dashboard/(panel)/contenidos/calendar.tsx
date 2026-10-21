@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import type { ContentItem, ContentStage } from '@/lib/zaire-ops/content';
 import { contentKbListsA, generateIdeasA } from './actions';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 
 const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -30,7 +31,7 @@ export default function ContentCalendar({
   useEffect(() => { contentKbListsA().then(r => setTematicas(r.tematicas)).catch(() => {}); }, []);
 
   const stageColor = new Map(stages.map(s => [s.id, s.color]));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
 
   const startOffset = (new Date(cursor.y, cursor.m, 1).getDay() + 6) % 7; // Lun=0
   const daysInMonth = new Date(cursor.y, cursor.m + 1, 0).getDate();

@@ -11,6 +11,7 @@ import ItemModal from './item-modal';
 import ContentStageManager from './stage-manager';
 import ContentImportModal from './import-modal';
 import ContentCalendar from './calendar';
+import { todayLocal, fmtDateOnly } from '@/lib/zaire-ops/dates';
 
 type Person = { id: string; name: string };
 
@@ -65,7 +66,8 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
     startTransition(async () => { await deleteItemA(it.id); });
   }
   const refresh = () => startTransition(() => router.refresh());
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  // content_date es fecha sin hora: `new Date('YYYY-MM-DD')` la tomaba como UTC y mostraba el día anterior.
+  const fmt = (iso: string) => fmtDateOnly(iso).replace(/\/\d{2}(\d{2})$/, '/$1');
 
   function exportRows() {
     const stageName = new Map(stages.map(s => [s.id, s.name]));
@@ -75,12 +77,12 @@ export default function ContentBoard({ initialStages, initialItems, people }: { 
     const ws = XLSX.utils.json_to_sheet(exportRows());
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Contenidos');
-    XLSX.writeFile(wb, `Zaire_Contenidos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `Zaire_Contenidos_${todayLocal()}.xlsx`);
   }
   function exportCSV() {
     const ws = XLSX.utils.json_to_sheet(exportRows());
     const blob = new Blob(['﻿' + XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Zaire_Contenidos_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Zaire_Contenidos_${todayLocal()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   }
 
   return (

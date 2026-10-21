@@ -3,6 +3,7 @@
 // Description: Facturas (invoices) y pagos (comprobantes) de Zaire Ops. Server-only.
 
 import { createSupabaseAdmin } from './supabase-admin';
+import { todayLocal } from './dates';
 
 const db = () => createSupabaseAdmin();
 
@@ -57,7 +58,7 @@ export const PAYMENT_METHODS = ['Transferencia', 'Efectivo', 'Mercado Pago', 'Cr
 export function isOverdue(i: ZoInvoice): boolean {
   if (i.status === 'anulada' || !i.due_date) return false;
   if ((i.paid ?? 0) >= i.amount) return false;
-  return i.due_date < new Date().toISOString().slice(0, 10);
+  return i.due_date < todayLocal();
 }
 
 // Días de mora: diferencia positiva entre una fecha de referencia y el vencimiento.
@@ -66,7 +67,7 @@ export function isOverdue(i: ZoInvoice): boolean {
 // Base reutilizable para un futuro cálculo de intereses.
 export function daysLate(dueDate?: string | null, refDate?: string | null): number {
   if (!dueDate) return 0;
-  const ref = refDate ?? new Date().toISOString().slice(0, 10);
+  const ref = refDate ?? todayLocal();
   const d = Math.floor((Date.parse(ref) - Date.parse(dueDate)) / 86_400_000);
   return d > 0 ? d : 0;
 }
@@ -199,7 +200,7 @@ export async function clientAccount(clientId: string): Promise<{ invoiced: numbe
 // Cuentas por cobrar globales: invoices con saldo (no anuladas), total y vencido.
 export async function receivables(): Promise<{ totalDue: number; overdueDue: number; currency: string; items: ZoInvoice[] }> {
   const all = await listInvoices();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
   const items = all.filter(i => i.status !== 'anulada' && (i.paid ?? 0) < i.amount);
   let totalDue = 0, overdueDue = 0;
   for (const i of items) {

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getInvoice, listPayments, liveInvoiceStatus, facturacionStatus, money, daysLate, PAYMENT_METHODS } from '@/lib/zaire-ops/billing';
 import { listClients } from '@/lib/zaire-ops/queries';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 import InvoiceFields from '@/app/dashboard/_components/invoice-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
 import ConfirmButton from '@/app/dashboard/_components/confirm-button';
@@ -129,7 +130,7 @@ export default async function FacturaDetailPage({ params, searchParams }: { para
           <form action={addPaymentAction.bind(null, invoice.id, invoice.client_id)} className="zo-form" style={{ maxWidth: '100%', marginTop: 14 }}>
             <div className="zo-grid3">
               <div className="zo-field"><label className="zo-flabel">Monto *</label><input className="zo-input" name="amount" type="number" min="0" step="0.01" required defaultValue={saldo > 0 ? saldo : ''} /></div>
-              <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="paid_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></div>
+              <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="paid_date" type="date" defaultValue={todayLocal()} /></div>
               <div className="zo-field"><label className="zo-flabel">Método</label><select className="zo-select" name="method" defaultValue="Transferencia">{PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
               <div className="zo-field"><label className="zo-flabel">Banco</label><input className="zo-input" name="bank" placeholder="Banco donde se acreditó" /></div>
               <div className="zo-field zo-span2"><label className="zo-flabel">Observaciones del pago</label><input className="zo-input" name="notes" placeholder="Referencia, nº de operación, detalle…" /></div>

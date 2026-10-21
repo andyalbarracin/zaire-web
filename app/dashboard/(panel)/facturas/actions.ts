@@ -7,6 +7,7 @@ import { createInvoice, updateInvoice, addPayment, editPayment, deletePayment, u
 import { getClient } from '@/lib/zaire-ops/queries';
 import { requireUser } from '@/lib/zaire-ops/auth';
 import { s, sReq, nN, b, actionError, type FormState } from '@/lib/zaire-ops/form';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 
 function parseInvoice(fd: FormData) {
   return {
@@ -71,7 +72,7 @@ export async function markPaidAction(invoiceId: string, clientId: string, curren
   if (saldo > 0) {
     await addPayment({
       invoice_id: invoiceId, client_id: clientId, amount: saldo, currency,
-      paid_date: new Date().toISOString().slice(0, 10), method: 'Marcado pagado',
+      paid_date: todayLocal(), method: 'Marcado pagado',
     });
   }
   revalidatePath(`/dashboard/facturas/${invoiceId}`);
@@ -114,7 +115,7 @@ export async function addPaymentAction(invoiceId: string, clientId: string, fd: 
       client_id: clientId,
       amount,
       currency: sReq(fd, 'currency') || 'USD',
-      paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
+      paid_date: sReq(fd, 'paid_date') || todayLocal(),
       method: s(fd, 'method'),
       bank: s(fd, 'bank'),
       receipt_url,
@@ -135,7 +136,7 @@ export async function editPaymentAction(paymentId: string, invoiceId: string, fd
   try {
     const patch: Record<string, unknown> = {
       amount,
-      paid_date: sReq(fd, 'paid_date') || new Date().toISOString().slice(0, 10),
+      paid_date: sReq(fd, 'paid_date') || todayLocal(),
       method: s(fd, 'method'),
       bank: s(fd, 'bank'),
       notes: s(fd, 'notes'),

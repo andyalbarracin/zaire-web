@@ -7,6 +7,7 @@
 import { createSupabaseAdmin } from './supabase-admin';
 import type { ZoClient, ZoProject, ZoTicket, ZoTimeEntry, ZoComment, ZoAttachment } from './types';
 import { OPEN_STATUSES } from './types';
+import { todayLocal, monthBounds } from './dates';
 
 const db = () => createSupabaseAdmin();
 
@@ -244,10 +245,8 @@ export async function deleteTimeEntry(id: string): Promise<void> {
 }
 
 // ── KPIs del dashboard ───────────────────────────────────────────────────────
-function monthRange(d = new Date()) {
-  const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-  const to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
-  return { from, to };
+function monthRange() {
+  return monthBounds(todayLocal().slice(0, 7)); // mes actual en hora Argentina
 }
 
 export async function getDashboardStats() {

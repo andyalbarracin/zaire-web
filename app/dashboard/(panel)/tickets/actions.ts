@@ -14,6 +14,7 @@ import { buildTicketEmailHtml } from '@/lib/zaire-ops/ticket-email';
 import { sendOpsEmail } from '@/lib/zaire-ops/mailer';
 import { buildAssignmentEmail, buildCommentEmail } from '@/lib/zaire-ops/team-email';
 import { s, sReq, b, hoursToMin, actionError, type FormState } from '@/lib/zaire-ops/form';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 import { STATUS_LABEL, type TicketPriority, type TicketStatus, type ZoTicket } from '@/lib/zaire-ops/types';
 
 function parse(fd: FormData) {
@@ -166,7 +167,7 @@ export async function logTimeAction(ticketId: string, clientId: string, projectI
     description: s(fd, 'description'),
     billable: b(fd, 'billable'),
     included_in_plan: b(fd, 'included_in_plan'),
-    entry_date: sReq(fd, 'entry_date') || new Date().toISOString().slice(0, 10),
+    entry_date: sReq(fd, 'entry_date') || todayLocal(),
   });
   redirect(`/dashboard/tickets/${ticketId}`);
 }

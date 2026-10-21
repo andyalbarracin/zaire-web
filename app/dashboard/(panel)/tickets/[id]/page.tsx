@@ -5,6 +5,7 @@ import {
   getTicket, listClients, listProjects, listTimeEntries, listComments, listAttachments,
 } from '@/lib/zaire-ops/queries';
 import { listProfiles } from '@/lib/zaire-ops/profiles';
+import { todayLocal } from '@/lib/zaire-ops/dates';
 import TicketFields from '@/app/dashboard/_components/ticket-fields';
 import FormShell from '@/app/dashboard/_components/form-shell';
 import Avatar from '@/app/dashboard/_components/avatar';
@@ -140,7 +141,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
             </div>
           </div>
           <div className="zo-grid2">
-            <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="entry_date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></div>
+            <div className="zo-field"><label className="zo-flabel">Fecha</label><input className="zo-input" name="entry_date" type="date" defaultValue={todayLocal()} /></div>
             <div className="zo-field"><label className="zo-flabel">Descripción</label><input className="zo-input" name="description" placeholder="Ajuste filtro por fecha" /></div>
           </div>
           <div className="zo-grid2">

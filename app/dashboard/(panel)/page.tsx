@@ -7,12 +7,13 @@ import { getDashboardStats } from '@/lib/zaire-ops/queries';
 import { minutesToHours, STATUS_LABEL, STATUS_COLOR } from '@/lib/zaire-ops/types';
 import RowLink from '@/app/dashboard/_components/row-link';
 import { receivables, money } from '@/lib/zaire-ops/billing';
+import { APP_TZ } from '@/lib/zaire-ops/dates';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InicioPage() {
   const [s, rec] = await Promise.all([getDashboardStats(), receivables()]);
-  const today = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const today = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: APP_TZ });
 
   return (
     <>
