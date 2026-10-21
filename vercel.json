@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/keepalive", "schedule": "0 12 * * *" }
+    { "path": "/api/keepalive", "schedule": "0 12 * * *" },
+    { "path": "/api/zaire-ops/digest", "schedule": "0 11 * * 1-5" }
   ]
 }
