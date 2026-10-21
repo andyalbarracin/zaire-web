@@ -6,8 +6,12 @@ import {
   createLead, updateLead, deleteLead, moveLead, bulkInsertLeads,
   getLead, listLeadEvents, addLeadEvent, uploadLeadFile,
   createStage, updateStage, reorderStages, deleteStage,
+  listActivitiesInRange, getActivity, createActivity, updateActivity, setActivityDone, deleteActivity,
   type CrmLeadInput, type CrmAttachment,
+  type CrmActivity, type CrmActivityWithLead, type CrmActivityInput, type CrmActivityPatch,
 } from '@/lib/zaire-ops/crm';
+import { CRM_ACTIVITY_LABEL } from '@/lib/zaire-ops/crm-constants';
+import { isDateOnly, addDays, fmtDateOnly } from '@/lib/zaire-ops/dates';
 import { researchLead, enrichLead, callScript, emailDraft } from '@/lib/zaire-ops/research';
 import { sendLeadEmail } from '@/lib/zaire-ops/mailer';
 import { getMyProfile } from '@/lib/zaire-ops/profiles';
@@ -228,6 +232,57 @@ Director General · Zaire Technologies<br>
   await addLeadEvent(leadId, u.id, `Email enviado a ${to} — "${data.subject.trim() || 'Zaire'}"`, 'system');
   touch(leadId);
   return { ok: true };
+}
+
+/* ── Actividades (agenda por lead + calendario) ── */
+// Revalida también Inicio (KPI "Tareas hoy").
+const touchActivity = (leadId: string) => { touch(leadId); revalidatePath('/dashboard'); };
+const actWhen = (a: CrmActivity) => `${fmtDateOnly(a.due_date)}${a.due_time ? ` ${a.due_time}` : ''}`;
+const actLabel = (a: CrmActivity) => `${CRM_ACTIVITY_LABEL[a.kind]} — "${a.title}" · ${actWhen(a)}`;
+// El log no debe hacer fallar la acción principal.
+async function logActivity(leadId: string, authorId: string, body: string) {
+  try { await addLeadEvent(leadId, authorId, body, 'system'); } catch { /* ignorar */ }
+}
+
+export async function listActivitiesRangeA(from: string, to: string): Promise<CrmActivityWithLead[] | null> {
+  await requireUser();
+  if (!isDateOnly(from) || !isDateOnly(to) || to < from || to > addDays(from, 62)) return null;
+  return listActivitiesInRange(from, to);
+}
+
+export async function createActivityA(input: CrmActivityInput): Promise<CrmActivity> {
+  const u = await requireUser();
+  const a = await createActivity(input, u.id);
+  await logActivity(a.lead_id, u.id, `Actividad agendada: ${actLabel(a)}`);
+  touchActivity(a.lead_id);
+  return a;
+}
+
+export async function updateActivityA(id: string, patch: CrmActivityPatch): Promise<CrmActivity> {
+  const u = await requireUser();
+  const before = await getActivity(id);
+  const a = await updateActivity(id, patch);
+  if (before && (before.due_date !== a.due_date || before.due_time !== a.due_time)) {
+    await logActivity(a.lead_id, u.id, `Actividad reprogramada: "${a.title}" → ${actWhen(a)}`);
+  }
+  touchActivity(a.lead_id);
+  return a;
+}
+
+export async function setActivityDoneA(id: string, done: boolean): Promise<CrmActivity> {
+  const u = await requireUser();
+  const { row, changed } = await setActivityDone(id, done);
+  if (changed) await logActivity(row.lead_id, u.id, `${done ? 'Actividad completada' : 'Actividad reabierta'}: ${actLabel(row)}`);
+  touchActivity(row.lead_id);
+  return row;
+}
+
+export async function deleteActivityA(id: string): Promise<void> {
+  const u = await requireUser();
+  const a = await deleteActivity(id);
+  if (!a) return;
+  await logActivity(a.lead_id, u.id, `Actividad eliminada: ${actLabel(a)}`);
+  touchActivity(a.lead_id);
 }
 
 /* ── Etapas ── */

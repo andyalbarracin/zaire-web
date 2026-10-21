@@ -1,18 +1,19 @@
 'use client';
-// lead-detail.tsx — ficha detallada de un lead: datos, ubicación, archivos, investigar (IA) y log.
+// lead-detail.tsx — ficha detallada de un lead: datos, ubicación, archivos, actividades, investigar (IA) y log.
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Sparkles, Phone, Mail, MapPin, Paperclip, X, Send, Trash2, Globe, MessageCircle, Copy, Check,
 } from 'lucide-react';
-import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput } from '@/lib/zaire-ops/crm';
+import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput, CrmActivity } from '@/lib/zaire-ops/crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
 import { updateLeadA, deleteLeadA, moveLeadA, addEventA, uploadLeadFileA, researchLeadA } from '../actions';
 import type { LeadAnalysis } from '@/lib/sales/types';
 import CallModal from './call-modal';
 import EmailModal from './email-modal';
+import ActivityList from './activity-list';
 
 type Person = { id: string; name: string };
 type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interest' | 'market_notes' | 'phone' | 'email' | 'address';
@@ -86,7 +87,12 @@ function Playbook({ a }: { a: LeadAnalysis }) {
   );
 }
 
-export default function LeadDetail({ lead, stages, events: initialEvents, people }: { lead: CrmLead; stages: CrmStage[]; events: CrmLeadEvent[]; people: Person[] }) {
+export default function LeadDetail({
+  lead, stages, events: initialEvents, people, activities, meId, backHref = '/dashboard/crm',
+}: {
+  lead: CrmLead; stages: CrmStage[]; events: CrmLeadEvent[]; people: Person[];
+  activities: CrmActivity[] | null; meId?: string; backHref?: string;
+}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const nameById = (id: string | null) => (id ? (people.find(p => p.id === id)?.name ?? 'Usuario') : 'Sistema');
@@ -103,6 +109,8 @@ export default function LeadDetail({ lead, stages, events: initialEvents, people
   const [stageId, setStageId] = useState(lead.stage_id ?? '');
   const [attachments, setAttachments] = useState<CrmAttachment[]>(lead.attachments ?? []);
   const [events, setEvents] = useState<CrmLeadEvent[]>(initialEvents);
+  // Al revalidar, el server manda el log real (con autor) y reemplaza las entradas temporales.
+  useEffect(() => { setEvents(initialEvents); }, [initialEvents]);
   const [research, setResearch] = useState(lead.research ?? '');
   const [analysis, setAnalysis] = useState<LeadAnalysis | null>(null);
   const [aiProviders, setAiProviders] = useState<string[]>([]);
@@ -305,7 +313,7 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
   async function remove() {
     if (!confirm(`¿Eliminar el lead "${f.name || f.company || 'sin nombre'}"? No se puede deshacer.`)) return;
     await deleteLeadA(lead.id);
-    router.push('/dashboard/crm');
+    router.push(backHref);
   }
 
   const isImg = (a: CrmAttachment) => a.type.startsWith('image/');
@@ -327,7 +335,7 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
 
       {/* Toolbar: Volver a la izquierda; Llamar/WhatsApp/Email/Guardar a la derecha (responsive) */}
       <div className="zo-detail-bar">
-        <Link href="/dashboard/crm"><button className="zo-btn zo-back" type="button"><ArrowLeft size={14} /> Volver</button></Link>
+        <Link href={backHref}><button className="zo-btn zo-back" type="button"><ArrowLeft size={14} /> Volver</button></Link>
         <div className="zo-detail-bar-actions">
           <button className="zo-btn zo-btn-sm" type="button" onClick={() => setCallOpen(true)}><Phone size={13} /> Llamar</button>
           <button className="zo-btn zo-btn-sm" type="button" onClick={() => window.open(wa(f.phone), '_blank')} disabled={!f.phone} title={f.phone ? 'Abrir WhatsApp Web' : 'Sin teléfono'}><MessageCircle size={13} /> WhatsApp</button>
@@ -337,9 +345,10 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
         </div>
       </div>
 
-      <div className="zo-2col" style={{ alignItems: 'start' }}>
+      {/* Desktop: ficha a la izquierda; actividades + IA a la derecha. Al apilar: actividades primero. */}
+      <div className="zo-2col zo-lead-grid" style={{ alignItems: 'start' }}>
         {/* Columna principal: ficha */}
-        <div>
+        <div className="zo-area-main">
           <div className="zo-card">
             <div className="zo-card-title">// CONTACTO</div>
             <div className="zo-grid2">
@@ -422,8 +431,12 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
           </div>
         </div>
 
+        <div className="zo-area-acts">
+          <ActivityList leadId={lead.id} leadName={f.name || f.company || 'el lead'} activities={activities} people={people} meId={meId} />
+        </div>
+
         {/* Columna lateral: investigar (IA) + info rápida */}
-        <div>
+        <div className="zo-area-side">
           <div className="zo-card">
             <div className="zo-card-title">// INVESTIGAR (IA)</div>
             <p style={{ fontSize: 12.5, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>

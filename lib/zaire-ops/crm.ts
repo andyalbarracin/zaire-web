@@ -8,6 +8,8 @@
 import { z } from 'zod';
 import { createSupabaseAdmin } from './supabase-admin';
 import { validateUpload } from './upload-guard';
+import { CRM_ACTIVITY_KINDS, CRM_ACTIVITY_LABEL, type CrmActivityKind } from './crm-constants';
+import { isDateOnly } from './dates';
 
 const db = () => createSupabaseAdmin();
 
@@ -188,6 +190,159 @@ export async function bulkInsertLeads(rows: CrmLeadInput[], stageId: string | nu
   const { error } = await db().from('zo_crm_leads').insert(payload);
   if (error) throw new Error(error.message);
   return payload.length;
+}
+
+/* ── Actividades (agenda por lead + calendario) — migración 0017 ─────────────
+   Lecturas: devuelven `null` si la tabla no existe (la UI muestra "corré 0017").
+   Escrituras: lanzan, como el resto del archivo. Fechas sin hora ('YYYY-MM-DD'),
+   hora opcional 'HH:MM' en hora Argentina. Los leads borrados (soft) se excluyen. */
+export interface CrmActivity {
+  id: string;
+  lead_id: string;
+  kind: CrmActivityKind;
+  title: string;
+  description: string | null;
+  due_date: string;
+  due_time: string | null;
+  done_at: string | null;
+  assignee_id: string | null;
+  author_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export interface CrmActivityWithLead extends CrmActivity { lead_name: string | null; lead_company: string | null; }
+export interface CrmActivityInput {
+  lead_id: string;
+  kind?: CrmActivityKind;
+  title?: string;
+  description?: string | null;
+  due_date: string;
+  due_time?: string | null;
+  assignee_id?: string | null;
+}
+export type CrmActivityPatch = Partial<Omit<CrmActivityInput, 'lead_id'>>;
+
+const ACT_COLS = 'id, lead_id, kind, title, description, due_date, due_time, done_at, assignee_id, author_id, created_at, updated_at';
+const ACT_WITH_LEAD = `${ACT_COLS}, zo_crm_leads!inner(name, company, deleted_at)`;
+
+const ActivityFields = z.object({
+  kind: z.enum(CRM_ACTIVITY_KINDS),
+  title: z.string().trim().max(200, 'El título es muy largo'),
+  description: z.string().trim().max(2000, 'La descripción es muy larga').nullable(),
+  due_date: z.string().refine(isDateOnly, 'Fecha inválida'),
+  due_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Hora inválida').or(z.literal('')).nullable(),
+  assignee_id: z.string().uuid('Responsable inválido').or(z.literal('')).nullable(),
+}).partial();
+
+// Valida + normaliza: '' → null, hora a 'HH:MM', título vacío → nombre del tipo.
+function cleanActivity(input: CrmActivityPatch): Record<string, unknown> {
+  const p = ActivityFields.safeParse(input);
+  if (!p.success) throw new Error(p.error.issues[0]?.message ?? 'Datos inválidos');
+  const d = p.data;
+  const out: Record<string, unknown> = {};
+  if (d.kind !== undefined) out.kind = d.kind;
+  if (d.title !== undefined) out.title = d.title;
+  if (d.description !== undefined) out.description = d.description || null;
+  if (d.due_date !== undefined) out.due_date = d.due_date;
+  if (d.due_time !== undefined) out.due_time = d.due_time ? d.due_time.slice(0, 5) : null;
+  if (d.assignee_id !== undefined) out.assignee_id = d.assignee_id || null;
+  return out;
+}
+
+type ActivityRow = Omit<CrmActivity, 'kind'> & { kind: string; zo_crm_leads?: { name: string | null; company: string | null } | null };
+
+function toActivity(r: ActivityRow): CrmActivity {
+  const { zo_crm_leads: _lead, ...a } = r;
+  void _lead;
+  return { ...a, kind: (CRM_ACTIVITY_KINDS as readonly string[]).includes(a.kind) ? a.kind as CrmActivityKind : 'tarea', due_time: a.due_time ? a.due_time.slice(0, 5) : null };
+}
+function toActivityWithLead(r: ActivityRow): CrmActivityWithLead {
+  return { ...toActivity(r), lead_name: r.zo_crm_leads?.name ?? null, lead_company: r.zo_crm_leads?.company ?? null };
+}
+
+export async function listLeadActivities(leadId: string): Promise<CrmActivity[] | null> {
+  try {
+    const { data, error } = await db().from('zo_crm_activities').select(ACT_COLS).eq('lead_id', leadId)
+      .order('due_date', { ascending: true }).order('due_time', { ascending: true, nullsFirst: true });
+    if (error) { console.warn('[crm] activities:', error.code, error.message); return null; }
+    return (data as ActivityRow[]).map(toActivity);
+  } catch { return null; }
+}
+
+export async function listActivitiesInRange(from: string, to: string): Promise<CrmActivityWithLead[] | null> {
+  try {
+    const { data, error } = await db().from('zo_crm_activities').select(ACT_WITH_LEAD)
+      .is('zo_crm_leads.deleted_at', null)
+      .gte('due_date', from).lte('due_date', to)
+      .order('due_date', { ascending: true }).order('due_time', { ascending: true, nullsFirst: true })
+      .limit(2000);
+    if (error) { console.warn('[crm] activities range:', error.code, error.message); return null; }
+    return (data as unknown as ActivityRow[]).map(toActivityWithLead);
+  } catch { return null; }
+}
+
+/** Todas las pendientes (una sola query para badges, agenda, KPI y resumen diario). `until`: hasta esa fecha inclusive. */
+export async function listPendingActivities(opts?: { until?: string }): Promise<CrmActivityWithLead[] | null> {
+  try {
+    let q = db().from('zo_crm_activities').select(ACT_WITH_LEAD)
+      .is('zo_crm_leads.deleted_at', null)
+      .is('done_at', null);
+    if (opts?.until) q = q.lte('due_date', opts.until);
+    const { data, error } = await q
+      .order('due_date', { ascending: true }).order('due_time', { ascending: true, nullsFirst: true })
+      .limit(1000);
+    if (error) { console.warn('[crm] activities pending:', error.code, error.message); return null; }
+    return (data as unknown as ActivityRow[]).map(toActivityWithLead);
+  } catch { return null; }
+}
+
+export async function getActivity(id: string): Promise<CrmActivity | null> {
+  const { data } = await db().from('zo_crm_activities').select(ACT_COLS).eq('id', id).maybeSingle();
+  return data ? toActivity(data as ActivityRow) : null;
+}
+
+export async function createActivity(input: CrmActivityInput, authorId: string | null): Promise<CrmActivity> {
+  if (!input.lead_id) throw new Error('Falta el lead');
+  const row = cleanActivity({ kind: 'llamar', ...input });
+  if (!row.due_date) throw new Error('Falta la fecha');
+  if (!row.title) row.title = CRM_ACTIVITY_LABEL[row.kind as CrmActivityKind];
+  const { data, error } = await db().from('zo_crm_activities')
+    .insert({ ...row, lead_id: input.lead_id, author_id: authorId })
+    .select(ACT_COLS).single();
+  if (error) throw new Error(error.message);
+  return toActivity(data as ActivityRow);
+}
+
+export async function updateActivity(id: string, patch: CrmActivityPatch): Promise<CrmActivity> {
+  const row = cleanActivity(patch);
+  if ('title' in row && !row.title) {
+    const kind = (row.kind as CrmActivityKind | undefined) ?? (await getActivity(id))?.kind ?? 'tarea';
+    row.title = CRM_ACTIVITY_LABEL[kind];
+  }
+  const { data, error } = await db().from('zo_crm_activities')
+    .update({ ...row, updated_at: new Date().toISOString() })
+    .eq('id', id).select(ACT_COLS).single();
+  if (error) throw new Error(error.message);
+  return toActivity(data as ActivityRow);
+}
+
+/** Marca hecha / reabre. Condicional: si ya estaba en ese estado, `changed:false` (no duplica el log). */
+export async function setActivityDone(id: string, done: boolean): Promise<{ row: CrmActivity; changed: boolean }> {
+  const now = new Date().toISOString();
+  const base = db().from('zo_crm_activities').update({ done_at: done ? now : null, updated_at: now }).eq('id', id);
+  const { data, error } = await (done ? base.is('done_at', null) : base.not('done_at', 'is', null)).select(ACT_COLS).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data) return { row: toActivity(data as ActivityRow), changed: true };
+  const row = await getActivity(id);
+  if (!row) throw new Error('Actividad no encontrada');
+  return { row, changed: false };
+}
+
+/** Borra y devuelve la fila borrada (para el log). */
+export async function deleteActivity(id: string): Promise<CrmActivity | null> {
+  const { data, error } = await db().from('zo_crm_activities').delete().eq('id', id).select(ACT_COLS).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? toActivity(data as ActivityRow) : null;
 }
 
 // Whitelist + normaliza: solo claves conocidas, strings vacíos → null, adjuntos validados con zod.
