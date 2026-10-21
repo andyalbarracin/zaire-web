@@ -1,24 +1,56 @@
 'use client';
-// board.tsx — Tablero del CRM (kanban con drag-and-drop nativo, buscador, import/export).
-// Estado local optimista; las mutaciones llaman server actions y refrescan el RSC.
+// board.tsx — Tablero del CRM: kanban (drag-and-drop nativo) o calendario de actividades,
+// buscador, import/export. Estado local optimista; las mutaciones llaman server actions y refrescan el RSC.
 
 import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
-import { Plus, Upload, Download, Pencil, Trash2, Search, SlidersHorizontal, Phone, Building2, User } from 'lucide-react';
-import type { CrmStage, CrmLead } from '@/lib/zaire-ops/crm';
+import {
+  Plus, Upload, Download, Pencil, Trash2, Search, SlidersHorizontal, Phone, Building2, User, LayoutGrid, CalendarDays,
+} from 'lucide-react';
+import type { CrmStage, CrmLead, CrmActivityWithLead } from '@/lib/zaire-ops/crm';
+import { activityStatus, nextByLead } from '@/lib/zaire-ops/crm-constants';
 import { moveLeadA, deleteLeadA } from './actions';
 import ImportModal from './import-modal';
 import LeadModal from './lead-modal';
 import StageManager from './stage-manager';
+import CrmCalendar from './calendar';
+import ActivityModal from './activity-modal';
+import { KindIcon, activityWhen } from './activity-kit';
 import { todayLocal } from '@/lib/zaire-ops/dates';
 
-export default function CrmBoard({ initialStages, initialLeads }: { initialStages: CrmStage[]; initialLeads: CrmLead[] }) {
+type Person = { id: string; name: string };
+export type CrmView = 'board' | 'calendar';
+
+export default function CrmBoard({
+  initialStages, initialLeads, pending, people, meId, initialView, initialMonth,
+}: {
+  initialStages: CrmStage[];
+  initialLeads: CrmLead[];
+  pending: CrmActivityWithLead[] | null; // null = migración 0017 sin correr
+  people: Person[];
+  meId?: string;
+  initialView: CrmView;
+  initialMonth: string;
+}) {
   const router = useRouter();
   const [stages, setStages] = useState(initialStages);
   const [leads, setLeads] = useState(initialLeads);
   const [search, setSearch] = useState('');
+  const [view, setView] = useState<CrmView>(initialView);
+  const [month, setMonth] = useState(initialMonth);
+  const [newActivity, setNewActivity] = useState(false);
+  const [calendarKey, setCalendarKey] = useState(0); // fuerza a releer el mes tras crear desde la barra
+  const today = todayLocal();
+  const nextAct = useMemo(() => nextByLead(pending ?? []), [pending]);
+
+  // La vista y el mes viven en la URL (link del KPI de Inicio, "Volver" de la ficha, recargar).
+  function syncUrl(v: CrmView, m: string) {
+    window.history.replaceState(null, '', v === 'calendar' ? `/dashboard/crm?view=calendar&m=${m}` : '/dashboard/crm');
+  }
+  const changeView = (v: CrmView) => { setView(v); syncUrl(v, month); };
+  const changeMonth = (m: string) => { setMonth(m); syncUrl(view, m); };
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -108,7 +140,14 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="zo-btn zo-btn-sm" onClick={() => setStageMgr(true)}><SlidersHorizontal size={14} /> Etapas</button>
+          <div style={{ display: 'inline-flex' }} role="group" aria-label="Vista">
+            <button className={`zo-btn zo-btn-sm${view === 'board' ? ' zo-btn-primary' : ''}`} style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} onClick={() => changeView('board')} aria-pressed={view === 'board'}><LayoutGrid size={14} /> Kanban</button>
+            <button className={`zo-btn zo-btn-sm${view === 'calendar' ? ' zo-btn-primary' : ''}`} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} onClick={() => changeView('calendar')} aria-pressed={view === 'calendar'}><CalendarDays size={14} /> Calendario</button>
+          </div>
+          {view === 'calendar' && pending !== null && (
+            <button className="zo-btn zo-btn-sm" onClick={() => setNewActivity(true)}><Plus size={14} /> Actividad</button>
+          )}
+          {view === 'board' && <button className="zo-btn zo-btn-sm" onClick={() => setStageMgr(true)}><SlidersHorizontal size={14} /> Etapas</button>}
           <div style={{ position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
             <input className="zo-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar…" style={{ padding: '8px 12px 8px 30px', fontSize: 12, minWidth: 200 }} />
@@ -116,7 +155,13 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
         </div>
       </div>
 
-      {stages.length === 0 ? (
+      {view === 'calendar' ? (
+        pending === null ? (
+          <div className="zo-table-wrap"><div className="zo-empty">El calendario usa las actividades de los leads. Corré la migración <span className="zo-mono">0017_crm_activities.sql</span> en Supabase y recargá.</div></div>
+        ) : (
+          <CrmCalendar leads={leads} people={people} meId={meId} pending={pending} month={month} onMonthChange={changeMonth} search={search} reloadKey={calendarKey} />
+        )
+      ) : stages.length === 0 ? (
         <div className="zo-table-wrap"><div className="zo-empty">No hay etapas todavía. Corré la migración <span className="zo-mono">0011_crm.sql</span> en Supabase y recargá.</div></div>
       ) : (
         <div className="zo-kanban">
@@ -157,6 +202,17 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
                       {l.company && <div className="zo-kan-card-line"><Building2 size={12} /> {l.company}</div>}
                       {l.contact_person && <div className="zo-kan-card-line"><User size={12} /> {l.contact_person}</div>}
                       {l.phone && <a className="zo-kan-card-line zo-kan-phone" href={`tel:${l.phone}`}><Phone size={12} /> {l.phone}</a>}
+                      {(() => {
+                        const na = nextAct.get(l.id);
+                        if (!na) return null;
+                        return (
+                          <Link href={`/dashboard/crm/${l.id}`} className={`zo-act-badge ${activityStatus(na.next, today)}`} title={`Próxima actividad: ${na.next.title}`}>
+                            <KindIcon kind={na.next.kind} size={11} />
+                            <span>{activityWhen(na.next, today)} · {na.next.title}</span>
+                            {na.count > 1 && <em>+{na.count - 1}</em>}
+                          </Link>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -188,6 +244,16 @@ export default function CrmBoard({ initialStages, initialLeads }: { initialStage
           stages={stages}
           onClose={() => setStageMgr(false)}
           onChanged={() => { setStageMgr(false); refresh(); }}
+        />
+      )}
+      {newActivity && (
+        <ActivityModal
+          leads={leads}
+          people={people}
+          meId={meId}
+          defaultDate={month === today.slice(0, 7) ? today : `${month}-01`}
+          onClose={() => setNewActivity(false)}
+          onSaved={() => { setNewActivity(false); setCalendarKey(k => k + 1); }}
         />
       )}
     </>

@@ -9,6 +9,7 @@
   color: #fff;
   font-family: var(--fu, 'Roboto', sans-serif);
   font-size: 14px;
+  color-scheme: dark;   /* controles nativos (fecha/hora, scrollbars) en oscuro */
 }
 
 /* ── Layout shell ─────────────────────────────────────────────────────────── */
@@ -395,7 +396,13 @@ a.zo-kan-phone:hover { color: var(--org); }
 /* CRM · actividades (ficha + agenda) */
 .zo-act-row { display: flex; gap: 9px; align-items: flex-start; padding: 9px 2px; border-top: 1px solid #1c1c1c; }
 .zo-act-row:first-of-type { border-top: none; }
-.zo-act-check { width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px; accent-color: var(--org); cursor: pointer; }
+.zo-act-check { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px; border: 1.5px solid #555; border-radius: 5px; background: #0d0d0d; display: inline-grid; place-content: center; cursor: pointer; }
+.zo-act-check::before { content: ""; width: 9px; height: 9px; transform: scale(0); transition: transform .1s; background: #111; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+.zo-act-check:checked { background: var(--org); border-color: var(--org); }
+.zo-act-check:checked::before { transform: scale(1); }
+.zo-act-check:hover:not(:disabled) { border-color: #999; }
+.zo-act-check:focus-visible { outline: 2px solid var(--org); outline-offset: 2px; }
+.zo-act-check:disabled { opacity: .5; cursor: default; }
 .zo-act-ico { color: #888; margin-top: 2px; display: inline-flex; }
 .zo-act-main { flex: 1; min-width: 0; }
 .zo-act-main.clickable { cursor: pointer; }
@@ -425,3 +432,54 @@ a.zo-kan-phone:hover { color: var(--org); }
 .zo-lead-grid > .zo-area-acts { grid-area: acts; }
 .zo-lead-grid > .zo-area-side { grid-area: side; }
 @media (max-width: 900px) { .zo-lead-grid { grid-template-areas: "acts" "main" "side"; grid-template-rows: auto; } }
+
+/* CRM · calendario de actividades + agenda + badge del kanban */
+.zo-mcal-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.zo-cal-grid.loading { opacity: .55; transition: opacity .15s; }
+.zo-cal-cell.clickable { cursor: pointer; }
+.zo-cal-cell.clickable:hover { border-color: #2c2c2c; }
+.zo-cal-cell.selected { border-color: #777; background: #121212; }
+.zo-cal-cell.today.selected { border-color: #FF6A00; }
+.zo-cal-more { background: none; border: none; color: #888; font-size: 10.5px; cursor: pointer; text-align: left; padding: 0 2px; }
+.zo-cal-more:hover { color: #fff; }
+.zo-act-chip { text-decoration: none; color: #bbb; }
+.zo-act-chip svg { color: #888; }
+.zo-act-chip.today { border-color: rgba(255,106,0,.5); }
+.zo-act-chip.today svg { color: #FF6A00; }
+.zo-act-chip.overdue { border-color: rgba(231,29,10,.6); background: rgba(231,29,10,.08); }
+.zo-act-chip.overdue svg { color: #ff8a7d; }
+.zo-act-chip.done { opacity: .5; }
+.zo-act-chip.done .zo-cal-item-title { text-decoration: line-through; }
+.zo-crmcal { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.zo-crmcal-main { min-width: 0; }
+.zo-agenda { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+.zo-agenda-sec { background: #121212; border: 1px solid #222; border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.zo-agenda-sec.overdue { border-color: rgba(231,29,10,.35); }
+.zo-agenda-sec.day { border-color: #3a3a3a; }
+.zo-agenda-head { display: flex; justify-content: space-between; align-items: center; font-family: var(--fm); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: #ccc; margin-bottom: 4px; }
+.zo-agenda-sec.overdue .zo-agenda-head { color: #ff8a7d; }
+.zo-agenda-sec.today .zo-agenda-head { color: #ffb27a; }
+.zo-agenda-empty { font-size: 12px; color: #666; padding: 6px 0 2px; }
+.zo-act-badge { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11px; color: #bbb; background: #151515; border: 1px solid #2a2a2a; border-radius: 6px; padding: 3px 7px; min-width: 0; text-decoration: none; }
+.zo-act-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.zo-act-badge em { font-style: normal; color: #888; flex-shrink: 0; }
+.zo-act-badge:hover { border-color: #444; }
+.zo-act-badge.today { border-color: rgba(255,106,0,.45); color: #ffb27a; }
+.zo-act-badge.overdue { border-color: rgba(231,29,10,.55); color: #ff8a7d; background: rgba(231,29,10,.08); }
+/* Laptop/tablet: la agenda (overview) pasa arriba como franja de 3 columnas */
+@media (max-width: 1200px) {
+  .zo-crmcal { grid-template-columns: minmax(0, 1fr); }
+  .zo-agenda { order: -1; position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .zo-agenda-sec.day { grid-column: 1 / -1; }
+}
+/* Mobile: agenda apilada primero; en la grilla las actividades son puntos de color y tocar un día lo abre en la agenda */
+@media (max-width: 720px) {
+  .zo-agenda { grid-template-columns: minmax(0, 1fr); }
+  .zo-crmcal .zo-cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .zo-crmcal .zo-cal-items { flex-direction: row; flex-wrap: wrap; gap: 3px; }
+  .zo-crmcal .zo-act-chip { width: 8px; height: 8px; padding: 0; border-radius: 50%; border: none; background: #666; pointer-events: none; }
+  .zo-crmcal .zo-act-chip.today { background: #FF6A00; }
+  .zo-crmcal .zo-act-chip.overdue { background: #E71D0A; }
+  .zo-crmcal .zo-act-chip.done { background: #333; opacity: 1; }
+  .zo-crmcal .zo-act-chip > *, .zo-crmcal .zo-cal-add, .zo-crmcal .zo-cal-more { display: none; }
+}
