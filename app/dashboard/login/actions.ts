@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createSupabaseServer } from '@/lib/zaire-ops/supabase-server';
 import { rateLimit } from '@/lib/zaire-ops/rate-limit';
+import { isStaff } from '@/lib/zaire-ops/staff';
 
 export interface LoginState { error?: string }
 
@@ -25,9 +26,15 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   if (!okEmail || !okIp) return { error: 'Demasiados intentos. Esperá unos minutos y volvé a probar.' };
 
   const supabase = await createSupabaseServer();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) return { error: 'Credenciales inválidas. Revisá email y contraseña.' };
+
+  // Credenciales válidas pero no es del equipo (ej. cliente del portal): no entra al panel.
+  if (!isStaff(data.user)) {
+    await supabase.auth.signOut();
+    return { error: 'Esta cuenta no tiene acceso al panel interno.' };
+  }
 
   redirect('/dashboard');
 }

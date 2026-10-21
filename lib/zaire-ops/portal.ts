@@ -15,12 +15,22 @@ export interface ZoClientUser {
   id: string; client_id: string; email: string; auth_user_id: string | null; created_at: string;
 }
 
+// ilike sin comodines: un email con % o _ no debe matchear emails ajenos.
+const likeExact = (s: string) => s.replace(/[\\%_]/g, '\\$&');
+
 // Resuelve el email autenticado → client_id vía zo_client_users (case-insensitive).
 export async function resolveClientByEmail(email: string): Promise<string | null> {
   const { data } = await admin()
     .from('zo_client_users').select('client_id, id, auth_user_id')
-    .ilike('email', email).limit(1).maybeSingle();
+    .ilike('email', likeExact(email)).limit(1).maybeSingle();
   return (data as { client_id: string } | null)?.client_id ?? null;
+}
+
+// Primer ingreso de un cliente: crea su usuario de auth desde el server (sin marca de equipo),
+// así el registro público de Supabase puede estar apagado. Si ya existe, no hace nada.
+export async function ensurePortalAuthUser(email: string): Promise<void> {
+  const { error } = await admin().auth.admin.createUser({ email, email_confirm: true, app_metadata: { zo_portal: true } });
+  if (error && !/already|exists|registered/i.test(error.message)) throw new Error(error.message);
 }
 
 // Gate del layout autenticado del portal. Redirige a /portal/login si no hay
@@ -35,7 +45,7 @@ export async function requirePortalClient(): Promise<PortalSession> {
 
   // Guarda auth_user_id en el primer login (best-effort, no bloqueante).
   await admin().from('zo_client_users').update({ auth_user_id: user.id })
-    .ilike('email', user.email).is('auth_user_id', null);
+    .ilike('email', likeExact(user.email)).is('auth_user_id', null);
 
   return { clientId, email: user.email };
 }

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/zaire-ops/supabase-server';
+import { isStaff } from '@/lib/zaire-ops/staff';
 
 export interface UpdatePwState { error?: string }
 
@@ -12,6 +13,7 @@ export async function updatePassword(_prev: UpdatePwState, fd: FormData): Promis
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'El link expiró o no es válido. Pedí uno nuevo desde "Recuperar contraseña".' };
+  if (!isStaff(user)) return { error: 'Esta cuenta no tiene acceso al panel interno.' };
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };

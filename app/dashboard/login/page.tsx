@@ -4,13 +4,20 @@
 
 'use client';
 
-import { useActionState } from 'react';
+import { Suspense, useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { signIn, type LoginState } from './actions';
 
 const initial: LoginState = {};
 
 export default function LoginPage() {
+  return <Suspense fallback={null}><LoginForm /></Suspense>; // useSearchParams lo requiere
+}
+
+function LoginForm() {
   const [state, action, pending] = useActionState(signIn, initial);
+  // ?e=sin-acceso: llegó con una sesión que no es del equipo (ej. cliente del portal).
+  const noAccess = useSearchParams().get('e') === 'sin-acceso';
 
   return (
     <div className="zo-login">
@@ -28,7 +35,9 @@ export default function LoginPage() {
             <input className="zo-input" id="password" name="password" type="password" required placeholder="••••••••" />
           </div>
 
-          {state.error && <div className="zo-error">{state.error}</div>}
+          {state.error
+            ? <div className="zo-error">{state.error}</div>
+            : noAccess && <div className="zo-error">Esta cuenta no tiene acceso al panel interno. Si sos cliente, entrá por el <a href="/portal" style={{ color: '#FF6A00' }}>Portal</a>.</div>}
 
           <button className="zo-btn zo-btn-primary" type="submit" disabled={pending}
             style={{ justifyContent: 'center', width: '100%' }}>

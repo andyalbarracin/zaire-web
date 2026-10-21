@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseAdmin } from './supabase-admin';
 import { createSupabaseServer } from './supabase-server';
+import { isStaff } from './staff';
 
 export type Role = 'owner' | 'admin' | 'member';
 
@@ -24,11 +25,11 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 export const ROLES: Role[] = ['owner', 'admin', 'member'];
 
-// ── Perfil del usuario logueado ──────────────────────────────────────────────
+// ── Perfil del usuario logueado (solo EQUIPO; un cliente del portal → null) ──
 export async function getMyProfile(): Promise<ZoProfile | null> {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user || !isStaff(user)) return null;
 
   const admin = createSupabaseAdmin();
   const { data } = await admin.from('zo_profiles').select('*').eq('id', user.id).single();
@@ -61,9 +62,10 @@ export async function listProfiles(): Promise<ZoProfile[]> {
   const { data } = await admin.from('zo_profiles').select('*').order('created_at');
   const profiles = (data ?? []) as ZoProfile[];
 
+  // Solo EQUIPO: el trigger crea perfil para todo usuario de auth (también clientes del portal).
   const { data: list } = await admin.auth.admin.listUsers();
-  const emailById = new Map((list?.users ?? []).map(u => [u.id, u.email]));
-  return profiles.map(p => ({ ...p, email: emailById.get(p.id) }));
+  const staff = new Map((list?.users ?? []).filter(isStaff).map(u => [u.id, u.email]));
+  return profiles.filter(p => staff.has(p.id)).map(p => ({ ...p, email: staff.get(p.id) }));
 }
 
 export async function countUsers(): Promise<number> {
@@ -79,6 +81,7 @@ export async function createTeamUser(input: { email: string; password: string; f
     password: input.password,
     email_confirm: true, // instantáneo, sin confirmación por email
     user_metadata: { full_name: input.full_name, role: input.role },
+    app_metadata: { zo_staff: true }, // acceso al panel (solo lo puede setear el service role)
   });
   if (error) throw new Error(error.message);
   // El trigger crea el perfil; reforzamos nombre y rol.

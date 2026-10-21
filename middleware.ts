@@ -7,6 +7,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isStaff } from '@/lib/zaire-ops/staff';
 
 function buildCsp(nonce: string): string {
   const dev = process.env.NODE_ENV !== 'production';
@@ -78,10 +79,14 @@ export async function middleware(request: NextRequest) {
   const PUBLIC = ['/dashboard/login', '/dashboard/setup', '/dashboard/recuperar', '/dashboard/auth'];
   const isPublic = PUBLIC.some(p => path.startsWith(p));
 
-  if (!user && !isPublic) {
-    return NextResponse.redirect(new URL('/dashboard/login', request.url));
+  // Solo EQUIPO: una sesión de cliente del portal (o de alguien que se registró solo) no entra.
+  const staff = isStaff(user);
+  if (!isPublic && !staff) {
+    const to = new URL('/dashboard/login', request.url);
+    if (user) to.searchParams.set('e', 'sin-acceso');
+    return NextResponse.redirect(to);
   }
-  if (user && path.startsWith('/dashboard/login')) {
+  if (staff && path.startsWith('/dashboard/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
