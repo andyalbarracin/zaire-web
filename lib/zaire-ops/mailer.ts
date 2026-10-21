@@ -7,8 +7,10 @@ export async function sendOpsEmail(opts: { to: string; subject: string; html: st
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
   const fromDomain = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   try {
-    await resend.emails.send({ from: `ZAIRE Ops <noreply@${fromDomain}>`, to: opts.to, subject: opts.subject, html: opts.html });
-    return true;
+    // Resend v6 no lanza ante un rechazo: devuelve { error }.
+    const { error } = await resend.emails.send({ from: `ZAIRE Ops <noreply@${fromDomain}>`, to: opts.to, subject: opts.subject, html: opts.html });
+    if (error) console.error('[mailer] ops:', error.message);
+    return !error;
   } catch {
     return false;
   }
@@ -24,7 +26,7 @@ export async function sendLeadEmail(opts: {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zairetech.com';
   const fromDomain = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: `Zaire Technologies <hola@${fromDomain}>`,
       to: opts.to,
       subject: opts.subject,
@@ -32,7 +34,8 @@ export async function sendLeadEmail(opts: {
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
       ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
     });
-    return true;
+    if (error) console.error('[mailer] lead:', error.message);
+    return !error;
   } catch {
     return false;
   }
