@@ -5,12 +5,46 @@
 // - budgetedWithFallback → cap DURO de llamadas al primario por invocación; agotado o ante
 //   cualquier error, cae a Groq. Así una key personal (OpenAI) no se puede vaciar en un loop.
 
+/** Un turno previo de una conversación (chat multi-turno). */
+export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
+
 export interface CompleteOptions {
   system: string;
   user: string;
   temperature?: number;
   maxTokens?: number;
   json?: boolean; // pide response_format json_object / responseMimeType json
+  history?: ChatTurn[]; // turnos previos: van entre el system y el `user` actual
+  timeoutMs?: number;   // timeout por llamada (default LLM_TIMEOUT_MS o 18s)
+}
+
+const timeoutOf = (opts: CompleteOptions) => opts.timeoutMs ?? (Number(process.env.LLM_TIMEOUT_MS) || 18000);
+
+/** Mensajes formato OpenAI: system → historial → user actual. */
+export function toOpenAIMessages(opts: CompleteOptions): { role: string; content: string }[] {
+  return [
+    { role: 'system', content: opts.system },
+    ...(opts.history ?? []).map((t) => ({ role: t.role, content: t.content })),
+    { role: 'user', content: opts.user },
+  ];
+}
+
+/**
+ * Contents formato Gemini: assistant → 'model'. Gemini exige arrancar con 'user' y alternar
+ * roles, así que se descartan los turnos 'model' iniciales (ej. el saludo del bot) y se
+ * unen los turnos consecutivos del mismo rol.
+ */
+export function toGeminiContents(opts: CompleteOptions): { role: 'user' | 'model'; parts: { text: string }[] }[] {
+  const turns = [...(opts.history ?? []), { role: 'user' as const, content: opts.user }];
+  const out: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+  for (const t of turns) {
+    const role = t.role === 'assistant' ? 'model' : 'user';
+    if (out.length === 0 && role === 'model') continue;
+    const last = out[out.length - 1];
+    if (last && last.role === role) last.parts[0].text += `\n\n${t.content}`;
+    else out.push({ role, parts: [{ text: t.content }] });
+  }
+  return out;
 }
 
 export interface LLMProvider {
@@ -31,7 +65,7 @@ interface OpenAICompatConfig {
 
 async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptions): Promise<string> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), Number(process.env.LLM_TIMEOUT_MS) || 18000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutOf(opts));
   try {
   const res = await fetch(cfg.endpoint, {
     method: 'POST',
@@ -39,10 +73,7 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
     headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json', ...(cfg.extraHeaders ?? {}) },
     body: JSON.stringify({
       model: cfg.model,
-      messages: [
-        { role: 'system', content: opts.system },
-        { role: 'user', content: opts.user },
-      ],
+      messages: toOpenAIMessages(opts),
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 1600,
       // gpt-oss son modelos de razonamiento: 'low' reduce lo que gastan pensando (más rápido,
@@ -65,9 +96,11 @@ async function openAICompatComplete(cfg: OpenAICompatConfig, opts: CompleteOptio
 export class GroqProvider implements LLMProvider {
   readonly name = 'groq';
   private endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-  constructor(private modelOverride?: string) {}
+  // apiKeyOverride: permite una key aparte (ej. GROQ_CHAT_API_KEY para el chat del sitio)
+  // y así no compartir el cupo por minuto con la IA del dashboard.
+  constructor(private modelOverride?: string, private apiKeyOverride?: string) {}
   complete(opts: CompleteOptions): Promise<string> {
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = this.apiKeyOverride || process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error('Falta GROQ_API_KEY');
     const model = this.modelOverride || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     return openAICompatComplete({ name: 'groq', endpoint: this.endpoint, apiKey, model }, opts);
@@ -115,7 +148,7 @@ export class GeminiProvider implements LLMProvider {
     const model = this.modelOverride || process.env.GEMINI_MODEL || 'gemini-flash-latest';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), Number(process.env.LLM_TIMEOUT_MS) || 18000);
+    const timer = setTimeout(() => ctrl.abort(), timeoutOf(opts));
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -123,7 +156,7 @@ export class GeminiProvider implements LLMProvider {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: opts.system }] },
-          contents: [{ role: 'user', parts: [{ text: opts.user }] }],
+          contents: toGeminiContents(opts),
           generationConfig: {
             temperature: opts.temperature ?? 0.3,
             maxOutputTokens: opts.maxTokens ?? 1600,
@@ -258,7 +291,7 @@ export function providerHasKey(name: ProviderName): boolean {
 export interface ChainStep { provider: LLMProvider; maxCalls: number; }
 
 /** Recolecta qué proveedores respondieron efectivamente (para mostrar "quién respondió"). */
-export interface ProviderReport { used: string[]; }
+export interface ProviderReport { used: string[]; errors?: string[]; } // errors: fallos por proveedor (opcional, para logs)
 
 /**
  * Cadena de proveedores con tope por paso. Cada `complete()` prueba en orden:
@@ -274,7 +307,11 @@ function isTransient(msg: string): boolean {
   return /HTTP (429|500|502|503)|rate.?limit|overload|unavailable|high demand|temporarily|timeout|aborted|ECONN|network/i.test(msg);
 }
 
-export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLMProvider {
+export function chainProviders(
+  steps: ChainStep[],
+  report?: ProviderReport,
+  chainOpts?: { attemptsPerProvider?: number },
+): LLMProvider {
   const usable = steps.filter((s) => s.provider);
   const used = usable.map(() => 0);
   return {
@@ -282,7 +319,8 @@ export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLM
     async complete(opts: CompleteOptions): Promise<string> {
       let lastErr: unknown;
       for (let i = 0; i < usable.length; i++) {
-        const maxAttempts = 2; // 1 reintento ante error transitorio, luego pasa al siguiente
+        // default: 1 reintento ante error transitorio, luego pasa al siguiente
+        const maxAttempts = Math.max(1, chainOpts?.attemptsPerProvider ?? 2);
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           if (used[i] >= usable[i].maxCalls) break;
           used[i] += 1;
@@ -292,6 +330,7 @@ export function chainProviders(steps: ChainStep[], report?: ProviderReport): LLM
             return text;
           } catch (e) {
             lastErr = e;
+            report?.errors?.push(`${usable[i].provider.name}: ${((e as Error)?.message ?? String(e)).slice(0, 160)}`);
             if (isTransient((e as Error)?.message || '') && attempt < maxAttempts) {
               await sleep(500 + attempt * 500); // backoff corto: 1s
               continue;

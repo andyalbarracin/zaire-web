@@ -1,6 +1,6 @@
 // File: chat-box.tsx
 // Path: zaire-web/components/chat-box.tsx
-// Last modified: 2026-04-28
+// Last modified: 2026-10-21
 
 'use client';
 
@@ -12,12 +12,14 @@ interface LeadForm { name: string; company: string; email: string; whatsapp: str
 
 const STORAGE_KEY  = 'zaire_chat_v2';
 const RESET_KEY    = 'zaire_chat_resets';
+const SID_KEY      = 'zaire_chat_sid';  // id de sesión para agrupar el log del chat (zo_chat_logs)
 const EXPIRY_MS    = 12 * 60 * 60 * 1000; // 12 horas
 const RESET_LIMIT  = 3;
 const RESET_WINDOW = 60 * 60_000; // 1 hora
 const WELCOME_TEXT = '¿Qué parte de tu operación querés optimizar?';
 const WELCOME_MSG: Message = { role: 'bot', text: WELCOME_TEXT };
 const MAX_MSG_LEN  = 800;
+const LEAD_TURN    = 4; // el formulario aparece siempre en este turno, aunque la IA no cierre
 
 const TOPIC_BTNS = [
   'Automatización de procesos',
@@ -58,6 +60,22 @@ function checkResetAllowed(): { allowed: boolean; minutesLeft?: number } {
   } catch { return { allowed: true }; }
 }
 
+function newSessionId(): string {
+  const sid = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  try { localStorage.setItem(SID_KEY, sid); } catch { /* ignorar */ }
+  return sid;
+}
+
+function getSessionId(): string {
+  try {
+    const sid = localStorage.getItem(SID_KEY);
+    if (sid) return sid;
+  } catch { /* ignorar */ }
+  return newSessionId();
+}
+
 function incrementResetCount(): void {
   try {
     const raw = localStorage.getItem(RESET_KEY);
@@ -82,6 +100,7 @@ export default function ChatBox() {
   const [showLead, setShowLead]       = useState(false);
   const [lead, setLead]               = useState<LeadForm>({ name: '', company: '', email: '', whatsapp: '' });
   const [leadSending, setLeadSending] = useState(false);
+  const [leadError, setLeadError]     = useState<string | null>(null);
   const [hasGroq, setHasGroq]         = useState(true);
   const [resetError, setResetError]   = useState<string | null>(null);
   const msgsRef  = useRef<HTMLDivElement>(null);
@@ -95,6 +114,7 @@ export default function ChatBox() {
     }
     incrementResetCount();
     localStorage.removeItem(STORAGE_KEY);
+    newSessionId();
     setMsgs([WELCOME_MSG]);
     setCount(0);
     setLeadDone(false);
@@ -149,7 +169,7 @@ export default function ChatBox() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: toApi(newMsgs) }),
+        body: JSON.stringify({ messages: toApi(newMsgs), session_id: getSessionId() }),
       });
 
       if (res.status === 429) {
@@ -160,11 +180,12 @@ export default function ChatBox() {
       if (!res.ok) throw new Error('api');
 
       const raw = await res.json();
-      const botText = raw.text ?? '';
-      const aiReady = botText.includes('[[LEAD]]');
-      const cleanText = botText.replace('[[LEAD]]', '').trim();
+      const botText: string = typeof raw.text === 'string' ? raw.text : '';
+      const aiReady = raw.lead === true || /\[\[\s*LEAD\s*\]\]/i.test(botText);
+      const cleanText = botText.replace(/\[\[\s*LEAD\s*\]\]/gi, '').trim();
+      if (!cleanText) throw new Error('empty'); // respuesta vacía = fallo → fallback + formulario
       setMsgs(p => [...p, { role: 'bot', text: cleanText }]);
-      if ((aiReady && newCount >= 3) || newCount >= 5) setTimeout(() => setShowLead(true), 400);
+      if ((aiReady && newCount >= 3) || newCount >= LEAD_TURN) setTimeout(() => setShowLead(true), 400);
     } catch {
       setHasGroq(false);
       setMsgs(p => [...p, { role: 'bot', text: 'Para ayudarte mejor, dejame tus datos y te contactamos hoy.' }]);
@@ -179,8 +200,9 @@ export default function ChatBox() {
     e.preventDefault();
     if (!lead.email) return;
     setLeadSending(true);
+    setLeadError(null);
     try {
-      await fetch('/api/lead', {
+      const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -190,16 +212,20 @@ export default function ChatBox() {
           whatsapp:     lead.whatsapp || null,
           conversation: msgs.map(m => `${m.role === 'bot' ? 'ZAIRE' : 'Visitante'}: ${m.text}`).join('\n'),
           source:       'chat_hero',
+          chat_session_id: getSessionId(),
         }),
       });
+      if (!res.ok) throw new Error(String(res.status));
       setLeadDone(true);
       localStorage.removeItem(STORAGE_KEY); // limpiar al convertir
+      newSessionId();
       setMsgs(p => [...p, {
         role: 'bot',
         text: `Perfecto${lead.name ? `, ${lead.name.split(' ')[0]}` : ''}! Te contactamos hoy. Podés explorar nuestros planes mientras tanto.`,
       }]);
       setShowLead(false);
     } catch {
+      setLeadError('No pudimos enviar tus datos. Probá de nuevo o escribinos a hola@zairetech.com');
       setLeadSending(false);
     }
   };
@@ -283,6 +309,11 @@ export default function ChatBox() {
             value={lead.email} onChange={e => setF('email', e.target.value)} maxLength={200} />
           <input className="ai-linput" type="tel" placeholder="¿Tenés WhatsApp? Ingresalo sin el 0 y sin el 15"
             value={lead.whatsapp} onChange={e => setF('whatsapp', e.target.value)} maxLength={20} />
+          {leadError && (
+            <div role="alert" style={{ fontFamily: 'var(--fm)', fontSize: 9, letterSpacing: '.04em', color: '#ff8a7d', margin: '2px 0 6px' }}>
+              {leadError}
+            </div>
+          )}
           <button className="ai-lsubmit" type="submit" disabled={leadSending}>
             {leadSending ? 'ENVIANDO...' : 'HABLAR CON ZAIRE →'}
           </button>

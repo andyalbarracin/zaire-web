@@ -1,15 +1,19 @@
 // File: route.ts
 // Path: zaire-web/app/api/lead/route.ts
-// Last modified: 2026-04-27
+// Last modified: 2026-10-21
 // Description: Recibe leads del chat y del formulario de contacto.
 //              1. Guarda en tabla `leads` de Supabase (usando service_role key).
 //              2. Envía email de confirmación automática al visitante via Resend.
 //              3. Envía notificación interna a ZAIRE.
+//              Si no quedó ni en la DB ni en la notificación interna → 500 (el cliente avisa).
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { rateLimit, clientIp, RL_LEAD } from '@/lib/rate-limit';
+import { logChatTurn } from '@/lib/zaire-ops/chat-logs';
+
+const SESSION_RE = /^[A-Za-z0-9-]{8,64}$/;
 
 /* ── Sanitización de campos de texto ───────────────────────── */
 function clean(val: unknown, maxLen = 500): string | null {
@@ -175,17 +179,29 @@ export async function POST(req: NextRequest) {
     const conversation = typeof body.conversation === 'string'
       ? body.conversation.slice(0, 20_000)
       : null;
+    const chat_session_id = typeof body.chat_session_id === 'string' && SESSION_RE.test(body.chat_session_id)
+      ? body.chat_session_id
+      : null;
 
     /* 1. Guardar en Supabase */
     const supabase = getSupabase();
-    const { error: dbError } = await supabase.from('leads').insert({
+    const row = {
       name, email, whatsapp, company, employees,
       challenge, message, conversation, need, source, ai_knowledge,
-    });
+    };
+    const payload: Record<string, unknown> = chat_session_id ? { ...row, chat_session_id } : row;
+    let { error: dbError } = await supabase.from('leads').insert(payload);
+    if (dbError && chat_session_id && /chat_session_id/.test(dbError.message)) {
+      // Migración 0018 sin correr (falta la columna): guardar el lead igual, sin el id de sesión.
+      ({ error: dbError } = await supabase.from('leads').insert(row));
+    }
 
     if (dbError) {
       console.error('Supabase insert error:', dbError.message);
       // No bloquear la respuesta si falla la DB — igual mandamos el email
+    }
+    if (chat_session_id) {
+      after(() => logChatTurn({ session_id: chat_session_id, turn: 0, finish: 'lead_submitted', lead_emitted: true, ip: clientIp(req) }));
     }
 
     /* 2. Email de confirmación al visitante */
@@ -204,7 +220,7 @@ export async function POST(req: NextRequest) {
       /* 3. Notificación interna — soporta múltiples emails separados por coma */
       const notifyEmails = (process.env.NOTIFY_EMAILS || process.env.NOTIFY_EMAIL || 'albarracin.andres@gmail.com')
         .split(',').map(e => e.trim()).filter(Boolean);
-      await resend.emails.send({
+      const { error: notifyError } = await resend.emails.send({
         from:    `ZAIRE Leads <noreply@${fromDomain}>`,
         to:      notifyEmails,
         subject: `🔔 Nuevo lead — ${name || email}`,
@@ -217,6 +233,12 @@ export async function POST(req: NextRequest) {
           ai_knowledge: ai_knowledge ?? undefined,
         }).html,
       });
+      if (notifyError) console.error('Resend notify error:', notifyError.message);
+      if (dbError && notifyError) {
+        return NextResponse.json({ error: 'No se pudo registrar el lead' }, { status: 500 });
+      }
+    } else if (dbError) {
+      return NextResponse.json({ error: 'No se pudo registrar el lead' }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

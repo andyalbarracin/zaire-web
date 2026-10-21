@@ -1,22 +1,32 @@
 // File: route.ts
 // Path: zaire-web/app/api/chat/route.ts
-// Last modified: 2026-04-28
+// Last modified: 2026-10-21
+// Description: Chat de diagnóstico de la home. Cadena Groq → Gemini → OpenRouter (lib/sales/chat.ts),
+//              respuesta limpia de markdown + flag `lead` (token [[LEAD]]), log por turno en
+//              consola (JSON) y en zo_chat_logs (después de responder, sin demorar al visitante).
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { rateLimit, clientIp, RL_CHAT } from '@/lib/rate-limit';
+import { chatProvider, cleanChatReply } from '@/lib/sales/chat';
+import type { ChatTurn, ProviderReport } from '@/lib/sales/providers';
+import { logChatTurn, hashIp } from '@/lib/zaire-ops/chat-logs';
+
+export const maxDuration = 45;
 
 /* ── Validación de mensajes ──────────────────────────────────── */
 const MAX_MSG_LEN  = 1000;
 const MAX_MSGS     = 12;
+const LEAD_TURN    = 4; // en este turno el formulario aparece siempre (components/chat-box.tsx)
+const SESSION_RE   = /^[A-Za-z0-9-]{8,64}$/;
 
-function validateMessages(msgs: unknown): { role: string; content: string }[] | null {
+function validateMessages(msgs: unknown): ChatTurn[] | null {
   if (!Array.isArray(msgs) || msgs.length === 0 || msgs.length > MAX_MSGS) return null;
-  const clean: { role: string; content: string }[] = [];
+  const clean: ChatTurn[] = [];
   for (const m of msgs) {
     if (typeof m !== 'object' || m === null) return null;
     const { role, content } = m as Record<string, unknown>;
-    if (typeof role !== 'string' || typeof content !== 'string') return null;
-    if (!['user', 'assistant'].includes(role)) return null;
+    if (typeof content !== 'string') return null;
+    if (role !== 'user' && role !== 'assistant') return null;
     clean.push({
       role,
       content: content.slice(0, MAX_MSG_LEN).replace(/[<>]/g, ''), // strip basic HTML
@@ -34,6 +44,7 @@ PERSONALIDAD:
 - Directo, técnico sin ser pedante. Auténtico.
 - Español argentino informal pero profesional.
 - Máximo 3-4 oraciones por respuesta. Una sola pregunta por turno.
+- Texto plano: sin markdown, sin asteriscos, sin títulos ni viñetas.
 - Si dicen algo interesante o gracioso, lo reconocés brevemente antes de seguir.
 - NUNCA asumas respuestas que el visitante no dio explícitamente.
 
@@ -45,6 +56,7 @@ REGLAS IRROMPIBLES:
 - UNA SOLA PREGUNTA POR TURNO. Nunca hagas dos preguntas en un mismo mensaje.
 - Nunca uses [[LEAD]] antes del turno 3. El formulario no puede aparecer antes.
 - Nunca asumas respuestas que el visitante no dio.
+- No repitas una pregunta que ya hiciste ni pidas un dato que el visitante ya dio.
 
 DATOS OBLIGATORIOS ANTES DE CERRAR:
 1. Tipo de negocio y rubro + tamaño del equipo o empresa
@@ -56,11 +68,11 @@ Turno 1: confirmá el tema en una oración. Preguntá SOLO por negocio y tamaño
   Ej: "Me contás un poco de tu negocio, que tipo de empresa es y cuántos son en el equipo?"
 Turno 2: reaccioná con algo concreto de lo que dijeron. Preguntá SOLO por experiencia con automatización/IA, o por cómo gestionan hoy la operación de campo si suena industrial.
   Ej: "Ya usaron alguna herramienta para las órdenes y las visitas, o va todo por planilla y WhatsApp?"
-Turno 3: si tenés los dos datos obligatorios, cerrá con [[LEAD]]. Si hubo un giro, preguntá UNA cosa más.
-Turno 4-5: usá lo que tenés para recomendar. Siempre cerrá con [[LEAD]] en el turno 5.
+Turno 3: si tenés los dos datos obligatorios, cerrá con [[LEAD]]. Si te falta uno, preguntá SOLO eso.
+Turno 4: usá lo que tenés para recomendar. Siempre cerrá con [[LEAD]] en el turno 4.
 
-CÓMO CERRAR:
-Cuando tenés los dos datos obligatorios (o llegaste al turno 5):
+CÓMO CERRAR (en 2-4 oraciones):
+Cuando tenés los dos datos obligatorios (o llegaste al turno 4):
 1. Hacé una recomendación concreta usando los datos reales: rubro, tamaño, experiencia. Sin frases genéricas.
 2. Nombrá la rama que encaja: un producto de la suite (Zaire Trace/Field) si es industrial, o un plan de Zaire Studio si es servicios. Explicá brevemente por qué en su caso puntual.
 3. Invitalos a coordinar: una demo de 30 minutos (suite) o un diagnóstico de 30 minutos (Studio).
@@ -68,7 +80,7 @@ Cuando tenés los dos datos obligatorios (o llegaste al turno 5):
    Ejemplo: "te propongo que lo veamos en una demo de 30 minutos.[[LEAD]]"
    Sin [[LEAD]] el formulario de contacto no aparece. Usalo solo al cerrar, una vez.
 
-Si la conversación llegó al turno 5 sin dirección clara, cerrá así:
+Si la conversación llegó al turno 4 sin dirección clara, cerrá así:
   "Puede ser que todavía no esté del todo claro por donde arrancar, es normal. Una charla de 30 minutos nos alcanza para ordenar todo. Lo hablamos?[[LEAD]]"
 
 PLANES DE ZAIRE STUDIO:
@@ -98,36 +110,65 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const messages = validateMessages(body?.messages);
-    if (!messages) {
+    if (!messages || messages[messages.length - 1].role !== 'user') {
       return NextResponse.json({ error: 'Formato de mensajes inválido' }, { status: 400 });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GROQ_API_KEY no configurada' }, { status: 500 });
+    const ip = clientIp(req);
+    const sessionId = typeof body?.session_id === 'string' && SESSION_RE.test(body.session_id)
+      ? body.session_id
+      : `nosid-${hashIp(ip) ?? 'anon'}`; // clientes viejos (JS cacheado) no mandan session_id
+    const turn = messages.filter(m => m.role === 'user').length;
+    const userText = messages[messages.length - 1].content;
+
+    const report: ProviderReport = { used: [], errors: [] };
+    const provider = chatProvider(report);
+    if (provider.name === 'none') {
+      console.error('Chat: sin proveedor configurado (GROQ_API_KEY / GEMINI_API_KEY / OPENROUTER_API_KEY)');
+      return NextResponse.json({ error: 'Chat sin proveedor configurado' }, { status: 500 });
     }
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-        max_tokens: 250,
+    /* El razonamiento de gpt-oss sale del mismo cupo de tokens: con 250 el cierre se cortaba
+       y se perdía el [[LEAD]] (o llegaba vacío). 900 + reasoning_effort low (providers.ts). */
+    const t0 = Date.now();
+    let reply = { text: '', lead: false };
+    let failure: string | null = null;
+    try {
+      const raw = await provider.complete({
+        system: `${SYSTEM_PROMPT}\n\nTURNO ACTUAL DEL VISITANTE: ${turn}. A más tardar en el turno ${LEAD_TURN} cerrá con [[LEAD]].`,
+        history: messages.slice(0, -1),
+        user: userText,
+        maxTokens: 900,
         temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Groq error:', await response.text());
-      return NextResponse.json({ error: 'Error en Groq API' }, { status: 500 });
+        timeoutMs: 12_000,
+      });
+      reply = cleanChatReply(raw);
+      if (!reply.text) failure = 'respuesta vacía';
+    } catch (e) {
+      failure = (e as Error)?.message ?? String(e);
     }
+    const ms = Date.now() - t0;
+    const used = report.used[0] ?? null;
+    const errors = report.errors ?? [];
 
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content
-              ?? 'Disculpá, hubo un error. Podés escribirnos a hola@zairetech.com';
+    console.log(JSON.stringify({ evt: 'chat_turn', session: sessionId, turn, provider: used, ms, ok: !failure, lead: reply.lead, errors }));
+    after(() => logChatTurn({
+      session_id: sessionId,
+      turn,
+      provider: used,
+      latency_ms: ms,
+      finish: failure ? 'error' : 'ok',
+      error: [failure, ...errors].filter(Boolean).join(' | ') || null,
+      lead_emitted: reply.lead,
+      user_text: userText,
+      bot_text: reply.text || null,
+      ip,
+    }));
 
-    return NextResponse.json({ text });
+    if (failure) {
+      return NextResponse.json({ error: 'Sin respuesta del asistente' }, { status: 502 });
+    }
+    return NextResponse.json({ text: reply.text, lead: reply.lead });
 
   } catch (err) {
     console.error('Chat route error:', err);
