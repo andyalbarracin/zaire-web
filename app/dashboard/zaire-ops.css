@@ -377,3 +377,17 @@ a.zo-kan-phone:hover { color: var(--org); }
 .zo-cal-item:hover { border-color: #3a3a3a; }
 .zo-cal-item-title { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 720px) { .zo-cal-cell { min-height: 64px; padding: 4px; } .zo-cal-item-title { display: none; } .zo-cal-dow { padding: 2px; text-align: center; } }
+
+/* Chat del sitio (log de conversaciones) */
+.zo-chat-sessions { display: flex; flex-direction: column; gap: 10px; }
+.zo-chat-sess { padding: 14px 18px; }
+.zo-chat-sess + .zo-chat-sess { margin-top: 0; }
+.zo-chat-sess summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.zo-chat-sess summary::-webkit-details-marker { display: none; }
+.zo-chat-sess[open] summary { padding-bottom: 12px; border-bottom: 1px solid #1e1e1e; }
+.zo-chat-first { flex: 1; min-width: 160px; font-size: 13px; color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zo-chat-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.zo-chat-turn { display: flex; flex-direction: column; gap: 6px; }
+.zo-chat-bot { margin-left: 28px; border-color: #2a2a2a; background: #121212; }
+.zo-chat-err { color: #ff8a7d; font-size: 10px; word-break: break-word; margin-left: 28px; }
+@media (max-width: 720px) { .zo-chat-bot, .zo-chat-err { margin-left: 12px; } .zo-chat-first { flex-basis: 100%; order: 3; } }
