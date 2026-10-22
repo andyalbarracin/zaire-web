@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// La CSP del middleware exige un nonce por request en cada <script>. Una página estática
+// (pre-generada, ej. el login) no lo puede llevar → el navegador bloquea todo (pantalla negra).
+// Render dinámico en todo /dashboard para que Next firme los scripts con el nonce.
+export const dynamic = 'force-dynamic';
+
 export default function ZaireOpsBaseLayout({ children }: { children: React.ReactNode }) {
   return <div className="zo-root">{children}</div>;
 }
