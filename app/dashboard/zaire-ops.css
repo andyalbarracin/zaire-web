@@ -483,3 +483,24 @@ a.zo-kan-phone:hover { color: var(--org); }
   .zo-crmcal .zo-act-chip.done { background: #333; opacity: 1; }
   .zo-crmcal .zo-act-chip > *, .zo-crmcal .zo-cal-add, .zo-crmcal .zo-cal-more { display: none; }
 }
+
+/* CRM · vista previa del import de JSON (investigación externa) */
+.zo-import-preview { margin-top: 10px; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 12px; background: #101010; }
+.zo-import-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+.zo-import-table td { padding: 5px 4px; border-top: 1px solid #1c1c1c; vertical-align: top; }
+.zo-import-table tr:first-child td { border-top: none; }
+.zo-import-table td:first-child { color: #888; white-space: nowrap; padding-right: 10px; }
+.zo-import-table td:nth-child(2) { color: #ddd; word-break: break-word; }
+.zo-import-table td:last-child { font-size: 11px; padding-left: 10px; min-width: 96px; }
+.zo-imp-new { color: #9be8b3; }
+.zo-imp-keep { color: #777; }
+.zo-imp-warn { color: #e0a54a; }
+.zo-import-notes { margin: 8px 0 0; padding-left: 16px; font-size: 11.5px; color: #e0a54a; line-height: 1.5; }
+@media (max-width: 520px) {
+  .zo-import-table, .zo-import-table tbody, .zo-import-table tr, .zo-import-table td { display: block; }
+  .zo-import-table tr { padding: 7px 0; border-top: 1px solid #1c1c1c; }
+  .zo-import-table tr:first-child { border-top: none; }
+  .zo-import-table td { border: none !important; padding: 1px 0; }
+  .zo-import-table td:first-child { font-size: 10.5px; }
+  .zo-import-table td:last-child { padding-left: 0; min-width: 0; }
+}

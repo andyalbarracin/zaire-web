@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { CrmStage, CrmLead, CrmLeadEvent, CrmAttachment, CrmLeadInput, CrmActivity } from '@/lib/zaire-ops/crm';
 import { CRM_INDUSTRIES, CRM_EMPLOYEES, CRM_PREFERRED } from '@/lib/zaire-ops/crm-constants';
+import { parseResearchImport, tidyResearch, type ImportKey, type ImportNotes } from '@/lib/zaire-ops/research-import';
 import { updateLeadA, deleteLeadA, moveLeadA, addEventA, uploadLeadFileA, researchLeadA } from '../actions';
 import type { LeadAnalysis } from '@/lib/sales/types';
 import CallModal from './call-modal';
@@ -21,13 +22,12 @@ type FieldKey = 'website' | 'industry' | 'city' | 'employees' | 'modules_interes
 const initialsOf = (name: string) => name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-// Extrae el objeto JSON de un texto pegado (saca ``` y toma del primer { al último }).
-function stripToJson(raw: string): string {
-  let s = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
-  const a = s.indexOf('{'), b = s.lastIndexOf('}');
-  if (a !== -1 && b !== -1 && b > a) s = s.slice(a, b + 1);
-  return s;
-}
+// Nombres de los campos para los mensajes del importador de JSON.
+const IMPORT_LABEL: Record<FieldKey, string> = {
+  website: 'Sitio web', phone: 'Teléfono', email: 'Email', address: 'Dirección', city: 'Ciudad',
+  industry: 'Industria', employees: 'Empleados', modules_interest: 'Módulos', market_notes: 'Observaciones',
+};
+const IMPORT_TONE = { ok: '#9be8b3', warn: '#e0a54a', error: '#ff8a7d' } as const;
 
 // Guión de venta (motor KB) renderizado dentro del panel de INVESTIGAR.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -120,7 +120,9 @@ export default function LeadDetail({
   const [copied, setCopied] = useState(false);
   const [copiedImport, setCopiedImport] = useState(false);
   const [importText, setImportText] = useState('');
-  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState<{ tone: keyof typeof IMPORT_TONE; text: string } | null>(null);
+  const [importPreview, setImportPreview] = useState<{ data: Partial<Record<ImportKey, string>>; notes: ImportNotes } | null>(null);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -137,10 +139,15 @@ export default function LeadDetail({
   const mapHref = mapQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}` : null;
 
   async function save() {
-    setSaving(true); setSavedOk(false);
+    setSaving(true); setSavedOk(false); setSaveErr(null);
     const input: CrmLeadInput = { ...f, attachments, research };
     // strings vacíos → null los normaliza la data layer
     try { await updateLeadA(lead.id, input); setSavedOk(true); setTimeout(() => setSavedOk(false), 2500); }
+    catch (e) {
+      // Un error al guardar (DB, red, sesión) se informa como tal; los datos siguen en la ficha para reintentar.
+      console.error('[guardar lead]', e);
+      setSaveErr('No se pudo guardar. Los cambios siguen en pantalla: probá de nuevo en un momento.');
+    }
     finally { setSaving(false); }
   }
 
@@ -259,25 +266,35 @@ TU TAREA
     const datos = ([
       ['Empresa', f.company || f.name], ['Web actual', f.website], ['Ciudad', f.city], ['Industria', f.industry],
     ] as [string, string][]).filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n');
-    return `Investigá a fondo a esta empresa (usá la web) y devolvé EXCLUSIVAMENTE un JSON válido, sin markdown ni comillas triples. Datos REALES; si no encontrás algo, dejá "".
+    // En ChatGPT el bloque de código conserva el texto exacto al copiar (fuera de él, el chat
+    // renderiza markdown y mete citas). El importador igual tolera JSON imperfecto.
+    return `Investigá a fondo a esta empresa (usá la web) y devolveme el resultado en UN bloque de código \`\`\`json (así se copia exacto con el botón Copiar). Datos REALES; si no encontrás algo, dejá el valor vacío.
 
 EMPRESA
 ${datos || '- (solo el nombre)'}
 
 CONTEXTO: Zaire Technologies vende "Zaire Industrial", suite modular (Trace=órdenes/trazabilidad, Field=trabajo de campo/geocerca, Assets=activos/TCO, Stock=repuestos, CRM=comercial) para empresas que mantienen, reparan u operan activos físicos.
 
-DEVOLVÉ ESTE JSON EXACTO (mismas claves):
+REGLAS DEL JSON (se importa automáticamente a nuestro CRM)
+- Solo el bloque de código con UN objeto JSON: sin texto antes ni después.
+- Exactamente las claves de abajo. Todos los valores son strings ("" si no hay dato; nunca null).
+- Cada valor en UNA sola línea: sin saltos de línea dentro de los textos. Para separar secciones usá " | ".
+- Sin comillas dobles dentro de los textos (usá comillas simples o «»).
+- Sin links en formato markdown ni citas entre campos: las fuentes van como URLs en texto plano al final de "research".
+- "research" de 3.000 a 6.000 caracteres: si te sobra contenido, sintetizá; nunca lo cortes.
+
+DEVOLVÉ ESTE JSON (mismas claves):
 {
   "website": "",
   "phone": "",
   "email": "",
   "address": "",
   "city": "",
-  "industry": "una EXACTA de: ${CRM_INDUSTRIES.join(' | ')}",
-  "employees": "una EXACTA de: ${CRM_EMPLOYEES.join(' | ')}",
+  "industry": "una EXACTA de: ${CRM_INDUSTRIES.join(' / ')} (o vacío si no se puede verificar)",
+  "employees": "una EXACTA de: ${CRM_EMPLOYEES.join(' / ')} (o vacío)",
   "modules_interest": "módulos de Zaire que le encajan, separados por coma",
   "market_notes": "1-2 frases del sector",
-  "research": "análisis comercial en texto plano: lectura rápida; módulos que encajan y por qué; ángulo de entrada; speech (apertura/cuerpo/cierre); 5-7 preguntas de calificación; 4-5 objeciones probables con su respuesta; próximo paso. Español rioplatense, con criterio, sin humo. NO prometer certificación ISO; entrar por cómo siguen un equipo/trabajo desde que ingresa hasta que vuelve al cliente."
+  "research": "análisis comercial en secciones numeradas separadas por ' | ': 1) Lectura rápida y actividad verificada | 2) Productos, clientes y novedades | 3) Módulos que encajan y por qué | 4) Ángulo de entrada | 5) Speech (apertura, cuerpo, cierre) | 6) 5-7 preguntas de calificación | 7) 4-5 objeciones probables con su respuesta | 8) Próximo paso | 9) Fuentes (URLs). Español rioplatense, con criterio, sin humo. NO prometer certificación ISO; entrar por cómo siguen un equipo/trabajo desde que ingresa hasta que vuelve al cliente."
 }`;
   }
 
@@ -287,27 +304,48 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
   }
 
   // Importa el JSON pegado (respuesta externa): llena campos vacíos + brief. Revisar y Guardar.
+  // Tolera el JSON imperfecto de los chats (ver lib/zaire-ops/research-import.ts) y avisa qué hizo.
+  // Paso 1: interpretar y mostrar la vista previa (no toca la ficha). Ante un error, el texto
+  // pegado queda intacto y el mensaje dice exactamente qué falló.
   function importJson() {
-    const raw = importText.trim();
-    if (!raw) { setImportMsg('Pegá primero el JSON.'); return; }
-    let obj: Record<string, unknown>;
-    try { obj = JSON.parse(stripToJson(raw)); } catch { setImportMsg('Eso no es un JSON válido. Revisá que sea la respuesta completa.'); return; }
+    const r = parseResearchImport(importText);
+    if (!r.ok) {
+      setImportPreview(null);
+      setImportMsg({ tone: 'error', text: r.error.message });
+      console.warn('[import JSON]', r.error.kind, r.error.line ?? '', r.error.column ?? ''); // diagnóstico, sin contenido
+      return;
+    }
+    setImportMsg(null);
+    setImportPreview({ data: r.data, notes: r.notes });
+  }
 
+  // Estado de cada campo en la vista previa: se completa / ya tiene dato (no se pisa) / igual / vacío.
+  function previewStatus(k: FieldKey, v?: string): { text: string; cls: string } {
+    if (!v) return { text: 'vacío', cls: 'zo-imp-keep' };
+    if (!f[k]) return { text: 'se completa', cls: 'zo-imp-new' };
+    return f[k] === v ? { text: 'igual al actual', cls: 'zo-imp-keep' } : { text: 'ya tiene dato: no se pisa', cls: 'zo-imp-keep' };
+  }
+
+  // Paso 2: aplicar a la ficha. Solo campos vacíos; el brief se reemplaza. Se persiste con "Guardar cambios".
+  function applyImport() {
+    if (!importPreview) return;
+    const d = importPreview.data;
+    const next = { ...f };
     const filled = new Set<string>();
-    setF(prev => {
-      const next = { ...prev };
-      const strFields: FieldKey[] = ['website', 'phone', 'email', 'address', 'city', 'modules_interest', 'market_notes'];
-      for (const k of strFields) {
-        const v = obj[k];
-        if (typeof v === 'string' && v.trim() && k in next && !next[k]) { (next as Record<string, string>)[k] = v.trim(); filled.add(k); }
-      }
-      if (typeof obj.industry === 'string' && CRM_INDUSTRIES.includes(obj.industry) && !next.industry) { next.industry = obj.industry; filled.add('industry'); }
-      if (typeof obj.employees === 'string' && CRM_EMPLOYEES.includes(obj.employees) && !next.employees) { next.employees = obj.employees; filled.add('employees'); }
-      return next;
-    });
+    for (const k of Object.keys(IMPORT_LABEL) as FieldKey[]) {
+      const v = d[k];
+      if (v && !next[k]) { next[k] = v; filled.add(k); }
+    }
+    setF(next);
     setAiFilled(filled);
-    if (typeof obj.research === 'string' && obj.research.trim()) { setResearch(obj.research.trim()); setAnalysis(null); }
-    setImportMsg(`Importado: ${filled.size} campo(s) llenado(s)${typeof obj.research === 'string' && obj.research.trim() ? ' + brief' : ''}. Revisá lo naranja y tocá Guardar cambios.`);
+    if (d.research) { setResearch(tidyResearch(d.research)); setAnalysis(null); }
+    setImportPreview(null);
+    setImportMsg({
+      tone: 'ok',
+      text: filled.size || d.research
+        ? `Aplicado: ${filled.size} campo(s) completado(s)${d.research ? ' + brief' : ''}. Revisá lo naranja y tocá Guardar cambios.`
+        : 'No había nada nuevo para aplicar: los campos ya tenían dato.',
+    });
   }
 
   async function remove() {
@@ -341,6 +379,7 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
           <button className="zo-btn zo-btn-sm" type="button" onClick={() => window.open(wa(f.phone), '_blank')} disabled={!f.phone} title={f.phone ? 'Abrir WhatsApp Web' : 'Sin teléfono'}><MessageCircle size={13} /> WhatsApp</button>
           <button className="zo-btn zo-btn-sm" type="button" onClick={() => setEmailOpen(true)}><Mail size={13} /> Email</button>
           {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
+          {saveErr && <span className="zo-chip" role="alert" style={{ background: 'rgba(231,29,10,.15)', color: '#ff8a7d' }} title={saveErr}>✕ No se pudo guardar · reintentá</span>}
           <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
         </div>
       </div>
@@ -427,6 +466,7 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
           <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             <button className="zo-btn zo-btn-primary" onClick={save} disabled={saving}><Save size={14} /> {saving ? 'Guardando…' : 'Guardar cambios'}</button>
             {savedOk && <span className="zo-chip" style={{ background: 'rgba(34,197,94,.15)', color: '#22c55e' }}>✓ Guardado</span>}
+          {saveErr && <span className="zo-chip" role="alert" style={{ background: 'rgba(231,29,10,.15)', color: '#ff8a7d' }} title={saveErr}>✕ No se pudo guardar · reintentá</span>}
             <button className="zo-btn zo-btn-ghost" style={{ marginLeft: 'auto', color: '#ff6b5b' }} onClick={remove}><Trash2 size={14} /> Eliminar lead</button>
           </div>
         </div>
@@ -482,8 +522,49 @@ DEVOLVÉ ESTE JSON EXACTO (mismas claves):
               <textarea className="zo-textarea" value={importText} onChange={e => setImportText(e.target.value)} placeholder='Pegá acá el JSON de la respuesta externa…' style={{ minHeight: 90, fontSize: 11.5 }} />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
                 <button type="button" className="zo-btn zo-btn-primary zo-btn-sm" onClick={importJson} disabled={!importText.trim()}>Importar JSON</button>
-                {importMsg && <span style={{ fontSize: 11.5, color: '#9be8b3' }}>{importMsg}</span>}
+                {importMsg && <span style={{ fontSize: 11.5, lineHeight: 1.5, color: IMPORT_TONE[importMsg.tone] }}>{importMsg.text}</span>}
               </div>
+
+              {importPreview && (() => {
+                const { data, notes } = importPreview;
+                const invalid = new Map(notes.invalid.map(i => [i.key as string, i.value]));
+                const warnings = [
+                  ...(notes.repairs.length ? [`El JSON venía con errores de formato y se reparó: ${notes.repairs.join('; ')}. Revisá el brief.`] : []),
+                  ...(notes.outsideText ? ['Había texto fuera del JSON: se ignoró.'] : []),
+                  ...notes.types,
+                  ...(notes.extra.length ? [`Claves desconocidas ignoradas: ${notes.extra.join(', ')}.`] : []),
+                  ...(notes.missing.length ? [`No vinieron: ${notes.missing.join(', ')}.`] : []),
+                ];
+                return (
+                  <div className="zo-import-preview">
+                    <div className="zo-flabel" style={{ marginBottom: 6 }}>Vista previa · revisá antes de aplicar</div>
+                    <table className="zo-import-table"><tbody>
+                      {(Object.keys(IMPORT_LABEL) as FieldKey[]).map(k => {
+                        const bad = invalid.get(k);
+                        const st = bad ? { text: 'no coincide con las opciones: elegilo a mano', cls: 'zo-imp-warn' } : previewStatus(k, data[k]);
+                        const val = bad ?? data[k] ?? '—';
+                        return (
+                          <tr key={k}>
+                            <td>{IMPORT_LABEL[k]}</td>
+                            <td title={val}>{val.length > 90 ? `${val.slice(0, 90)}…` : val}</td>
+                            <td className={st.cls}>{st.text}</td>
+                          </tr>
+                        );
+                      })}
+                      <tr>
+                        <td>Brief</td>
+                        <td>{data.research ? `${data.research.length.toLocaleString('es-AR')} caracteres · ${data.research.slice(0, 120)}…` : '—'}</td>
+                        <td className={data.research ? 'zo-imp-new' : 'zo-imp-keep'}>{data.research ? (research ? 'reemplaza el actual' : 'se agrega') : 'vacío'}</td>
+                      </tr>
+                    </tbody></table>
+                    {warnings.length > 0 && <ul className="zo-import-notes">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      <button type="button" className="zo-btn zo-btn-primary zo-btn-sm" onClick={applyImport}>Aplicar a la ficha</button>
+                      <button type="button" className="zo-btn zo-btn-sm" onClick={() => setImportPreview(null)}>Cancelar</button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
